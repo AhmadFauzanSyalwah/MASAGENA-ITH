@@ -4,7 +4,7 @@ require 'koneksi.php';
 
 // Cek apakah ada sesi dari halaman login. Jika tidak ada, kembalikan ke login.
 if (!isset($_SESSION['id_belum_verifikasi'])) {
-    header("Location: index.php");
+    header("Location: login.php");
     exit;
 }
 
