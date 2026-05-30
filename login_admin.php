@@ -161,10 +161,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between text-xs font-semibold pt-1 pb-2">
-                            <a href="#" class="text-[#205187] hover:underline">Lupa password?</a>
-                        </div>
-
                         <button type="submit" name="login_admin" class="w-full bg-[#F59E0B] hover:bg-[#d98b09] text-white font-bold py-3 px-4 rounded-lg focus:outline-none text-xs transition duration-200 uppercase tracking-wide">
                             LANJUTKAN LOGIN
                         </button>

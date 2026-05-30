@@ -178,10 +178,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between text-xs font-semibold pt-1 pb-2">
-                            <a href="#" class="text-[#205187] hover:underline">Lupa password?</a>
-                        </div>
-
                         <button type="submit" name="login_mahasiswa" class="w-full bg-[#F59E0B] hover:bg-[#d98b09] text-white font-bold py-3 px-4 rounded-lg focus:outline-none text-xs transition duration-200">
                             LOGIN
                         </button>
@@ -190,10 +186,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             LOGIN PENGURUS ORGANISASI
                         </button>
                     </form>
-
-                    <div class="text-center mt-6">
-                        <a href="#" class="text-[13px] text-[#2b7bed] font-bold hover:underline">Belum punya akun? Hubungi administrator</a>
-                    </div>
                 
                 <?php elseif ($step == 'verifikasi'): ?>
                     
