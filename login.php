@@ -21,18 +21,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login_mahasiswa'])) {
     $password = $_POST['password'];
 
     if (!empty($identifier) && !empty($password)) {
-        // Query untuk mengecek kecocokan email/NIM dan password
-        $sql = "SELECT * FROM tbmahasiswa WHERE (email = :identifier OR nim = :identifier) AND password = :password";
+        // Query HANYA untuk mengambil data berdasarkan email atau NIM (jangan cek password di SQL)
+        $sql = "SELECT * FROM tbmahasiswa WHERE email = :identifier OR nim = :identifier";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
-            ':identifier' => $identifier,
-            ':password' => $password
+            ':identifier' => $identifier
         ]);
 
         $user = $stmt->fetch();
 
-        if ($user) {
-            // -- LOGIKA DIUBAH: Setiap kali password benar, selalu kirim OTP baru --
+        // Verifikasi password menggunakan password_verify()
+        if ($user && password_verify($password, $user['password'])) {
+            // -- JIKA PASSWORD COCOK, JALANKAN LOGIKA OTP --
             
             // 1. Buat 6 Digit OTP Acak
             $otp = rand(100000, 999999);
@@ -95,6 +95,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login_mahasiswa'])) {
             }
 
         } else {
+            // Error ini akan muncul jika user tidak ditemukan ATAU password salah (hasil password_verify gagal)
             $error = "Email/Username atau Password salah!";
         }
     } else {
