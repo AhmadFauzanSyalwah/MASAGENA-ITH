@@ -1,105 +1,111 @@
 <?php
 session_start();
 
-// 1. Deklarasi USE WAJIB di paling atas setelah tag php / session
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-// 2. Load file PHPMailer secara manual
-require 'PHPMailer/src/Exception.php';
-require 'PHPMailer/src/PHPMailer.php';
-require 'PHPMailer/src/SMTP.php';
-
-// 3. Panggil koneksi database
+// Panggil koneksi database
 require 'koneksi.php'; 
 
 $error = "";
+$step = isset($_GET['step']) ? $_GET['step'] : 'login';
 
-// Proses ketika tombol login ditekan
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login_mahasiswa'])) {
-    $identifier = $_POST['identifier']; 
-    $password = $_POST['password'];
+// =========================================================================
+// PROSES KETIKA TOMBOL LOGIN DITEKAN
+// =========================================================================
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    if (!empty($identifier) && !empty($password)) {
-        // Query HANYA untuk mengambil data berdasarkan email atau NIM (jangan cek password di SQL)
-        $sql = "SELECT * FROM tbmahasiswa WHERE email = :identifier OR nim = :identifier";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':identifier' => $identifier
-        ]);
+    // ----------- A. JIKA TOMBOL "LOGIN" (MAHASISWA) DITEKAN -----------
+    if (isset($_POST['login_mahasiswa'])) {
+        $identifier = trim($_POST['identifier']); 
+        $password = trim($_POST['password']);
 
-        $user = $stmt->fetch();
+        if (!empty($identifier) && !empty($password)) {
+            $sql = "SELECT * FROM tbmahasiswa WHERE email = :identifier OR nim = :identifier";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([':identifier' => $identifier]);
+            $user = $stmt->fetch();
 
-        // Verifikasi password menggunakan password_verify()
-        if ($user && password_verify($password, $user['password'])) {
-            // -- JIKA PASSWORD COCOK, JALANKAN LOGIKA OTP --
-            
-            // 1. Buat 6 Digit OTP Acak
-            $otp = rand(100000, 999999);
-
-            // 2. Update OTP ke database mahasiswa tersebut
-            $updateSql = "UPDATE tbmahasiswa SET verification_token = :otp WHERE id_mahasiswa = :id";
-            $updateStmt = $pdo->prepare($updateSql);
-            $updateStmt->execute([
-                ':otp' => $otp,
-                ':id' => $user['id_mahasiswa']
-            ]);
-
-            // 3. Proses Kirim Email OTP
-            $mail = new PHPMailer(true);
-
-            try {
-                // Setting Server SMTP
-                $mail->isSMTP();
-                $mail->Host       = 'smtp.gmail.com'; 
-                $mail->SMTPAuth   = true;
-                $mail->Username   = 'adminmasagena@gmail.com'; // WAJIB GANTI DENGAN EMAIL ANDA
-                $mail->Password   = 'dwhh atlo qerk bccu';  // WAJIB GANTI DENGAN 16 DIGIT SANDI APLIKASI
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; 
-                $mail->Port       = 465; 
-
-                // Pengirim & Penerima
-                $mail->setFrom('adminmasagena@gmail.com', 'Admin MASAGENA ITH'); // Ganti juga dengan email Anda
-                $mail->addAddress($user['email'], $user['nama']);
-
-                // Konten Email
-                $mail->isHTML(true);
-                $mail->Subject = 'Kode OTP Verifikasi Login Masagena ITH';
+            if ($user && password_verify($password, $user['password'])) {
+                // Login langsung untuk mahasiswa
+                $_SESSION['is_mahasiswa'] = true;
+                $_SESSION['mahasiswa_id'] = $user['id_mahasiswa'];
+                $_SESSION['nim'] = $user['nim'];
+                $_SESSION['nama'] = $user['nama']; 
                 
-                $mail->Body = "
-                    <div style='font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4;'>
-                        <div style='background-color: #ffffff; padding: 30px; border-radius: 10px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1);'>
-                            <h2 style='color: #1F3D68; text-align: center;'>Kode OTP MASAGENA ITH</h2>
-                            <p>Halo <b>{$user['nama']}</b>,</p>
-                            <p>Seseorang mencoba masuk ke akun Anda. Jika itu adalah Anda, silakan gunakan kode OTP berikut untuk melanjutkan login:</p>
-                            <div style='text-align: center; margin: 30px 0;'>
-                                <span style='font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #F59E0B; background: #fdf2f8; padding: 10px 20px; border-radius: 5px; border: 1px dashed #F59E0B;'>
-                                    {$otp}
-                                </span>
-                            </div>
-                            <p>Kode ini bersifat rahasia. Jangan berikan kode ini kepada siapapun.</p>
-                        </div>
-                    </div>
-                ";
-
-                // Eksekusi kirim email
-                $mail->send();
-                
-                // 4. Setelah email terkirim, arahkan ke verifikasi.php
-                $_SESSION['id_belum_verifikasi'] = $user['id_mahasiswa'];
-                header("Location: verifikasi.php");
+                header("Location: dashboard_mahasiswa.php");
                 exit;
-
-            } catch (Exception $e) {
-                $error = "Gagal mengirim OTP ke email. Silakan lapor ke Admin. Error: {$mail->ErrorInfo}";
+            } else {
+                $error = "Email/NIM atau Password salah!";
             }
-
         } else {
-            // Error ini akan muncul jika user tidak ditemukan ATAU password salah (hasil password_verify gagal)
-            $error = "Email/Username atau Password salah!";
+            $error = "Harap isi semua kolom!";
         }
-    } else {
-        $error = "Harap isi semua kolom!";
+    }
+
+    // ----------- B. JIKA TOMBOL "LOGIN PENGURUS ORGANISASI" DITEKAN -----------
+    if (isset($_POST['login_pengurus'])) {
+        $username = trim($_POST['identifier']); 
+        $password = trim($_POST['password']);
+
+        if (!empty($username) && !empty($password)) {
+            // Cek di database pada tabel pengurus_organisasi berdasarkan nama_pengurus
+            $sql = "SELECT * FROM pengurus_organisasi WHERE nama_pengurus = :username";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([':username' => $username]);
+            $pengurus = $stmt->fetch();
+
+            if ($pengurus && password_verify($password, $pengurus['password'])) {
+                
+                // Cek apakah pengurus ini sudah diverifikasi dan punya ID Akses dari Superadmin
+                if ($pengurus['status_verifikasi'] === 'Terverifikasi' && !empty($pengurus['id_akses'])) {
+                    // Simpan sementara datanya ke session untuk verifikasi tahap 2
+                    $_SESSION['pending_pengurus_data'] = $pengurus;
+                    
+                    // Alihkan ke tahap input ID Akses
+                    header("Location: login.php?step=verifikasi");
+                    exit;
+                } else {
+                    $error = "Akun Anda belum diverifikasi oleh Superadmin (Belum memiliki ID Akses).";
+                }
+
+            } else {
+                $error = "Nama Pengurus atau Password Pengurus salah!";
+            }
+        } else {
+            $error = "Harap isi semua kolom!";
+        }
+    }
+
+    // ----------- C. PROSES VERIFIKASI ID AKSES PENGURUS (TAHAP 2) -----------
+    if (isset($_POST['verifikasi_id_akses'])) {
+        $input_id_akses = trim($_POST['id_akses']);
+
+        if (!empty($input_id_akses)) {
+            if (isset($_SESSION['pending_pengurus_data'])) {
+                $pengurus_sukses = $_SESSION['pending_pengurus_data'];
+
+                // Cocokkan inputan dengan id_akses yang ada di database (abaikan besar kecil huruf saat input)
+                if (strtoupper($input_id_akses) === strtoupper($pengurus_sukses['id_akses'])) {
+                    
+                    // Set session utama Pengurus Organisasi
+                    $_SESSION['is_pengurus'] = true;
+                    $_SESSION['id_pengurus'] = $pengurus_sukses['id_pengurus'];
+                    $_SESSION['id_organisasi'] = $pengurus_sukses['id_organisasi'];
+                    $_SESSION['nama_pengurus'] = $pengurus_sukses['nama_pengurus']; 
+
+                    // Hapus session temporary
+                    unset($_SESSION['pending_pengurus_data']);
+
+                    // Arahkan ke dashboard pengurus
+                    header("Location: dashboard_pengurus.php?tab=dashboard");
+                    exit;
+                } else {
+                    $error = "ID Akses tidak valid! Periksa kembali kode Anda.";
+                }
+            } else {
+                $error = "Sesi login tidak valid. Silakan login kembali!";
+            }
+        } else {
+            $error = "Harap masukkan ID Akses!";
+        }
     }
 }
 ?>
@@ -113,7 +119,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login_mahasiswa'])) {
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Font Family (Opsional agar lebih rapi) */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
     </style>
@@ -142,55 +147,85 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login_mahasiswa'])) {
             </div>
 
             <div class="md:w-[58%] px-12 py-10 flex flex-col justify-center bg-white">
-                <div class="text-center mb-8">
-                    <h2 class="text-[28px] font-bold text-[#1F3D68]">Selamat Datang</h2>
-                    <p class="text-gray-500 text-sm mt-1 font-semibold">Silahkan login untuk melanjutkan</p>
-                </div>
-
+                
                 <?php if($error != ""): ?>
                     <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-lg mb-4 text-center text-sm font-semibold">
                         <?= $error; ?>
                     </div>
                 <?php endif; ?>
 
-                <form action="" method="POST" class="space-y-4">
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <i class="fa-regular fa-user text-gray-500"></i>
-                        </div>
-                        <input type="text" name="identifier" required placeholder="Email atau Username" class="w-full pl-11 pr-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-[#1F3D68] text-sm font-semibold text-gray-700 placeholder-gray-500 transition">
+                <?php if ($step == 'login'): ?>
+                    <div class="text-center mb-8">
+                        <h2 class="text-[28px] font-bold text-[#1F3D68]">Selamat Datang</h2>
+                        <p class="text-gray-500 text-sm mt-1 font-semibold">Silahkan login untuk melanjutkan</p>
                     </div>
 
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <i class="fa-solid fa-lock text-gray-500"></i>
+                    <form action="login.php?step=login" method="POST" class="space-y-4">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fa-regular fa-user text-gray-500"></i>
+                            </div>
+                            <input type="text" name="identifier" required placeholder="Email atau Username" class="w-full pl-11 pr-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-[#1F3D68] text-sm font-semibold text-gray-700 placeholder-gray-500 transition">
                         </div>
-                        <input type="password" name="password" id="passwordField" required placeholder="Password" class="w-full pl-11 pr-11 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-[#1F3D68] text-sm font-semibold text-gray-700 placeholder-gray-500 transition">
-                        <div class="absolute inset-y-0 right-0 pr-4 flex items-center cursor-pointer" onclick="togglePassword()">
-                            <i class="fa-regular fa-eye-slash text-gray-500 hover:text-gray-700" id="eyeIcon"></i>
+
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fa-solid fa-lock text-gray-500"></i>
+                            </div>
+                            <input type="password" name="password" id="passwordField" required placeholder="Password" class="w-full pl-11 pr-11 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-[#1F3D68] text-sm font-semibold text-gray-700 placeholder-gray-500 transition">
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center cursor-pointer" onclick="togglePassword()">
+                                <i class="fa-regular fa-eye-slash text-gray-500 hover:text-gray-700" id="eyeIcon"></i>
+                            </div>
                         </div>
+
+                        <div class="flex items-center justify-between text-xs font-semibold pt-1 pb-2">
+                            <a href="#" class="text-[#205187] hover:underline">Lupa password?</a>
+                        </div>
+
+                        <button type="submit" name="login_mahasiswa" class="w-full bg-[#F59E0B] hover:bg-[#d98b09] text-white font-bold py-3 px-4 rounded-lg focus:outline-none text-xs transition duration-200">
+                            LOGIN
+                        </button>
+
+                        <button type="submit" name="login_pengurus" class="w-full bg-[#F59E0B] hover:bg-[#d98b09] text-white font-bold py-3 px-4 rounded-lg focus:outline-none text-xs transition duration-200">
+                            LOGIN PENGURUS ORGANISASI
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-6">
+                        <a href="#" class="text-[13px] text-[#2b7bed] font-bold hover:underline">Belum punya akun? Hubungi administrator</a>
+                    </div>
+                
+                <?php elseif ($step == 'verifikasi'): ?>
+                    
+                    <div class="text-center mb-8">
+                        <h2 class="text-[28px] font-bold text-[#1F3D68]">Verifikasi Keamanan</h2>
+                        <p class="text-gray-500 text-xs mt-1 font-semibold leading-relaxed">
+                            Masukkan kode <b>ID AKSES</b> Anda yang telah<br>
+                            diberikan oleh Superadmin via WhatsApp.
+                        </p>
                     </div>
 
-                    <div class="flex items-center justify-between text-xs font-semibold pt-1 pb-2">
-                        <label class="flex items-center text-gray-600 cursor-pointer">
-                            <input type="checkbox" class="mr-2 w-4 h-4 rounded border-gray-300 text-[#1F3D68] focus:ring-[#1F3D68]">
-                            Ingat saya
-                        </label>
-                        <a href="#" class="text-[#205187] hover:underline">Lupa password?</a>
+                    <form action="login.php?step=verifikasi" method="POST" class="space-y-6">
+                        <div class="relative w-4/5 mx-auto">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fa-solid fa-key text-gray-500"></i>
+                            </div>
+                            <input type="text" name="id_akses" required placeholder="ID AKSES" autocomplete="off" class="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-[#1F3D68] text-sm font-bold text-gray-700 placeholder-gray-500 transition tracking-widest text-center uppercase">
+                        </div>
+
+                        <div class="w-4/5 mx-auto mt-6">
+                            <button type="submit" name="verifikasi_id_akses" class="w-full bg-[#F59E0B] hover:bg-[#d98b09] text-white font-bold py-3.5 px-4 rounded-lg focus:outline-none text-xs transition duration-200 uppercase tracking-wide">
+                                VERIFIKASI & LOGIN
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-6">
+                        <a href="login.php?step=login" class="text-[12px] text-gray-500 hover:text-red-500 hover:underline transition font-bold"><i class="fa-solid fa-arrow-left"></i> Kembali ke Login Utama</a>
                     </div>
 
-                    <button type="submit" name="login_mahasiswa" class="w-full bg-[#F59E0B] hover:bg-[#d98b09] text-white font-bold py-3 px-4 rounded-lg focus:outline-none text-xs transition duration-200">
-                        LOGIN
-                    </button>
+                <?php endif; ?>
 
-                    <button type="button" class="w-full bg-[#F59E0B] hover:bg-[#d98b09] text-white font-bold py-3 px-4 rounded-lg focus:outline-none text-xs transition duration-200">
-                        LOGIN ADMIN & PENGURUS ORGANISASI
-                    </button>
-                </form>
-
-                <div class="text-center mt-6">
-                    <a href="#" class="text-[13px] text-[#2b7bed] font-bold hover:underline">Belum punya akun? Hubungi administrator</a>
-                </div>
             </div>
         </div>
     </div>
@@ -208,14 +243,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login_mahasiswa'])) {
         function togglePassword() {
             var x = document.getElementById("passwordField");
             var icon = document.getElementById("eyeIcon");
-            if (x.type === "password") {
-                x.type = "text";
-                icon.classList.remove("fa-eye-slash");
-                icon.classList.add("fa-eye");
-            } else {
-                x.type = "password";
-                icon.classList.remove("fa-eye");
-                icon.classList.add("fa-eye-slash");
+            if (x && icon) {
+                if (x.type === "password") {
+                    x.type = "text";
+                    icon.classList.remove("fa-eye-slash");
+                    icon.classList.add("fa-eye");
+                } else {
+                    x.type = "password";
+                    icon.classList.remove("fa-eye");
+                    icon.classList.add("fa-eye-slash");
+                }
             }
         }
     </script>
