@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 23 Bulan Mei 2026 pada 08.23
+-- Waktu pembuatan: 30 Bulan Mei 2026 pada 08.14
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -116,6 +116,7 @@ CREATE TABLE `pengurus_organisasi` (
   `id_pengurus` int(11) NOT NULL,
   `id_organisasi` int(11) NOT NULL,
   `nama_pengurus` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
   `jabatan` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -152,7 +153,7 @@ CREATE TABLE `tbmahasiswa` (
 --
 
 INSERT INTO `tbmahasiswa` (`id_mahasiswa`, `nim`, `nama`, `email`, `password`, `is_verified`, `verification_token`) VALUES
-(1, '241011087', 'Arya Ahmad', 'aryaahmad.241011087@mahasiswa.ith.ac.id', 'AryaAhmad21', '1', NULL);
+(1, '241011087', 'Arya Ahmad', 'aryaahmad.241011087@mahasiswa.ith.ac.id', '$2y$10$8JJKjg5inxFop1mFpzQqf.wqL2F8SF7MXQyjzXoB/XlJ4WBtdlvaq', '1', NULL);
 
 --
 -- Indexes for dumped tables
