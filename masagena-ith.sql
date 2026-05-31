@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 30 Bulan Mei 2026 pada 08.14
+-- Waktu pembuatan: 31 Bulan Mei 2026 pada 10.33
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -31,7 +31,12 @@ CREATE TABLE `administrator` (
   `id_admin` int(11) NOT NULL,
   `username` varchar(50) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `nama_lengkap` varchar(100) NOT NULL
+  `nama_lengkap` varchar(100) NOT NULL,
+  `no_hp` varchar(20) NOT NULL,
+  `id_akses` varchar(20) DEFAULT NULL,
+  `status_verifikasi` enum('Belum','Terverifikasi') DEFAULT 'Belum',
+  `reset_token` varchar(100) DEFAULT NULL,
+  `reset_expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -73,6 +78,7 @@ CREATE TABLE `komentar` (
 
 CREATE TABLE `konten_kegiatan` (
   `id_konten` int(11) NOT NULL,
+  `id_organisasi` int(11) NOT NULL,
   `judul_kegiatan` varchar(255) NOT NULL,
   `isi_kegiatan` text NOT NULL,
   `foto` varchar(255) DEFAULT NULL,
@@ -92,6 +98,13 @@ CREATE TABLE `organisasi` (
   `logo` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data untuk tabel `organisasi`
+--
+
+INSERT INTO `organisasi` (`id_organisasi`, `nama_organisasi`, `deskripsi`, `logo`) VALUES
+(7, 'BEM ITH', 'a', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -102,6 +115,7 @@ CREATE TABLE `pendaftaran` (
   `id_pendaftaran` int(11) NOT NULL,
   `id_mahasiswa` int(11) NOT NULL,
   `id_organisasi` int(11) NOT NULL,
+  `id_konten` int(11) NOT NULL,
   `tanggal_daftar` datetime NOT NULL DEFAULT current_timestamp(),
   `status_pendaftaran` enum('pending','diterima','ditolak') NOT NULL DEFAULT 'pending'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -117,7 +131,12 @@ CREATE TABLE `pengurus_organisasi` (
   `id_organisasi` int(11) NOT NULL,
   `nama_pengurus` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `jabatan` varchar(50) NOT NULL
+  `jabatan` varchar(50) NOT NULL,
+  `no_hp` varchar(20) NOT NULL,
+  `id_akses` varchar(20) DEFAULT NULL,
+  `status_verifikasi` enum('Belum','Terverifikasi') DEFAULT 'Belum',
+  `reset_token` varchar(100) DEFAULT NULL,
+  `reset_expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -145,15 +164,10 @@ CREATE TABLE `tbmahasiswa` (
   `email` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
   `is_verified` enum('0','1') NOT NULL DEFAULT '0',
-  `verification_token` varchar(255) DEFAULT NULL
+  `verification_token` varchar(255) DEFAULT NULL,
+  `reset_token` varchar(100) DEFAULT NULL,
+  `reset_expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data untuk tabel `tbmahasiswa`
---
-
-INSERT INTO `tbmahasiswa` (`id_mahasiswa`, `nim`, `nama`, `email`, `password`, `is_verified`, `verification_token`) VALUES
-(1, '241011087', 'Arya Ahmad', 'aryaahmad.241011087@mahasiswa.ith.ac.id', '$2y$10$8JJKjg5inxFop1mFpzQqf.wqL2F8SF7MXQyjzXoB/XlJ4WBtdlvaq', '1', NULL);
 
 --
 -- Indexes for dumped tables
@@ -222,31 +236,31 @@ ALTER TABLE `tbmahasiswa`
 -- AUTO_INCREMENT untuk tabel `administrator`
 --
 ALTER TABLE `administrator`
-  MODIFY `id_admin` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_admin` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT untuk tabel `aspirasi`
 --
 ALTER TABLE `aspirasi`
-  MODIFY `id_aspirasi` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_aspirasi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT untuk tabel `komentar`
 --
 ALTER TABLE `komentar`
-  MODIFY `id_komentar` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_komentar` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT untuk tabel `konten_kegiatan`
 --
 ALTER TABLE `konten_kegiatan`
-  MODIFY `id_konten` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_konten` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT untuk tabel `organisasi`
 --
 ALTER TABLE `organisasi`
-  MODIFY `id_organisasi` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_organisasi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT untuk tabel `pendaftaran`
@@ -258,19 +272,19 @@ ALTER TABLE `pendaftaran`
 -- AUTO_INCREMENT untuk tabel `pengurus_organisasi`
 --
 ALTER TABLE `pengurus_organisasi`
-  MODIFY `id_pengurus` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_pengurus` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT untuk tabel `tblike`
 --
 ALTER TABLE `tblike`
-  MODIFY `id_like` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_like` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT untuk tabel `tbmahasiswa`
 --
 ALTER TABLE `tbmahasiswa`
-  MODIFY `id_mahasiswa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_mahasiswa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
