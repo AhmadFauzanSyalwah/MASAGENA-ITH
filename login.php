@@ -12,7 +12,7 @@ $step = isset($_GET['step']) ? $_GET['step'] : 'login';
 // =========================================================================
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    // ----------- A. JIKA TOMBOL "LOGIN" (MAHASISWA) DITEKAN -----------
+// ----------- A. JIKA TOMBOL "LOGIN" (MAHASISWA) DITEKAN -----------
     if (isset($_POST['login_mahasiswa'])) {
         $identifier = trim($_POST['identifier']); 
         $password = trim($_POST['password']);
@@ -23,15 +23,51 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt->execute([':identifier' => $identifier]);
             $user = $stmt->fetch();
 
+            // Jika User ditemukan dan password benar
             if ($user && password_verify($password, $user['password'])) {
-                // Login langsung untuk mahasiswa
-                $_SESSION['is_mahasiswa'] = true;
-                $_SESSION['mahasiswa_id'] = $user['id_mahasiswa'];
-                $_SESSION['nim'] = $user['nim'];
-                $_SESSION['nama'] = $user['nama']; 
                 
-                header("Location: dashboard_mahasiswa.php");
-                exit;
+                // --- KINI SETIAP LOGIN SELALU MINTA OTP ---
+                
+                // 1. Generate Kode OTP 6 Digit
+                $otp = rand(100000, 999999);
+                
+                // 2. Simpan OTP ke database (kolom verification_token)
+                $update_otp = $pdo->prepare("UPDATE tbmahasiswa SET verification_token = :otp WHERE id_mahasiswa = :id");
+                $update_otp->execute([':otp' => $otp, ':id' => $user['id_mahasiswa']]);
+                
+                // 3. Panggil PHPMailer & Kirim Email
+                require 'PHPMailer/src/Exception.php';
+                require 'PHPMailer/src/PHPMailer.php';
+                require 'PHPMailer/src/SMTP.php'; 
+                
+                $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+                try {
+                    $mail->isSMTP();
+                    $mail->Host       = 'smtp.gmail.com'; 
+                    $mail->SMTPAuth   = true;
+                    $mail->Username   = 'adminmasagena@gmail.com'; 
+                    $mail->Password   = 'dwhh atlo qerk bccu';    
+                    $mail->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+                    $mail->Port       = 587;
+
+                    $mail->setFrom('email_anda@gmail.com', 'Admin Masagena ITH');
+                    $mail->addAddress($user['email'], $user['nama']);
+
+                    $mail->isHTML(true);
+                    $mail->Subject = 'Kode Keamanan Login OTP - Masagena ITH';
+                    $mail->Body    = "Halo <b>{$user['nama']}</b>,<br><br>Seseorang baru saja mencoba login ke akun Anda. Berikut adalah kode OTP Anda untuk masuk ke sistem MASAGENA ITH:<br><h2 style='color:#F59E0B;'>{$otp}</h2><br>Kode ini bersifat rahasia. Jangan berikan kepada siapapun.";
+
+                    $mail->send();
+                    
+                    // 4. Buat session khusus untuk tahap verifikasi & Alihkan ke verifikasi.php
+                    $_SESSION['id_belum_verifikasi'] = $user['id_mahasiswa'];
+                    header("Location: verifikasi.php");
+                    exit;
+                    
+                } catch (Exception $e) {
+                    $error = "Gagal mengirim email OTP. Error: {$mail->ErrorInfo}";
+                }
+
             } else {
                 $error = "Email/NIM atau Password salah!";
             }
@@ -185,6 +221,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <button type="submit" name="login_pengurus" class="w-full bg-[#F59E0B] hover:bg-[#d98b09] text-white font-bold py-3 px-4 rounded-lg focus:outline-none text-xs transition duration-200">
                             LOGIN PENGURUS ORGANISASI
                         </button>
+
+                        <div class="flex justify-between items-center mt-2 px-1">
+                            <a href="lupa_password.php?role=mahasiswa" class="text-[11px] font-bold text-blue-500 hover:text-blue-700 hover:underline">Lupa Password Mahasiswa?</a>
+                            <a href="lupa_password.php?role=pengurus" class="text-[11px] font-bold text-blue-500 hover:text-blue-700 hover:underline">Lupa Password Pengurus?</a>
+                        </div>
                     </form>
                 
                 <?php elseif ($step == 'verifikasi'): ?>

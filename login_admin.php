@@ -160,6 +160,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 <i class="fa-regular fa-eye-slash text-gray-500 hover:text-gray-700" id="eyeIcon"></i>
                             </div>
                         </div>
+                        <div class="text-right mt-2">
+                            <a href="lupa_password.php?role=admin" class="text-xs text-blue-400 hover:text-blue-600 hover:underline">Lupa Password?</a>
+                        </div>
 
                         <button type="submit" name="login_admin" class="w-full bg-[#F59E0B] hover:bg-[#d98b09] text-white font-bold py-3 px-4 rounded-lg focus:outline-none text-xs transition duration-200 uppercase tracking-wide">
                             LANJUTKAN LOGIN

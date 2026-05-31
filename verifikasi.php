@@ -29,21 +29,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['verify_otp'])) {
             $user = $stmt->fetch();
 
             if ($user) {
-                // Jika OTP benar, update status
-                $updateSql = "UPDATE tbmahasiswa SET is_verified = '1', verification_token = NULL WHERE id_mahasiswa = :id";
+                // Jika OTP benar, kosongkan kembali tokennya agar tidak bisa dipakai ulang
+                $updateSql = "UPDATE tbmahasiswa SET verification_token = NULL WHERE id_mahasiswa = :id";
                 $updateStmt = $pdo->prepare($updateSql);
                 $updateStmt->execute([':id' => $id_mahasiswa]);
 
-                // Verifikasi sukses! Set session login utama
-                $_SESSION['id_mahasiswa'] = $user['id_mahasiswa'];
-                $_SESSION['nama'] = $user['nama'];
+                // Verifikasi sukses! Set session login utama sesuai kebutuhan dashboard
+                $_SESSION['is_mahasiswa'] = true;
+                $_SESSION['mahasiswa_id'] = $user['id_mahasiswa'];
                 $_SESSION['nim'] = $user['nim'];
+                $_SESSION['nama'] = $user['nama']; 
 
                 // Hapus sesi verifikasi sementara
                 unset($_SESSION['id_belum_verifikasi']);
 
-                // Arahkan ke halaman dashboard
-                header("Location: dashboard.php");
+                // Arahkan ke halaman dashboard mahasiswa
+                header("Location: dashboard_mahasiswa.php");
                 exit;
             } else {
                 $message = "Kode OTP tidak valid atau salah!";
