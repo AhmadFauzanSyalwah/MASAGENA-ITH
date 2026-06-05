@@ -48,12 +48,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['simpan_aspirasi'])) {
     $kategori = $_POST['kategori'];
     $tanggal = date("Y-m-d H:i:s"); 
     $status = "selesai";             
+    
+    // SOLUSI ERROR: Membuat kode unik acak sepanjang 5 karakter agar tidak bentrok (duplicate entry)
+    $kode_aspirasi = "ASP-" . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 5));
 
-    $stmt_insert = $conn->prepare("INSERT INTO aspirasi (id_mahasiswa, tanggal, judul, kategori, status) VALUES (?, ?, ?, ?, ?)");
-    $stmt_insert->bind_param("issss", $id_mahasiswa, $tanggal, $judul, $kategori, $status);
+    $stmt_insert = $conn->prepare("INSERT INTO aspirasi (id_mahasiswa, tanggal, judul, kategori, status, kode_aspirasi) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt_insert->bind_param("isssss", $id_mahasiswa, $tanggal, $judul, $kategori, $status, $kode_aspirasi);
 
     if ($stmt_insert->execute()) {
-        echo "<script>alert('Aspirasi berhasil dikirim!'); window.location.href = 'aktivitas_pengguna.php';</script>";
+        echo "<script>alert('Aspirasi berhasil dikirim dengan kode: $kode_aspirasi'); window.location.href = 'aktivitas_pengguna.php';</script>";
         exit;
     }
     $stmt_insert->close();
@@ -415,7 +418,7 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
                                 <th class="ps-4" style="width: 140px;">Tanggal</th>
                                 <th>Judul Aspirasi</th>
                                 <th>Kategori</th>
-                                <th style="width: 100px; text-center">Suka</th>
+                                <th style="width: 100px; text-align: center;">Suka</th>
                                 <th style="width: 130px;">Status</th>
                                 <th class="text-center" style="width: 150px;">Aksi</th>
                             </tr>
@@ -437,7 +440,7 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
                                             <td class='ps-4 text-muted small'>{$only_date}</td>
                                             <td class='fw-semibold text-dark'>" . htmlspecialchars($row['judul']) . "</td>
                                             <td><span class='badge bg-light text-secondary border'>" . htmlspecialchars($row['kategori']) . "</span></td>
-                                            <td><span class='text-danger fw-bold'><i class='bi bi-heart-fill me-1'></i>" . ($row['likes'] ?: 0) . "</span></td>
+                                            <td class='text-center'><span class='text-danger fw-bold'><i class='bi bi-heart-fill me-1'></i>" . ($row['likes'] ?: 0) . "</span></td>
                                             <td><span class='badge {$badge_class} px-2 py-1.5 w-100 text-center'>" . strtoupper($row['status'] ?: 'PENDING') . "</span></td>
                                             <td class='text-center'>
                                                 <div class='d-inline-flex gap-1'>
@@ -475,7 +478,7 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
                                 <th class="ps-4" style="width: 140px;">Tanggal</th>
                                 <th style="width: 250px;">Pada Aspirasi (Judul)</th>
                                 <th>Isi Komentar</th>
-                                <th style="width: 100px;">Suka</th>
+                                <th style="width: 100px; text-align: center;">Suka</th>
                                 <th class="text-center" style="width: 150px;">Aksi</th>
                             </tr>
                         </thead>
@@ -498,7 +501,7 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
                                             <td class='ps-4 text-muted small'>{$only_date}</td>
                                             <td class='text-truncate fw-semibold text-secondary' style='max-width: 250px;'>" . htmlspecialchars($row['judul']) . "</td>
                                             <td class='text-dark'>" . htmlspecialchars($row['isi_komentar']) . "</td>
-                                            <td><span class='text-danger fw-bold'><i class='bi bi-heart-fill me-1'></i>" . ($row['likes'] ?: 0) . "</span></td>
+                                            <td class='text-center'><span class='text-danger fw-bold'><i class='bi bi-heart-fill me-1'></i>" . ($row['likes'] ?: 0) . "</span></td>
                                             <td class='text-center'>
                                                 <div class='d-inline-flex gap-1'>
                                                     <a href='aktivitas_pengguna.php?aksi=like_komentar&id={$row['id_komentar']}' class='btn btn-sm btn-like px-2' title='Suka'>
