@@ -17,16 +17,40 @@ if ($conn->connect_error) {
     die("Koneksi gagal: " . $conn->connect_error);
 }
 
+// ==========================================
+// FITUR PROSES LIKE (ASPIRASI & KOMENTAR)
+// ==========================================
+if (isset($_GET['aksi']) && isset($_GET['id'])) {
+    $id_target = $_GET['id'];
+    
+    if ($_GET['aksi'] == 'like_aspirasi') {
+        $stmt_like = $conn->prepare("UPDATE aspirasi SET likes = likes + 1 WHERE id_aspirasi = ?");
+        $stmt_like->bind_param("i", $id_target);
+        $stmt_like->execute();
+        $stmt_like->close();
+        header("Location: aktivitas_pengguna.php");
+        exit;
+    }
+    
+    if ($_GET['aksi'] == 'like_komentar') {
+        $stmt_like_k = $conn->prepare("UPDATE komentar SET likes = likes + 1 WHERE id_komentar = ?");
+        $stmt_like_k->bind_param("i", $id_target);
+        $stmt_like_k->execute();
+        $stmt_like_k->close();
+        header("Location: aktivitas_pengguna.php");
+        exit;
+    }
+}
+
 // 1. PROSES SIMPAN ASPIRASI (Insert)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['simpan_aspirasi'])) {
-    $nama_pengirim = $_POST['nama_pengirim'];
     $judul = $_POST['judul'];
     $kategori = $_POST['kategori'];
     $tanggal = date("Y-m-d H:i:s"); 
     $status = "selesai";             
 
-    $stmt_insert = $conn->prepare("INSERT INTO aspirasi (id_mahasiswa, nama_pengirim, tanggal, judul, kategori, status) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt_insert->bind_param("isssss", $id_mahasiswa, $nama_pengirim, $tanggal, $judul, $kategori, $status);
+    $stmt_insert = $conn->prepare("INSERT INTO aspirasi (id_mahasiswa, tanggal, judul, kategori, status) VALUES (?, ?, ?, ?, ?)");
+    $stmt_insert->bind_param("issss", $id_mahasiswa, $tanggal, $judul, $kategori, $status);
 
     if ($stmt_insert->execute()) {
         echo "<script>alert('Aspirasi berhasil dikirim!'); window.location.href = 'aktivitas_pengguna.php';</script>";
@@ -38,12 +62,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['simpan_aspirasi'])) {
 // 2. PROSES UPDATE ASPIRASI (Edit)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_aspirasi'])) {
     $id_aspirasi = $_POST['id_aspirasi'];
-    $nama_pengirim = $_POST['nama_pengirim'];
     $judul = $_POST['judul'];
     $kategori = $_POST['kategori'];
 
-    $stmt_update = $conn->prepare("UPDATE aspirasi SET nama_pengirim = ?, judul = ?, kategori = ? WHERE id_aspirasi = ? AND id_mahasiswa = ?");
-    $stmt_update->bind_param("sssii", $nama_pengirim, $judul, $kategori, $id_aspirasi, $id_mahasiswa);
+    $stmt_update = $conn->prepare("UPDATE aspirasi SET judul = ?, kategori = ? WHERE id_aspirasi = ? AND id_mahasiswa = ?");
+    $stmt_update->bind_param("ssii", $judul, $kategori, $id_aspirasi, $id_mahasiswa);
 
     if ($stmt_update->execute()) {
         echo "<script>alert('Aspirasi berhasil diperbarui!'); window.location.href = 'aktivitas_pengguna.php';</script>";
@@ -54,14 +77,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_aspirasi'])) {
 
 // 3. PROSES SIMPAN KOMENTAR (Insert)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['simpan_komentar'])) {
-    $nama_pengirim = $_POST['nama_pengirim'];
     $id_aspirasi = $_POST['id_aspirasi'];
     $isi_komentar = $_POST['isi_komentar'];
     $tanggal = date("Y-m-d H:i:s");
     $level_user = "mahasiswa";
 
-    $stmt_comment = $conn->prepare("INSERT INTO komentar (id_aspirasi, id_user, nama_pengirim, level_user, tanggal, isi_komentar) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt_comment->bind_param("iissss", $id_aspirasi, $id_mahasiswa, $nama_pengirim, $level_user, $tanggal, $isi_komentar);
+    $stmt_comment = $conn->prepare("INSERT INTO komentar (id_aspirasi, id_user, level_user, tanggal, isi_komentar) VALUES (?, ?, ?, ?, ?)");
+    $stmt_comment->bind_param("iisss", $id_aspirasi, $id_mahasiswa, $level_user, $tanggal, $isi_komentar);
 
     if ($stmt_comment->execute()) {
         echo "<script>alert('Komentar berhasil ditambahkan!'); window.location.href = 'aktivitas_pengguna.php';</script>";
@@ -73,11 +95,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['simpan_komentar'])) {
 // 4. PROSES UPDATE KOMENTAR (Edit)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_komentar'])) {
     $id_komentar = $_POST['id_komentar'];
-    $nama_pengirim = $_POST['nama_pengirim'];
     $isi_komentar = $_POST['isi_komentar'];
 
-    $stmt_update_kmtr = $conn->prepare("UPDATE komentar SET nama_pengirim = ?, isi_komentar = ? WHERE id_komentar = ? AND id_user = ? AND level_user = 'mahasiswa'");
-    $stmt_update_kmtr->bind_param("ssii", $nama_pengirim, $isi_komentar, $id_komentar, $id_mahasiswa);
+    $stmt_update_kmtr = $conn->prepare("UPDATE komentar SET isi_komentar = ? WHERE id_komentar = ? AND id_user = ? AND level_user = 'mahasiswa'");
+    $stmt_update_kmtr->bind_param("sii", $isi_komentar, $id_komentar, $id_mahasiswa);
 
     if ($stmt_update_kmtr->execute()) {
         echo "<script>alert('Komentar berhasil diperbarui!'); window.location.href = 'aktivitas_pengguna.php';</script>";
@@ -172,6 +193,8 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
         .btn-delete-action:hover { color: #ffffff; background-color: #dc3545; }
         .btn-edit-action { color: #ffc107; background-color: #fffbeb; border-radius: 8px; transition: all 0.2s; }
         .btn-edit-action:hover { color: #333; background-color: #ffc107; }
+        .btn-like { background-color: #ffeef2; color: #e91e63; border: 1px solid #ffccd8; border-radius: 8px; font-weight: 600; transition: all 0.2s; }
+        .btn-like:hover { background-color: #e91e63; color: #ffffff; }
     </style>
 </head>
 <body>
@@ -187,10 +210,6 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
                         </div>
                         <div class="p-4">
                             <form action="aktivitas_pengguna.php" method="POST">
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold text-secondary">Nama Pengirim</label>
-                                    <input type="text" name="nama_pengirim" class="form-control" required placeholder="Masukkan nama Anda">
-                                </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold text-secondary">Judul Aspirasi</label>
                                     <input type="text" name="judul" class="form-control" required placeholder="Contoh: Lampu Ruang Kuliah Mati">
@@ -214,9 +233,9 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
             </div>
 
         <?php elseif ($aksi == 'edit_aspirasi' && isset($_GET['id'])): 
-            // AMBIL DATA ASPIRASI YANG AKAN DIEDIT
+            // FORM EDIT ASPIRASI
             $id_edit = $_GET['id'];
-            $stmt_get = $conn->prepare("SELECT nama_pengirim, judul, kategori FROM aspirasi WHERE id_aspirasi = ? AND id_mahasiswa = ?");
+            $stmt_get = $conn->prepare("SELECT judul, kategori FROM aspirasi WHERE id_aspirasi = ? AND id_mahasiswa = ?");
             $stmt_get->bind_param("ii", $id_edit, $id_mahasiswa);
             $stmt_get->execute();
             $res_edit = $stmt_get->get_result()->fetch_assoc();
@@ -232,10 +251,6 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
                         <div class="p-4">
                             <form action="aktivitas_pengguna.php" method="POST">
                                 <input type="hidden" name="id_aspirasi" value="<?php echo $id_edit; ?>">
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold text-secondary">Nama Pengirim</label>
-                                    <input type="text" name="nama_pengirim" class="form-control" required value="<?php echo htmlspecialchars($res_edit['nama_pengirim']); ?>">
-                                </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold text-secondary">Judul Aspirasi</label>
                                     <input type="text" name="judul" class="form-control" required value="<?php echo htmlspecialchars($res_edit['judul']); ?>">
@@ -269,10 +284,6 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
                         <div class="p-4">
                             <form action="aktivitas_pengguna.php" method="POST">
                                 <div class="mb-3">
-                                    <label class="form-label fw-semibold text-secondary">Nama Pengirim</label>
-                                    <input type="text" name="nama_pengirim" class="form-control" required placeholder="Masukkan nama Anda">
-                                </div>
-                                <div class="mb-3">
                                     <label class="form-label fw-semibold text-secondary">Pilih Aspirasi</label>
                                     <select name="id_aspirasi" class="form-select" required>
                                         <?php
@@ -298,9 +309,9 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
             </div>
 
         <?php elseif ($aksi == 'edit_komentar' && isset($_GET['id'])): 
-            // AMBIL DATA KOMENTAR YANG AKAN DIEDIT
+            // FORM EDIT KOMENTAR
             $id_edit_kmtr = $_GET['id'];
-            $stmt_get_kmtr = $conn->prepare("SELECT nama_pengirim, isi_komentar FROM komentar WHERE id_komentar = ? AND id_user = ? AND level_user = 'mahasiswa'");
+            $stmt_get_kmtr = $conn->prepare("SELECT isi_komentar FROM komentar WHERE id_komentar = ? AND id_user = ? AND level_user = 'mahasiswa'");
             $stmt_get_kmtr->bind_param("ii", $id_edit_kmtr, $id_mahasiswa);
             $stmt_get_kmtr->execute();
             $res_edit_kmtr = $stmt_get_kmtr->get_result()->fetch_assoc();
@@ -316,10 +327,6 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
                         <div class="p-4">
                             <form action="aktivitas_pengguna.php" method="POST">
                                 <input type="hidden" name="id_komentar" value="<?php echo $id_edit_kmtr; ?>">
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold text-secondary">Nama Pengirim</label>
-                                    <input type="text" name="nama_pengirim" class="form-control" required value="<?php echo htmlspecialchars($res_edit_kmtr['nama_pengirim']); ?>">
-                                </div>
                                 <div class="mb-4">
                                     <label class="form-label fw-semibold text-secondary">Isi Komentar</label>
                                     <textarea name="isi_komentar" class="form-control" rows="4" required><?php echo htmlspecialchars($res_edit_kmtr['isi_komentar']); ?></textarea>
@@ -347,10 +354,18 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
                                 <div class="mb-3">
                                     <label class="form-label fw-semibold text-secondary">Pilih Organisasi</label>
                                     <select name="id_organisasi" class="form-select" required>
+                                        <option value="" disabled selected>-- Pilih Organisasi --</option>
+                                        <option value="991">Habibie Coding Club</option>
+                                        <option value="992">Robotika</option>
+                                        
                                         <?php
                                         $list_org = $conn->query("SELECT id_organisasi, nama_organisasi FROM organisasi");
-                                        while($org = $list_org->fetch_assoc()) {
-                                            echo "<option value='{$org['id_organisasi']}'>" . htmlspecialchars($org['nama_organisasi']) . "</option>";
+                                        if ($list_org && $list_org->num_rows > 0) {
+                                            while($org = $list_org->fetch_assoc()) {
+                                                if ($org['nama_organisasi'] != 'Habibie Coding Club' && $org['nama_organisasi'] != 'Robotika') {
+                                                    echo "<option value='{$org['id_organisasi']}'>" . htmlspecialchars($org['nama_organisasi']) . "</option>";
+                                                }
+                                            }
                                         }
                                         ?>
                                     </select>
@@ -391,23 +406,23 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
 
             <div class="card mb-4 overflow-hidden">
                 <div class="custom-card-header d-flex align-items-center">
-                    <h5 class="m-0">1. Aspirasi Anda</h5>
+                    <h5 class="m-0">Aspirasi</h5>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
                                 <th class="ps-4" style="width: 140px;">Tanggal</th>
-                                <th>Nama Pengirim</th>
                                 <th>Judul Aspirasi</th>
                                 <th>Kategori</th>
+                                <th style="width: 100px; text-center">Suka</th>
                                 <th style="width: 130px;">Status</th>
-                                <th class="text-center" style="width: 120px;">Aksi</th>
+                                <th class="text-center" style="width: 150px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php
-                            $stmt1 = $conn->prepare("SELECT id_aspirasi, nama_pengirim, tanggal, judul, kategori, status FROM aspirasi WHERE id_mahasiswa = ? ORDER BY tanggal DESC");
+                            $stmt1 = $conn->prepare("SELECT id_aspirasi, tanggal, judul, kategori, status, likes FROM aspirasi WHERE id_mahasiswa = ? ORDER BY tanggal DESC");
                             $stmt1->bind_param("i", $id_mahasiswa);
                             $stmt1->execute();
                             $result1 = $stmt1->get_result();
@@ -420,12 +435,15 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
 
                                     echo "<tr>
                                             <td class='ps-4 text-muted small'>{$only_date}</td>
-                                            <td class='fw-semibold text-secondary'>" . htmlspecialchars($row['nama_pengirim'] ?? '-') . "</td>
                                             <td class='fw-semibold text-dark'>" . htmlspecialchars($row['judul']) . "</td>
                                             <td><span class='badge bg-light text-secondary border'>" . htmlspecialchars($row['kategori']) . "</span></td>
+                                            <td><span class='text-danger fw-bold'><i class='bi bi-heart-fill me-1'></i>" . ($row['likes'] ?: 0) . "</span></td>
                                             <td><span class='badge {$badge_class} px-2 py-1.5 w-100 text-center'>" . strtoupper($row['status'] ?: 'PENDING') . "</span></td>
                                             <td class='text-center'>
                                                 <div class='d-inline-flex gap-1'>
+                                                    <a href='aktivitas_pengguna.php?aksi=like_aspirasi&id={$row['id_aspirasi']}' class='btn btn-sm btn-like px-2' title='Suka'>
+                                                        <i class='bi bi-hand-thumbs-up'></i> Like
+                                                    </a>
                                                     <a href='aktivitas_pengguna.php?aksi=edit_aspirasi&id={$row['id_aspirasi']}' class='btn btn-sm btn-edit-action border-0 px-2' title='Edit'>
                                                         Edit
                                                     </a>
@@ -448,22 +466,22 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
 
             <div class="card mb-4 overflow-hidden">
                 <div class="custom-card-header d-flex align-items-center">
-                    <h5 class="m-0">2. Komentar Anda</h5>
+                    <h5 class="m-0">Komentar</h5>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
                                 <th class="ps-4" style="width: 140px;">Tanggal</th>
-                                <th>Nama Pengirim</th>
                                 <th style="width: 250px;">Pada Aspirasi (Judul)</th>
                                 <th>Isi Komentar</th>
-                                <th class="text-center" style="width: 120px;">Aksi</th>
+                                <th style="width: 100px;">Suka</th>
+                                <th class="text-center" style="width: 150px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php
-                            $stmt2 = $conn->prepare("SELECT k.id_komentar, k.nama_pengirim, k.tanggal, k.isi_komentar, a.judul 
+                            $stmt2 = $conn->prepare("SELECT k.id_komentar, k.tanggal, k.isi_komentar, k.likes, a.judul 
                                                      FROM komentar k 
                                                      JOIN aspirasi a ON k.id_aspirasi = a.id_aspirasi 
                                                      WHERE k.id_user = ? AND k.level_user = 'mahasiswa' 
@@ -478,11 +496,14 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
 
                                     echo "<tr>
                                             <td class='ps-4 text-muted small'>{$only_date}</td>
-                                            <td class='fw-semibold text-secondary'>" . htmlspecialchars($row['nama_pengirim'] ?? '-') . "</td>
                                             <td class='text-truncate fw-semibold text-secondary' style='max-width: 250px;'>" . htmlspecialchars($row['judul']) . "</td>
                                             <td class='text-dark'>" . htmlspecialchars($row['isi_komentar']) . "</td>
+                                            <td><span class='text-danger fw-bold'><i class='bi bi-heart-fill me-1'></i>" . ($row['likes'] ?: 0) . "</span></td>
                                             <td class='text-center'>
                                                 <div class='d-inline-flex gap-1'>
+                                                    <a href='aktivitas_pengguna.php?aksi=like_komentar&id={$row['id_komentar']}' class='btn btn-sm btn-like px-2' title='Suka'>
+                                                        <i class='bi bi-hand-thumbs-up'></i> Like
+                                                    </a>
                                                     <a href='aktivitas_pengguna.php?aksi=edit_komentar&id={$row['id_komentar']}' class='btn btn-sm btn-edit-action border-0 px-2' title='Edit'>
                                                         Edit
                                                     </a>
@@ -505,7 +526,7 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
 
             <div class="card overflow-hidden">
                 <div class="custom-card-header d-flex align-items-center">
-                    <h5 class="m-0">3. Pendaftaran Kegiatan / Organisasi</h5>
+                    <h5 class="m-0">Pendaftaran Kegiatan / Organisasi</h5>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -520,9 +541,9 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
                         </thead>
                         <tbody>
                             <?php
-                            $stmt3 = $conn->prepare("SELECT p.id_pendaftaran, p.tanggal_daftar, p.status_pendaftaran, o.nama_organisasi, k.judul_kegiatan 
+                            $stmt3 = $conn->prepare("SELECT p.id_pendaftaran, p.tanggal_daftar, p.status_pendaftaran, p.id_organisasi, o.nama_organisasi, k.judul_kegiatan 
                                                      FROM pendaftaran p
-                                                     JOIN organisasi o ON p.id_organisasi = o.id_organisasi
+                                                     LEFT JOIN organisasi o ON p.id_organisasi = o.id_organisasi
                                                      JOIN konten_kegiatan k ON p.id_konten = k.id_konten
                                                      WHERE p.id_mahasiswa = ? 
                                                      ORDER BY p.tanggal_daftar DESC");
@@ -536,9 +557,16 @@ $aksi = isset($_GET['aksi']) ? $_GET['aksi'] : '';
                                     $badge_pendaftaran = ($status_pendaftaran == 'selesai' || $status_pendaftaran == 'lulus') ? 'badge-selesai' : 'badge-pending';
                                     $only_date = date('Y-m-d', strtotime($row['tanggal_daftar']));
 
+                                    $nama_org_tampil = $row['nama_organisasi'];
+                                    if ($row['id_organisasi'] == 991) {
+                                        $nama_org_tampil = "Habibie Coding Club";
+                                    } elseif ($row['id_organisasi'] == 992) {
+                                        $nama_org_tampil = "Robotika";
+                                    }
+
                                     echo "<tr>
                                             <td class='ps-4 text-muted small'>{$only_date}</td>
-                                            <td class='fw-semibold text-dark'>" . htmlspecialchars($row['nama_organisasi']) . "</td>
+                                            <td class='fw-semibold text-dark'>" . htmlspecialchars($nama_org_tampil ?: '-') . "</td>
                                             <td class='text-secondary'>" . htmlspecialchars($row['judul_kegiatan']) . "</td>
                                             <td><span class='badge {$badge_pendaftaran} px-2 py-1.5 w-100 text-center'>" . strtoupper($row['status_pendaftaran'] ?: 'PENDING') . "</span></td>
                                             <td class='text-center'>
