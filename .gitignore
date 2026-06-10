@@ -28,3 +28,6 @@ Homestead.json
 .env.production
 .phpactor.json
 auth.json
+
+/database jangan dikasih liat i, bocor ki tuh data-datanya nana'
+config/database.php
