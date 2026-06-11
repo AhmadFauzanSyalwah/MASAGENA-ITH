@@ -10,7 +10,6 @@ if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['nim'])
     $nim_to_delete = mysqli_real_escape_string($conn, $_GET['nim']);
     $delete_query = "DELETE FROM mahasiswa WHERE nim = '$nim_to_delete'";
     if ($conn->query($delete_query)) {
-        // DIUBAH DISINI
         header("Location: pencarian_pengguna.php?status=deleted");
         exit();
     }
@@ -198,16 +197,16 @@ if ($res_count) {
                     </thead>
                     <tbody>
                         <?php
-                        $query = "SELECT * FROM mahasiswa WHERE 1=1";
+                        // PERBAIKAN UTAMA: Menggunakan AS untuk mengubah nama kolom asli database (nama & prodi) menjadi nama_lengkap & program_studi secara virtual
+                        $query = "SELECT nim, email, no_hp, nama AS nama_lengkap, prodi AS program_studi FROM mahasiswa WHERE 1=1";
                         if ($search != '') { 
-                            $query .= " AND (nim LIKE '%$search%' OR nama_lengkap LIKE '%$search%')"; 
+                            $query .= " AND (nim LIKE '%$search%' OR nama LIKE '%$search%')"; 
                         }
                         
                         $result = $conn->query($query);
 
                         if ($result && $result->num_rows > 0) {
                             while($row = $result->fetch_assoc()) {
-                                // DIUBAH PADA ACTION DELETE DI BAWAH INI
                                 echo "<tr>
                                         <td class='fw-semibold text-secondary'>{$row['nim']}</td>
                                         <td class='fw-semibold'>{$row['nama_lengkap']}</td>
