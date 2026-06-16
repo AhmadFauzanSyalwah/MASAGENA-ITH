@@ -1,0 +1,947 @@
+/* =============================================
+   MASAGENA-ITH - Main Stylesheet (Final)
+   Warna: #071C34 (primary), #FFA007 (accent)
+   ============================================= */
+
+:root {
+    --primary: #071C34;
+    --accent: #FFA007;
+    --primary-light: #0a2a4a;
+    --accent-dark: #e69500;
+    --bg-body: #f5f7fa;
+    --text-dark: #1a2c3e;
+    --text-muted: #64748b;
+    --text-light: #cbd5e0;
+    --white: #ffffff;
+    --border: #e2e8f0;
+    --danger: #dc2626;
+    --success: #16a34a;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 20px rgba(0,0,0,0.1);
+    --radius: 12px;
+    --radius-sm: 8px;
+}
+
+/* Reset & Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-dark);
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* ========== HEADER DUA BARIS ========== */
+.main-header {
+    background-color: var(--primary);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Baris atas: logo + brand, search, profil - TINGGI LEBIH BESAR */
+.header-top {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0.8rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+/* Baris bawah: menu navigasi - TINGGI LEBIH RAMPING */
+.header-bottom {
+    background-color: #0a2f4a;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    width: 100%;
+}
+
+.header-bottom .nav-area {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    width: 100%;
+}
+
+/* Menu navigasi */
+.nav-menu {
+    display: flex;
+    list-style: none;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0.2rem 0;
+    scrollbar-width: thin;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.nav-menu li a {
+    white-space: nowrap;
+    display: inline-block;
+    padding: 0.25rem 0.8rem;
+    color: var(--white);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.85rem;
+    border-radius: 30px;
+    transition: all 0.2s;
+}
+
+.nav-menu li a:hover {
+    background-color: rgba(255, 160, 7, 0.2);
+    color: var(--accent);
+}
+
+.nav-menu li a.active {
+    background-color: var(--accent);
+    color: var(--primary);
+}
+
+/* Brand Area */
+.brand-area {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.logo-link {
+    display: flex;
+    align-items: center;
+}
+
+.logo-img {
+    height: 45px;
+    width: auto;
+    object-fit: contain;
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.brand-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+}
+
+.brand-subtitle {
+    font-size: 0.6rem;
+    color: var(--text-light);
+    line-height: 1.2;
+}
+
+/* Search Area - DIPERBESAR */
+.search-area {
+    flex: 1;
+    max-width: 650px;
+    min-width: 200px;
+}
+
+.search-form {
+    display: flex;
+    background-color: var(--white);
+    border-radius: 50px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.search-form input {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    border: none;
+    font-size: 0.95rem;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+}
+
+.search-form button {
+    background-color: var(--accent);
+    border: none;
+    padding: 0 1.2rem;
+    cursor: pointer;
+    color: var(--primary);
+    transition: background 0.3s;
+}
+
+.search-form button:hover {
+    background-color: var(--accent-dark);
+}
+
+/* Profile Area - Ikon besar, teks kecil */
+.profile-area {
+    flex-shrink: 0;
+    position: relative;
+}
+
+.profile-dropdown {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 0.2rem 1rem;
+    border-radius: 40px;
+    cursor: pointer;
+    color: var(--white);
+}
+
+.profile-dropdown i {
+    font-size: 2.2rem;
+    color: var(--accent);
+    margin-right: 0.2rem;
+}
+
+.profile-dropdown span {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* Dropdown Content - Ikon di dalamnya normal */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: var(--white);
+    min-width: 200px;
+    box-shadow: var(--shadow-md);
+    border-radius: var(--radius-sm);
+    z-index: 1;
+    margin-top: 0.5rem;
+}
+
+.dropdown-content a {
+    color: var(--primary);
+    padding: 0.75rem 1rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.2s;
+}
+
+/* Ikon dalam dropdown dibuat normal (kecil) */
+.dropdown-content a i {
+    font-size: 1rem;
+    width: 1.2rem;
+    text-align: center;
+}
+
+.dropdown-content a:hover {
+    background-color: var(--bg-body);
+}
+
+.dropdown-content hr {
+    margin: 0.5rem 0;
+    border-color: var(--border);
+}
+
+.profile-dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.btn-login {
+    background-color: var(--accent);
+    color: var(--primary);
+    padding: 0.5rem 1.2rem;
+    border-radius: 40px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-login:hover {
+    background-color: var(--accent-dark);
+}
+
+/* ========== MAIN CONTENT ========== */
+.main-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+    flex: 1;
+}
+
+/* Dashboard Welcome - sejajar dengan elemen lain */
+.dashboard-welcome {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: var(--white);
+    padding: 1.5rem 2rem;
+    border-radius: var(--radius);
+    margin-bottom: 2rem;
+    margin-top: 0;
+    width: 100%;
+}
+
+.dashboard-welcome h1 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-welcome p {
+    color: var(--text-light);
+}
+
+/* Grid */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+/* Card */
+.card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.card h3 {
+    margin-bottom: 0.5rem;
+}
+
+.card h3 a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.card h3 a:hover {
+    color: var(--accent);
+}
+
+.card .meta {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+}
+
+.card-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+/* Sidebar */
+.sidebar {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.sidebar h2 {
+    font-size: 1.3rem;
+    border-left: 4px solid var(--accent);
+    padding-left: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.pengumuman-list {
+    list-style: none;
+}
+
+.pengumuman-list li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.pengumuman-list li a {
+    text-decoration: none;
+    color: var(--primary);
+    font-weight: 500;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.pengumuman-list li a:hover {
+    color: var(--accent);
+}
+
+.pengumuman-list .date {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Buttons */
+.btn-sm {
+    display: inline-block;
+    background-color: var(--accent);
+    color: var(--primary);
+    padding: 0.4rem 1rem;
+    border-radius: 30px;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: background 0.3s;
+}
+
+.btn-sm:hover {
+    background-color: var(--accent-dark);
+}
+
+.btn, .btn-daftar {
+    display: inline-block;
+    background-color: var(--accent);
+    color: var(--primary);
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn:hover, .btn-daftar:hover {
+    background-color: var(--accent-dark);
+}
+
+.btn-cancel {
+    background-color: var(--border);
+    color: var(--text-dark);
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    margin-left: 0.5rem;
+    transition: background 0.3s;
+}
+
+.btn-cancel:hover {
+    background-color: #cbd5e1;
+}
+
+/* Tables */
+.agenda-table,
+.riwayat-table,
+.aspirasi-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--white);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.agenda-table th,
+.riwayat-table th,
+.aspirasi-table th {
+    background-color: var(--primary);
+    color: var(--white);
+    padding: 0.75rem;
+    text-align: left;
+}
+
+.agenda-table td,
+.riwayat-table td,
+.aspirasi-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+/* Forms */
+.profil-form,
+.aspirasi-form {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: var(--radius);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.profil-form label,
+.aspirasi-form label {
+    display: block;
+    margin-top: 1rem;
+    margin-bottom: 0.3rem;
+    font-weight: 500;
+    color: var(--primary);
+}
+
+.profil-form input,
+.profil-form select,
+.aspirasi-form input,
+.aspirasi-form select,
+.aspirasi-form textarea {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+}
+
+.profil-form button,
+.aspirasi-form button {
+    margin-top: 1.5rem;
+    background-color: var(--accent);
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius-sm);
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* Alert */
+.alert {
+    background-color: #dcfce7;
+    color: var(--success);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 1.5rem;
+    border-left: 4px solid var(--success);
+}
+
+.error {
+    background-color: #fee2e2;
+    color: var(--danger);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 1.5rem;
+    border-left: 4px solid var(--danger);
+}
+
+/* Detail Kegiatan */
+.detail-kegiatan {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 2rem;
+}
+
+.detail-kegiatan h1 {
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.detail-kegiatan .meta {
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+}
+
+.detail-kegiatan .deskripsi {
+    margin: 1.5rem 0;
+    line-height: 1.7;
+}
+
+.interaksi {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.btn-like,
+.btn-share {
+    background: none;
+    border: 1px solid var(--border);
+    padding: 0.4rem 1rem;
+    border-radius: 30px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-like:hover,
+.btn-share:hover {
+    background-color: var(--bg-body);
+}
+
+.komentar-section {
+    margin-top: 2rem;
+}
+
+.komentar-item {
+    background: var(--bg-body);
+    padding: 1rem;
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+}
+
+.komentar-item strong {
+    color: var(--primary);
+}
+
+/* Organisasi Grid */
+.organisasi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.org-card .jenis {
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+/* ========== LOGIN PAGE ========== */
+.login-page {
+    background-color: var(--primary);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-container {
+    background: var(--white);
+    padding: 40px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-container h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: var(--primary);
+    border-left: 4px solid var(--accent);
+    padding-left: 15px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(255,160,7,0.2);
+}
+
+.login-container button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--accent);
+    color: var(--primary);
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.login-container button[type="submit"]:hover {
+    background-color: var(--accent-dark);
+}
+
+.register-link {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+.register-link a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.register-link a:hover {
+    text-decoration: underline;
+}
+
+.logo-login {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.logo-login img {
+    max-height: 60px;
+}
+
+/* ========== FOOTER ========== */
+.main-footer {
+    background-color: var(--primary);
+    color: var(--text-light);
+    padding: 1.5rem 0 0.75rem;
+    margin-top: auto;
+    font-size: 0.85rem;
+}
+
+.footer-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+}
+
+/* Kiri: logo dan teks horizontal */
+.footer-brand-horizontal {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1.2;
+    min-width: 260px;
+}
+
+.footer-logo {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+}
+
+.footer-brand-text h3 {
+    font-size: 1.2rem;
+    color: var(--accent);
+    font-family: 'Montserrat', sans-serif;
+    margin-bottom: 0.25rem;
+}
+
+.footer-brand-text p {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    line-height: 1.3;
+    margin: 0;
+}
+
+/* Kanan: grid link */
+.footer-links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1.5rem;
+    flex: 2;
+    min-width: 320px;
+}
+
+.footer-col h4 {
+    font-size: 0.9rem;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.footer-col ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-col ul li {
+    margin-bottom: 0.3rem;
+    font-size: 0.75rem;
+}
+
+.footer-col ul li a {
+    color: var(--text-light);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.footer-col ul li a:hover {
+    color: var(--accent);
+}
+
+.social-icons {
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+}
+
+.social-icons a {
+    color: var(--text-light);
+    font-size: 1.2rem;
+    transition: color 0.2s;
+}
+
+.social-icons a:hover {
+    color: var(--accent);
+}
+
+.contact-info p {
+    margin-bottom: 0.3rem;
+    font-size: 0.75rem;
+}
+
+.contact-info i {
+    width: 20px;
+    color: var(--accent);
+}
+
+.footer-bottom {
+    text-align: center;
+    padding-top: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 0.7rem;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1024px) {
+    .header-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .brand-area {
+        justify-content: space-between;
+    }
+    .search-area {
+        max-width: 100%;
+    }
+    .header-bottom .nav-area {
+        overflow-x: auto;
+    }
+    .nav-menu {
+        justify-content: flex-start;
+    }
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 900px) {
+    .footer-container {
+        flex-direction: column;
+    }
+    .footer-brand-horizontal {
+        justify-content: center;
+        text-align: center;
+    }
+    .footer-links-grid {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        padding: 1rem;
+    }
+    .card {
+        padding: 1rem;
+    }
+    .footer-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer-links-grid {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    .footer-brand-horizontal {
+        flex-direction: column;
+        text-align: center;
+    }
+    .social-icons {
+        justify-content: center;
+    }
+    .brand-text .brand-subtitle {
+        font-size: 0.6rem;
+    }
+    .login-container {
+        padding: 20px;
+        margin: 1rem;
+    }
+}
+
+/* Perbaikan agar dashboard welcome sejajar dengan logo dan menu */
+.main-container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+    padding-top: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.dashboard-welcome {
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    box-sizing: border-box;
+}
+
+/* Jika masih belum sejajar, pastikan tidak ada margin negatif atau extra spacing */
+.dashboard-welcome h1 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+
+/* Perkecil card kegiatan terbaru (lebih ramping) */
+.kegiatan-list .card {
+    padding: 0.8rem 1rem !important;
+    margin-bottom: 1rem !important;
+}
+.kegiatan-list .card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+.kegiatan-list .card .meta {
+    font-size: 0.7rem;
+}
+.kegiatan-list .card p {
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+.kegiatan-list .card-actions {
+    margin-top: 0.5rem;
+}
+.kegiatan-list .card-actions span {
+    font-size: 0.75rem;
+}
+.kegiatan-list .btn-sm {
+    padding: 0.2rem 0.6rem;
+    font-size: 0.7rem;
+}
+
+/* Beri garis kuning pada judul "Kegiatan Terbaru" seperti di sidebar */
+.main-content > h2,
+.sidebar h2 {
+    font-size: 1.3rem;
+    border-left: 4px solid var(--accent);
+    padding-left: 0.75rem;
+    margin-bottom: 1rem;
+}
