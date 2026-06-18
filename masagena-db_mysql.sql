@@ -1,159 +1,412 @@
--- Hapus database lama jika ada dan buat baru agar fresh
-DROP DATABASE IF EXISTS `masagena-ith`;
-CREATE DATABASE `masagena-ith`;
-USE `masagena-ith`;
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Waktu pembuatan: 18 Jun 2026 pada 14.58
+-- Versi server: 10.4.32-MariaDB
+-- Versi PHP: 8.2.12
 
--- =======================================================
--- 1. TABEL ORGANISASI
--- =======================================================
-CREATE TABLE `organisasi` (
-    `id_organisasi` INT AUTO_INCREMENT PRIMARY KEY,
-    `nama_organisasi` VARCHAR(100) NOT NULL,
-    `jenis` ENUM('BEM','UKM','SC','Himpunan') NOT NULL,
-    `deskripsi` TEXT,
-    `logo` VARCHAR(255),
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
 
--- =======================================================
--- 2. TABEL PENGGUNA (DIPISAH SESUAI KODE PHP)
--- =======================================================
-CREATE TABLE `tbmahasiswa` (
-    `id_mahasiswa` INT AUTO_INCREMENT PRIMARY KEY,
-    `nim` VARCHAR(20) UNIQUE,
-    `nama` VARCHAR(150) NOT NULL,
-    `email` VARCHAR(100) UNIQUE NOT NULL,
-    `password` VARCHAR(255) NOT NULL,
-    `prodi` VARCHAR(50),
-    `angkatan` VARCHAR(4),
-    `kontak` VARCHAR(20),
-    `is_verified` ENUM('0','1') DEFAULT '0',
-    `verification_token` VARCHAR(6),
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `masagena-ith`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `administrator`
+--
 
 CREATE TABLE `administrator` (
-    `id_admin` INT AUTO_INCREMENT PRIMARY KEY,
-    `username` VARCHAR(50) UNIQUE NOT NULL,
-    `nama_lengkap` VARCHAR(150) NOT NULL,
-    `password` VARCHAR(255) NOT NULL,
-    `no_hp` VARCHAR(20),
-    `id_akses` VARCHAR(20),
-    `status_verifikasi` VARCHAR(50) DEFAULT 'Belum'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `id_admin` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `nama_lengkap` varchar(150) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `no_hp` varchar(20) DEFAULT NULL,
+  `id_akses` varchar(20) DEFAULT NULL,
+  `status_verifikasi` varchar(50) DEFAULT 'Belum',
+  `reset_token` varchar(255) DEFAULT NULL,
+  `reset_expires` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE `pengurus_organisasi` (
-    `id_pengurus` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_organisasi` INT,
-    `nama_pengurus` VARCHAR(150) NOT NULL,
-    `jabatan` VARCHAR(100) DEFAULT 'Anggota Inti',
-    `password` VARCHAR(255) NOT NULL,
-    `no_hp` VARCHAR(20),
-    `id_akses` VARCHAR(20),
-    `status_verifikasi` VARCHAR(50) DEFAULT 'Belum',
-    FOREIGN KEY (`id_organisasi`) REFERENCES `organisasi`(`id_organisasi`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+--
+-- Dumping data untuk tabel `administrator`
+--
 
--- =======================================================
--- 3. TABEL KONTEN & FITUR
--- =======================================================
-CREATE TABLE `konten_kegiatan` (
-    `id_konten` INT AUTO_INCREMENT PRIMARY KEY,
-    `judul` VARCHAR(255) NOT NULL,
-    `deskripsi` TEXT NOT NULL,
-    `tanggal_kegiatan` DATE,
-    `kategori` VARCHAR(50),
-    `lampiran` VARCHAR(255),
-    `status_publikasi` VARCHAR(20) DEFAULT 'publish',
-    `id_organisasi` INT NOT NULL,
-    `id_pembuat` INT NOT NULL, -- Merujuk ke id_pengurus / id_admin (FK dilepas agar fleksibel)
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`id_organisasi`) REFERENCES `organisasi`(`id_organisasi`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT INTO `administrator` (`id_admin`, `username`, `nama_lengkap`, `password`, `no_hp`, `id_akses`, `status_verifikasi`, `reset_token`, `reset_expires`) VALUES
+(1, 'admin_kampus', 'Administrator', '$2y$10$qu8S96J2sRC6WfI3Nb2VsupZ1.X.h05ORFfiBOed8zwNYRAGuDz6.', NULL, NULL, 'Belum', NULL, NULL);
 
-CREATE TABLE `komentar` (
-    `id_komentar` INT AUTO_INCREMENT PRIMARY KEY,
-    `isi_komentar` TEXT NOT NULL,
-    `id_mahasiswa` INT NOT NULL, -- Disetel agar mahasiswa yang bisa komen
-    `id_konten` INT NOT NULL,
-    `id_komentar_parent` INT,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`id_mahasiswa`) REFERENCES `tbmahasiswa`(`id_mahasiswa`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_konten`) REFERENCES `konten_kegiatan`(`id_konten`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_komentar_parent`) REFERENCES `komentar`(`id_komentar`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- --------------------------------------------------------
 
-CREATE TABLE `likes` (
-    `id_like` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_mahasiswa` INT NOT NULL,
-    `id_konten` INT NOT NULL,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (`id_mahasiswa`, `id_konten`),
-    FOREIGN KEY (`id_mahasiswa`) REFERENCES `tbmahasiswa`(`id_mahasiswa`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_konten`) REFERENCES `konten_kegiatan`(`id_konten`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE `pendaftaran` (
-    `id_pendaftaran` INT AUTO_INCREMENT PRIMARY KEY,
-    `id_mahasiswa` INT NOT NULL,
-    `id_konten` INT NOT NULL,
-    `tanggal_daftar` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `status_pendaftaran` ENUM('menunggu','diterima','ditolak') DEFAULT 'menunggu',
-    `kuota_maks` INT DEFAULT 0,
-    UNIQUE (`id_mahasiswa`, `id_konten`),
-    FOREIGN KEY (`id_mahasiswa`) REFERENCES `tbmahasiswa`(`id_mahasiswa`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_konten`) REFERENCES `konten_kegiatan`(`id_konten`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+--
+-- Struktur dari tabel `aspirasi`
+--
 
 CREATE TABLE `aspirasi` (
-    `id_aspirasi` INT AUTO_INCREMENT PRIMARY KEY,
-    `isi_aspirasi` TEXT NOT NULL,
-    `kategori` VARCHAR(100),
-    `id_mahasiswa` INT NOT NULL,
-    `id_organisasi_tujuan` INT,
-    `status` VARCHAR(50) DEFAULT 'proses',
-    `tanggapan` TEXT,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`id_mahasiswa`) REFERENCES `tbmahasiswa`(`id_mahasiswa`) ON DELETE CASCADE,
-    FOREIGN KEY (`id_organisasi_tujuan`) REFERENCES `organisasi`(`id_organisasi`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `id_aspirasi` int(11) NOT NULL,
+  `isi_aspirasi` text NOT NULL,
+  `kategori` varchar(100) DEFAULT NULL,
+  `id_mahasiswa` int(11) NOT NULL,
+  `id_organisasi_tujuan` int(11) DEFAULT NULL,
+  `status` varchar(50) DEFAULT 'proses',
+  `tanggapan` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
 
--- =======================================================
--- 4. INSERT DATA DARI FILE DUMP ANDA
--- =======================================================
+--
+-- Struktur dari tabel `komentar`
+--
 
--- 4.1 Data Organisasi
-INSERT INTO organisasi (id_organisasi, nama_organisasi, jenis, deskripsi, created_at) VALUES
-(1,'BEM ITH','BEM','Badan Eksekutif Mahasiswa Institut Teknologi Habibie','2026-06-15 14:47:10'),
-(2,'UKM Robotik','UKM','Unit Kegiatan Mahasiswa Robotika','2026-06-15 14:47:10'),
-(6,'Habibie Coding Club','SC','Klub pemrograman dan pengembangan perangkat lunak','2026-06-16 07:34:36'),
-(11,'English Club ITH','UKM','Klub Bahasa Inggris Mahasiswa','2026-06-16 07:34:36'),
-(44,'Himpunan Mahasiswa Ilmu Komputer','Himpunan','Himpunan Mahasiswa Program Studi S1 Ilmu Komputer / Informatika','2026-06-16 07:34:36');
+CREATE TABLE `komentar` (
+  `id_komentar` int(11) NOT NULL,
+  `isi_komentar` text NOT NULL,
+  `id_mahasiswa` int(11) NOT NULL,
+  `id_konten` int(11) NOT NULL,
+  `id_komentar_parent` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- 4.2 Data Mahasiswa
-INSERT INTO tbmahasiswa (id_mahasiswa, nama, email, password, nim, prodi, angkatan, is_verified) VALUES
-(3,'Andi Prasetyo','andi@mahasiswa.ith.ac.id','$2y$10$qPJV5xk3fITtOFFsrszLK.Jy3B2xHHoBLDt9AigLJmD0mn8c0fw7G','241011001','Ilmu Komputer','2024','1'),
-(45,'Rina Melati','rina.melati@ith.ac.id','$2y$10$qPJV5xk3fITtOFFsrszLK.Jy3B2xHHoBLDt9AigLJmD0mn8c0fw7G','241011002','Sistem Informasi','2024','1');
+--
+-- Dumping data untuk tabel `komentar`
+--
 
--- 4.3 Data Administrator
-INSERT INTO administrator (id_admin, username, nama_lengkap, password, status_verifikasi) VALUES
-(1,'admin_kampus','Administrator','$2y$10$qu8S96J2sRC6WfI3Nb2VsupZ1.X.h05ORFfiBOed8zwNYRAGuDz6.','Belum');
+INSERT INTO `komentar` (`id_komentar`, `isi_komentar`, `id_mahasiswa`, `id_konten`, `id_komentar_parent`, `created_at`) VALUES
+(1, 'Wah, acaranya sangat menarik min! Nggak sabar buat ikutan.', 3, 2, NULL, '2026-06-16 00:23:37');
 
--- 4.4 Data Pengurus Organisasi
-INSERT INTO pengurus_organisasi (id_pengurus, id_organisasi, nama_pengurus, jabatan, password, status_verifikasi) VALUES
-(2, 1, 'Budi Santoso', 'Ketua', '$2y$10$t6Eliq.1g540dJCNHh8zOeq2eXTPDbNLdgsMnqkvrpnhlk.gXSMwG', 'Belum'),
-(6, 6, 'Fajar Coding', 'Inti', '$2y$10$t6Eliq.1g540dJCNHh8zOeq2eXTPDbNLdgsMnqkvrpnhlk.gXSMwG', 'Belum');
+-- --------------------------------------------------------
 
--- 4.5 Data Konten Kegiatan
-INSERT INTO konten_kegiatan (id_konten, judul, deskripsi, tanggal_kegiatan, kategori, id_organisasi, id_pembuat) VALUES
-(1,'Dies Natalis ITH ke-4','Perayaan Dies Natalis kampus dengan berbagai lomba, seminar, dan malam puncak seni.','2026-06-25','Acara Kampus',1,2),
-(2,'Sosialisasi Beasiswa 2026','Informasi lengkap beasiswa internal dan eksternal untuk mahasiswa ITH.','2026-07-02','Pendidikan',1,2),
-(6,'Bootcamp Web Development','Pelatihan intensif membangun website modern dengan HTML, CSS, JavaScript, dan PHP.','2026-07-15','Workshop',6,6);
+--
+-- Struktur dari tabel `konten_kegiatan`
+--
 
--- 4.6 Data Komentar & Likes
-INSERT INTO komentar (id_komentar, isi_komentar, id_mahasiswa, id_konten, created_at) VALUES
-(1,'Wah, acaranya sangat menarik min! Nggak sabar buat ikutan.', 3, 2, '2026-06-16 08:23:37');
+CREATE TABLE `konten_kegiatan` (
+  `id_konten` int(11) NOT NULL,
+  `judul` varchar(255) NOT NULL,
+  `deskripsi` text NOT NULL,
+  `tanggal_kegiatan` date DEFAULT NULL,
+  `kategori` varchar(50) DEFAULT NULL,
+  `lampiran` varchar(255) DEFAULT NULL,
+  `status_publikasi` varchar(20) DEFAULT 'publish',
+  `id_organisasi` int(11) NOT NULL,
+  `id_pembuat` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO likes (id_like, id_mahasiswa, id_konten, created_at) VALUES
-(12, 3, 2, '2026-06-16 08:41:02');
+--
+-- Dumping data untuk tabel `konten_kegiatan`
+--
+
+INSERT INTO `konten_kegiatan` (`id_konten`, `judul`, `deskripsi`, `tanggal_kegiatan`, `kategori`, `lampiran`, `status_publikasi`, `id_organisasi`, `id_pembuat`, `created_at`) VALUES
+(1, 'Dies Natalis ITH ke-4', 'Perayaan Dies Natalis kampus dengan berbagai lomba, seminar, dan malam puncak seni.', '2026-06-25', 'Acara Kampus', NULL, 'publish', 1, 2, '2026-06-18 12:37:50'),
+(2, 'Sosialisasi Beasiswa 2026', 'Informasi lengkap beasiswa internal dan eksternal untuk mahasiswa ITH.', '2026-07-02', 'Pendidikan', NULL, 'publish', 1, 2, '2026-06-18 12:37:50'),
+(6, 'Bootcamp Web Development', 'Pelatihan intensif membangun website modern dengan HTML, CSS, JavaScript, dan PHP.', '2026-07-15', 'Workshop', NULL, 'publish', 6, 6, '2026-06-18 12:37:50');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `likes`
+--
+
+CREATE TABLE `likes` (
+  `id_like` int(11) NOT NULL,
+  `id_mahasiswa` int(11) NOT NULL,
+  `id_konten` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `likes`
+--
+
+INSERT INTO `likes` (`id_like`, `id_mahasiswa`, `id_konten`, `created_at`) VALUES
+(12, 3, 2, '2026-06-16 00:41:02');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `organisasi`
+--
+
+CREATE TABLE `organisasi` (
+  `id_organisasi` int(11) NOT NULL,
+  `nama_organisasi` varchar(100) NOT NULL,
+  `jenis` enum('BEM','UKM','SC','Himpunan') NOT NULL,
+  `deskripsi` text DEFAULT NULL,
+  `logo` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `organisasi`
+--
+
+INSERT INTO `organisasi` (`id_organisasi`, `nama_organisasi`, `jenis`, `deskripsi`, `logo`, `created_at`) VALUES
+(1, 'BEM ITH', 'BEM', 'Badan Eksekutif Mahasiswa Institut Teknologi Habibie', NULL, '2026-06-15 06:47:10'),
+(2, 'UKM Robotik', 'UKM', 'Unit Kegiatan Mahasiswa Robotika', NULL, '2026-06-15 06:47:10'),
+(6, 'Habibie Coding Club', 'SC', 'Klub pemrograman dan pengembangan perangkat lunak', NULL, '2026-06-15 23:34:36'),
+(11, 'English Club ITH', 'UKM', 'Klub Bahasa Inggris Mahasiswa', NULL, '2026-06-15 23:34:36'),
+(44, 'Himpunan Mahasiswa Ilmu Komputer', 'Himpunan', 'Himpunan Mahasiswa Program Studi S1 Ilmu Komputer / Informatika', NULL, '2026-06-15 23:34:36');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `pendaftaran`
+--
+
+CREATE TABLE `pendaftaran` (
+  `id_pendaftaran` int(11) NOT NULL,
+  `id_mahasiswa` int(11) NOT NULL,
+  `id_konten` int(11) NOT NULL,
+  `tanggal_daftar` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status_pendaftaran` enum('menunggu','diterima','ditolak') DEFAULT 'menunggu',
+  `kuota_maks` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `pengurus_organisasi`
+--
+
+CREATE TABLE `pengurus_organisasi` (
+  `id_pengurus` int(11) NOT NULL,
+  `id_organisasi` int(11) DEFAULT NULL,
+  `nama_pengurus` varchar(150) NOT NULL,
+  `jabatan` varchar(100) DEFAULT 'Anggota Inti',
+  `password` varchar(255) NOT NULL,
+  `no_hp` varchar(20) DEFAULT NULL,
+  `id_akses` varchar(20) DEFAULT NULL,
+  `status_verifikasi` varchar(50) DEFAULT 'Belum',
+  `reset_token` varchar(255) DEFAULT NULL,
+  `reset_expires` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `pengurus_organisasi`
+--
+
+INSERT INTO `pengurus_organisasi` (`id_pengurus`, `id_organisasi`, `nama_pengurus`, `jabatan`, `password`, `no_hp`, `id_akses`, `status_verifikasi`, `reset_token`, `reset_expires`) VALUES
+(2, 1, 'Budi Santoso', 'Ketua', '$2y$10$t6Eliq.1g540dJCNHh8zOeq2eXTPDbNLdgsMnqkvrpnhlk.gXSMwG', NULL, NULL, 'Belum', NULL, NULL),
+(6, 6, 'Fajar Coding', 'Inti', '$2y$10$t6Eliq.1g540dJCNHh8zOeq2eXTPDbNLdgsMnqkvrpnhlk.gXSMwG', NULL, NULL, 'Belum', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `tbmahasiswa`
+--
+
+CREATE TABLE `tbmahasiswa` (
+  `id_mahasiswa` int(11) NOT NULL,
+  `nim` varchar(20) DEFAULT NULL,
+  `nama` varchar(150) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `prodi` varchar(50) DEFAULT NULL,
+  `angkatan` varchar(4) DEFAULT NULL,
+  `kontak` varchar(20) DEFAULT NULL,
+  `is_verified` enum('0','1') DEFAULT '0',
+  `verification_token` varchar(6) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `reset_token` varchar(255) DEFAULT NULL,
+  `reset_expires` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `tbmahasiswa`
+--
+
+INSERT INTO `tbmahasiswa` (`id_mahasiswa`, `nim`, `nama`, `email`, `password`, `prodi`, `angkatan`, `kontak`, `is_verified`, `verification_token`, `created_at`, `reset_token`, `reset_expires`) VALUES
+(3, '241011001', 'Andi Prasetyo', 'andi@mahasiswa.ith.ac.id', '$2y$10$qPJV5xk3fITtOFFsrszLK.Jy3B2xHHoBLDt9AigLJmD0mn8c0fw7G', 'Ilmu Komputer', '2024', NULL, '1', NULL, '2026-06-18 12:37:50', NULL, NULL),
+(45, '241011002', 'Rina Melati', 'rina.melati@ith.ac.id', '$2y$10$qPJV5xk3fITtOFFsrszLK.Jy3B2xHHoBLDt9AigLJmD0mn8c0fw7G', 'Sistem Informasi', '2024', NULL, '1', NULL, '2026-06-18 12:37:50', NULL, NULL);
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indeks untuk tabel `administrator`
+--
+ALTER TABLE `administrator`
+  ADD PRIMARY KEY (`id_admin`),
+  ADD UNIQUE KEY `username` (`username`);
+
+--
+-- Indeks untuk tabel `aspirasi`
+--
+ALTER TABLE `aspirasi`
+  ADD PRIMARY KEY (`id_aspirasi`),
+  ADD KEY `id_mahasiswa` (`id_mahasiswa`),
+  ADD KEY `id_organisasi_tujuan` (`id_organisasi_tujuan`);
+
+--
+-- Indeks untuk tabel `komentar`
+--
+ALTER TABLE `komentar`
+  ADD PRIMARY KEY (`id_komentar`),
+  ADD KEY `id_mahasiswa` (`id_mahasiswa`),
+  ADD KEY `id_konten` (`id_konten`),
+  ADD KEY `id_komentar_parent` (`id_komentar_parent`);
+
+--
+-- Indeks untuk tabel `konten_kegiatan`
+--
+ALTER TABLE `konten_kegiatan`
+  ADD PRIMARY KEY (`id_konten`),
+  ADD KEY `id_organisasi` (`id_organisasi`);
+
+--
+-- Indeks untuk tabel `likes`
+--
+ALTER TABLE `likes`
+  ADD PRIMARY KEY (`id_like`),
+  ADD UNIQUE KEY `id_mahasiswa` (`id_mahasiswa`,`id_konten`),
+  ADD KEY `id_konten` (`id_konten`);
+
+--
+-- Indeks untuk tabel `organisasi`
+--
+ALTER TABLE `organisasi`
+  ADD PRIMARY KEY (`id_organisasi`);
+
+--
+-- Indeks untuk tabel `pendaftaran`
+--
+ALTER TABLE `pendaftaran`
+  ADD PRIMARY KEY (`id_pendaftaran`),
+  ADD UNIQUE KEY `id_mahasiswa` (`id_mahasiswa`,`id_konten`),
+  ADD KEY `id_konten` (`id_konten`);
+
+--
+-- Indeks untuk tabel `pengurus_organisasi`
+--
+ALTER TABLE `pengurus_organisasi`
+  ADD PRIMARY KEY (`id_pengurus`),
+  ADD KEY `id_organisasi` (`id_organisasi`);
+
+--
+-- Indeks untuk tabel `tbmahasiswa`
+--
+ALTER TABLE `tbmahasiswa`
+  ADD PRIMARY KEY (`id_mahasiswa`),
+  ADD UNIQUE KEY `email` (`email`),
+  ADD UNIQUE KEY `nim` (`nim`);
+
+--
+-- AUTO_INCREMENT untuk tabel yang dibuang
+--
+
+--
+-- AUTO_INCREMENT untuk tabel `administrator`
+--
+ALTER TABLE `administrator`
+  MODIFY `id_admin` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT untuk tabel `aspirasi`
+--
+ALTER TABLE `aspirasi`
+  MODIFY `id_aspirasi` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT untuk tabel `komentar`
+--
+ALTER TABLE `komentar`
+  MODIFY `id_komentar` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT untuk tabel `konten_kegiatan`
+--
+ALTER TABLE `konten_kegiatan`
+  MODIFY `id_konten` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT untuk tabel `likes`
+--
+ALTER TABLE `likes`
+  MODIFY `id_like` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+
+--
+-- AUTO_INCREMENT untuk tabel `organisasi`
+--
+ALTER TABLE `organisasi`
+  MODIFY `id_organisasi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+
+--
+-- AUTO_INCREMENT untuk tabel `pendaftaran`
+--
+ALTER TABLE `pendaftaran`
+  MODIFY `id_pendaftaran` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT untuk tabel `pengurus_organisasi`
+--
+ALTER TABLE `pengurus_organisasi`
+  MODIFY `id_pengurus` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT untuk tabel `tbmahasiswa`
+--
+ALTER TABLE `tbmahasiswa`
+  MODIFY `id_mahasiswa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+
+--
+-- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
+--
+
+--
+-- Ketidakleluasaan untuk tabel `aspirasi`
+--
+ALTER TABLE `aspirasi`
+  ADD CONSTRAINT `aspirasi_ibfk_1` FOREIGN KEY (`id_mahasiswa`) REFERENCES `tbmahasiswa` (`id_mahasiswa`) ON DELETE CASCADE,
+  ADD CONSTRAINT `aspirasi_ibfk_2` FOREIGN KEY (`id_organisasi_tujuan`) REFERENCES `organisasi` (`id_organisasi`) ON DELETE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `komentar`
+--
+ALTER TABLE `komentar`
+  ADD CONSTRAINT `komentar_ibfk_1` FOREIGN KEY (`id_mahasiswa`) REFERENCES `tbmahasiswa` (`id_mahasiswa`) ON DELETE CASCADE,
+  ADD CONSTRAINT `komentar_ibfk_2` FOREIGN KEY (`id_konten`) REFERENCES `konten_kegiatan` (`id_konten`) ON DELETE CASCADE,
+  ADD CONSTRAINT `komentar_ibfk_3` FOREIGN KEY (`id_komentar_parent`) REFERENCES `komentar` (`id_komentar`) ON DELETE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `konten_kegiatan`
+--
+ALTER TABLE `konten_kegiatan`
+  ADD CONSTRAINT `konten_kegiatan_ibfk_1` FOREIGN KEY (`id_organisasi`) REFERENCES `organisasi` (`id_organisasi`) ON DELETE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `likes`
+--
+ALTER TABLE `likes`
+  ADD CONSTRAINT `likes_ibfk_1` FOREIGN KEY (`id_mahasiswa`) REFERENCES `tbmahasiswa` (`id_mahasiswa`) ON DELETE CASCADE,
+  ADD CONSTRAINT `likes_ibfk_2` FOREIGN KEY (`id_konten`) REFERENCES `konten_kegiatan` (`id_konten`) ON DELETE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `pendaftaran`
+--
+ALTER TABLE `pendaftaran`
+  ADD CONSTRAINT `pendaftaran_ibfk_1` FOREIGN KEY (`id_mahasiswa`) REFERENCES `tbmahasiswa` (`id_mahasiswa`) ON DELETE CASCADE,
+  ADD CONSTRAINT `pendaftaran_ibfk_2` FOREIGN KEY (`id_konten`) REFERENCES `konten_kegiatan` (`id_konten`) ON DELETE CASCADE;
+
+--
+-- Ketidakleluasaan untuk tabel `pengurus_organisasi`
+--
+ALTER TABLE `pengurus_organisasi`
+  ADD CONSTRAINT `pengurus_organisasi_ibfk_1` FOREIGN KEY (`id_organisasi`) REFERENCES `organisasi` (`id_organisasi`) ON DELETE CASCADE;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
