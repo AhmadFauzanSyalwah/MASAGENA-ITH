@@ -128,21 +128,45 @@ if (isset($_SESSION['is_superadmin']) && $_SERVER["REQUEST_METHOD"] == "POST") {
         $password_hash = password_hash($_POST['password'], PASSWORD_DEFAULT); 
         try {
             if ($role === 'mahasiswa') {
-                $sql = "INSERT INTO tbmahasiswa (nim, nama, email, password, is_verified) VALUES (:nim, :nama, :email, :password, '1')";
+                $sql = "INSERT INTO tbmahasiswa (nim, nama, email, password, kontak, prodi, is_verified) VALUES (:nim, :nama, :email, :password, :kontak, :prodi, '1')";
                 $stmt = $pdo->prepare($sql);
-                $stmt->execute([':nim' => $_POST['nim'], ':nama' => $_POST['nama'], ':email' => $_POST['email'], ':password' => $password_hash]);
+                // Ditambahkan ?? '' agar tidak error saat input form kosong/tidak ada
+                $stmt->execute([
+                    ':nim'      => $_POST['nim'] ?? '', 
+                    ':nama'     => $_POST['nama'] ?? '', 
+                    ':email'    => $_POST['email'] ?? '', 
+                    ':password' => $password_hash,
+                    ':kontak'   => $_POST['kontak'] ?? '',
+                    ':prodi'    => $_POST['prodi'] ?? ''
+                ]);
                 $pesan = "Mahasiswa Baru Berhasil Didaftarkan!";
-            } elseif ($role === 'admin') {
+            }
+            
+            if ($role === 'admin') {
                 $sql = "INSERT INTO administrator (username, nama_lengkap, password, no_hp, status_verifikasi) VALUES (:username, :nama_lengkap, :password, :no_telp, 'Belum')";
                 $stmt = $pdo->prepare($sql);
-                $stmt->execute([':username' => $_POST['username_admin'], ':nama_lengkap' => $_POST['nama_admin'], ':password' => $password_hash, ':no_telp' => $_POST['no_telp_admin']]);
+                $stmt->execute([
+                    ':username'     => $_POST['username_admin'] ?? '', 
+                    ':nama_lengkap' => $_POST['nama_admin'] ?? '', 
+                    ':password'     => $password_hash, 
+                    ':no_telp'      => $_POST['no_telp_admin'] ?? ''
+                ]);
                 $pesan = "Administrator Baru Berhasil Ditambahkan (Status: Belum Verifikasi)!";
-            } elseif ($role === 'pengurus') {
+            }
+            
+            if ($role === 'pengurus') {
                 $sql = "INSERT INTO pengurus_organisasi (id_organisasi, nama_pengurus, jabatan, password, no_hp, status_verifikasi) VALUES (:id_org, :nama, :jabatan, :password, :no_telp, 'Belum')";
                 $stmt = $pdo->prepare($sql);
-                $stmt->execute([':id_org' => $_POST['id_organisasi'], ':nama' => $_POST['nama_pengurus'], ':jabatan' => $_POST['jabatan'], ':password' => $password_hash, ':no_telp' => $_POST['no_telp_pengurus']]);
+                $stmt->execute([
+                    ':id_org'   => $_POST['id_organisasi'] ?? '', 
+                    ':nama'     => $_POST['nama_pengurus'] ?? '', 
+                    ':jabatan'  => $_POST['jabatan'] ?? '', 
+                    ':password' => $password_hash, 
+                    ':no_telp'  => $_POST['no_telp_pengurus'] ?? ''
+                ]);
                 $pesan = "Pengurus Organisasi Baru Berhasil Ditambahkan (Status: Belum Verifikasi)!";
             }
+            
             $tipe_pesan = "success";
         } catch (PDOException $e) {
             $pesan = "Gagal memproses data: " . $e->getMessage();
@@ -156,26 +180,60 @@ if (isset($_SESSION['is_superadmin']) && $_SERVER["REQUEST_METHOD"] == "POST") {
         $id = $_POST['id_edit'];
         try {
             if ($role === 'mahasiswa') {
-                $sql = "UPDATE tbmahasiswa SET nim = :nim, nama = :nama, email = :email WHERE id_mahasiswa = :id";
-                $pdo->prepare($sql)->execute([':nim' => $_POST['nim_edit'], ':nama' => $_POST['nama_edit'], ':email' => $_POST['email_edit'], ':id' => $id]);
-            } elseif ($role === 'admin') {
+                $sql = "UPDATE tbmahasiswa SET nim = :nim, nama = :nama, email = :email, kontak = :kontak, prodi = :prodi WHERE id_mahasiswa = :id";
+                $stmt = $pdo->prepare($sql);
+                // Ditambahkan ?? '' agar tidak error saat input form kosong/tidak ada
+                $stmt->execute([
+                    ':nim'    => $_POST['nim_edit'] ?? '', 
+                    ':nama'   => $_POST['nama_edit'] ?? '', 
+                    ':email'  => $_POST['email_edit'] ?? '',
+                    ':kontak' => $_POST['kontak_edit'] ?? '', 
+                    ':prodi'  => $_POST['prodi_edit'] ?? '',   
+                    ':id'     => $id
+                ]);
+            }
+            
+            if ($role === 'admin') {
                 $sql = "UPDATE administrator SET username = :username, nama_lengkap = :nama, no_hp = :no_telp WHERE id_admin = :id";
-                $pdo->prepare($sql)->execute([':username' => $_POST['username_edit'], ':nama' => $_POST['nama_edit'], ':no_telp' => $_POST['no_telp_edit'], ':id' => $id]);
-            } elseif ($role === 'pengurus') {
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([
+                    ':username' => $_POST['username_edit'] ?? '', 
+                    ':nama'     => $_POST['nama_edit'] ?? '', 
+                    ':no_telp'  => $_POST['no_telp_edit'] ?? '', 
+                    ':id'       => $id
+                ]);
+            }
+            
+            if ($role === 'pengurus') {
                 $sql = "UPDATE pengurus_organisasi SET id_organisasi = :id_org, nama_pengurus = :nama, jabatan = :jabatan, no_hp = :no_telp WHERE id_pengurus = :id";
-                $pdo->prepare($sql)->execute([':id_org' => $_POST['id_organisasi_edit'], ':nama' => $_POST['nama_edit'], ':jabatan' => $_POST['jabatan_edit'], ':no_telp' => $_POST['no_telp_edit'], ':id' => $id]);
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([
+                    ':id_org'   => $_POST['id_organisasi_edit'] ?? '', 
+                    ':nama'     => $_POST['nama_edit'] ?? '', 
+                    ':jabatan'  => $_POST['jabatan_edit'] ?? '', 
+                    ':no_telp'  => $_POST['no_telp_edit'] ?? '', 
+                    ':id'       => $id
+                ]);
             }
             
             if (!empty($_POST['password_edit'])) {
                 $password_hash = password_hash($_POST['password_edit'], PASSWORD_DEFAULT);
-                if ($role === 'mahasiswa') $pdo->prepare("UPDATE tbmahasiswa SET password = :pw WHERE id_mahasiswa = :id")->execute([':pw' => $password_hash, ':id' => $id]);
-                if ($role === 'admin') $pdo->prepare("UPDATE administrator SET password = :pw WHERE id_admin = :id")->execute([':pw' => $password_hash, ':id' => $id]);
-                if ($role === 'pengurus') $pdo->prepare("UPDATE pengurus_organisasi SET password = :pw WHERE id_pengurus = :id")->execute([':pw' => $password_hash, ':id' => $id]);
+                if ($role === 'mahasiswa') {
+                    $pdo->prepare("UPDATE tbmahasiswa SET password = :pw WHERE id_mahasiswa = :id")->execute([':pw' => $password_hash, ':id' => $id]);
+                }
+                if ($role === 'admin') {
+                    $pdo->prepare("UPDATE administrator SET password = :pw WHERE id_admin = :id")->execute([':pw' => $password_hash, ':id' => $id]);
+                }
+                if ($role === 'pengurus') {
+                    $pdo->prepare("UPDATE pengurus_organisasi SET password = :pw WHERE id_pengurus = :id")->execute([':pw' => $password_hash, ':id' => $id]);
+                }
             }
             
-            $pesan = "Data Pengguna Berhasil Diperbarui!"; $tipe_pesan = "success";
+            $pesan = "Data Pengguna Berhasil Diperbarui!"; 
+            $tipe_pesan = "success";
         } catch (PDOException $e) {
-            $pesan = "Gagal memperbarui data: " . $e->getMessage(); $tipe_pesan = "error";
+            $pesan = "Gagal memperbarui data: " . $e->getMessage(); 
+            $tipe_pesan = "error";
         }
     }
 
@@ -329,7 +387,8 @@ try {
         $counts['organisasi'] = $pdo->query("SELECT COUNT(*) FROM organisasi")->fetchColumn() ?: 0;
         $counts['konten'] = $pdo->query("SELECT COUNT(*) FROM konten_kegiatan")->fetchColumn() ?: 0;
         $counts['pendaftaran'] = $pdo->query("SELECT COUNT(*) FROM pendaftaran")->fetchColumn() ?: 0;
-        $counts['interaksi'] = ($pdo->query("SELECT COUNT(*) FROM komentar")->fetchColumn() ?: 0) + ($pdo->query("SELECT COUNT(*) FROM tblike")->fetchColumn() ?: 0);
+        $counts['interaksi'] = ($pdo->query("SELECT COUNT(*) FROM komentar")->fetchColumn() ?: 0); 
+        $counts['like'] = $pdo->query("SELECT COUNT(*) FROM likes")->fetchColumn() ?: 0;
 
         $data_organisasi = $pdo->query("SELECT * FROM organisasi ORDER BY id_organisasi DESC")->fetchAll() ?: [];
 
@@ -349,7 +408,7 @@ try {
             $data_pendaftaran = $pdo->query("SELECT p.*, m.nama as nama_mhs, m.nim, k.judul_kegiatan FROM pendaftaran p JOIN tbmahasiswa m ON p.id_mahasiswa = m.id_mahasiswa LEFT JOIN konten_kegiatan k ON p.id_konten = k.id_konten ORDER BY p.tanggal_daftar DESC")->fetchAll() ?: [];
         } elseif ($tab === 'interaksi') {
             $data_komentar = $pdo->query("SELECT k.*, a.judul FROM komentar k JOIN aspirasi a ON k.id_aspirasi = a.id_aspirasi ORDER BY k.tanggal DESC")->fetchAll() ?: [];
-            $data_like = $pdo->query("SELECT l.*, a.judul, m.nama FROM tblike l JOIN aspirasi a ON l.id_aspirasi = a.id_aspirasi JOIN tbmahasiswa m ON l.id_mahasiswa = m.id_mahasiswa ORDER BY l.id_like DESC")->fetchAll() ?: [];
+            $data_like = $pdo->query("SELECT l.*, k.judul, m.nama FROM likes l JOIN konten_kegiatan k ON l.id_konten = k.id_konten JOIN tbmahasiswa m ON l.id_mahasiswa = m.id_mahasiswa ORDER BY l.id_like DESC")->fetchAll() ?: [];
         }
     }
 } catch (PDOException $e) {
@@ -502,32 +561,74 @@ try {
                             <option value="pengurus">Pengurus Organisasi</option>
                         </select>
                         
-                        <div id="formMahasiswa" class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                            <input type="text" name="nim" placeholder="NIM" class="p-2.5 border rounded-lg">
-                            <input type="text" name="nama" placeholder="Nama Lengkap" class="p-2.5 border rounded-lg">
-                            <input type="email" name="email" placeholder="Email Akun" class="p-2.5 border rounded-lg">
-                            <input type="password" name="password" placeholder="Buat Password" class="p-2.5 border rounded-lg">
+                        <div id="formMahasiswa" class="hidden space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">NIM</label>
+                            <input type="text" name="nim" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
                         </div>
-                        
-                        <div id="formAdmin" class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 hidden">
-                            <input type="text" name="username_admin" placeholder="Username Admin" class="p-2.5 border rounded-lg">
-                            <input type="text" name="nama_admin" placeholder="Nama Lengkap" class="p-2.5 border rounded-lg">
-                            <input type="text" name="no_telp_admin" placeholder="No. HP (contoh: 08123...)" class="p-2.5 border rounded-lg">
-                            <input type="password" name="password" placeholder="Buat Password" class="p-2.5 border rounded-lg">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nama Lengkap</label>
+                            <input type="text" name="nama" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
                         </div>
-                        
-                        <div id="formPengurus" class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 hidden">
-                            <select name="id_organisasi" class="p-2.5 border rounded-lg">
-                                <option value="">-- Organisasi --</option>
-                                <?php foreach($data_organisasi as $org): ?>
-                                <option value="<?= $org['id_organisasi'] ?>"><?= $org['nama_organisasi'] ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <input type="text" name="nama_pengurus" placeholder="Nama Lengkap" class="p-2.5 border rounded-lg">
-                            <input type="text" name="jabatan" placeholder="Jabatan" class="p-2.5 border rounded-lg">
-                            <input type="text" name="no_telp_pengurus" placeholder="No. HP (contoh: 08123...)" class="p-2.5 border rounded-lg">
-                            <input type="password" name="password" placeholder="Buat Password" class="p-2.5 border rounded-lg md:col-span-2">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Email</label>
+                            <input type="email" name="email" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
                         </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Program Studi (Prodi)</label>
+                            <input type="text" name="prodi" placeholder="Contoh: Teknik Informatika" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">No. HP / WhatsApp (Kontak)</label>
+                            <input type="text" name="kontak" placeholder="Contoh: 08123456789" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Password Awal</label>
+                            <input type="password" name="password" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                    </div>
+
+                    <div id="formAdmin" class="hidden space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Username</label>
+                            <input type="text" name="username_admin" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nama Lengkap Admin</label>
+                            <input type="text" name="nama_admin" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">No. HP / WhatsApp</label>
+                            <input type="text" name="no_telp_admin" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Password Awal</label>
+                            <input type="password" name="password" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                    </div>
+
+                    <div id="formPengurus" class="hidden space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">ID Organisasi</label>
+                            <input type="text" name="id_organisasi" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nama Pengurus</label>
+                            <input type="text" name="nama_pengurus" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Jabatan</label>
+                            <input type="text" name="jabatan" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">No. HP / WhatsApp</label>
+                            <input type="text" name="no_telp_pengurus" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Password Awal</label>
+                            <input type="password" name="password" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                    </div>
 
                         <button type="submit" name="tambah_user" class="w-full bg-[#1F3D68] text-white font-bold py-3.5 rounded-xl transition hover:bg-blue-900">DAFTARKAN PENGGUNA</button>
                     </form>
@@ -537,14 +638,17 @@ try {
                     <div class="bg-[#1F3D68] text-white p-4 font-bold flex justify-between items-center"><span>Data Mahasiswa</span></div>
                     <table class="w-full text-left text-sm text-gray-600">
                         <thead class="bg-gray-50 text-xs uppercase border-b">
-                            <tr><th class="p-4">NIM</th><th class="p-4">Nama</th><th class="p-4 text-center">Aksi</th></tr>
+                            <tr><th class="p-4">NIM</th><th class="p-4">Nama Lengkap</th><th class="p-4">Program Studi</th><th class="p-4">Email Kampus</th><th class="p-4">No. HP / WhatsApp</th> <th class="p-4 text-center">Aksi Manajemen</th></tr>
                         </thead>
                         <tbody class="divide-y">
                             <?php foreach($data_mahasiswa as $mhs): ?>
                             <tr>
-                                <td class="p-4 font-bold"><?= $mhs['nim'] ?></td>
-                                <td class="p-4"><?= $mhs['nama'] ?></td>
-                                <td class="p-4 text-center space-x-2">
+                                <td class="p-4 font-bold text-[#1F3D68]"><?= $mhs['nim'] ?></td>
+                                <td class="p-4 font-bold"><?= $mhs['nama'] ?></td>
+                                <td class="p-4 text-gray-600"><?= htmlspecialchars($mhs['prodi'] ?? '-') ?></td>
+                                <td class="p-4 text-gray-500"><?= $mhs['email'] ?></td>
+                                <td class="p-4 text-gray-600"><?= htmlspecialchars($mhs['kontak'] ?? '-') ?></td> 
+                                <td class="p-4 text-center space-x-1">
                                     <button type="button" onclick="bukaModalEdit('mahasiswa', '<?= $mhs['id_mahasiswa'] ?>', {nim: '<?= $mhs['nim'] ?>', nama: '<?= addslashes($mhs['nama']) ?>', email: '<?= $mhs['email'] ?>'})" class="text-amber-500 hover:text-amber-700 font-bold bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
                                     <form method="POST" onsubmit="return confirm('Hapus mahasiswa?');" class="inline-block">
                                         <input type="hidden" name="target_tabel" value="tbmahasiswa"><input type="hidden" name="id_kolom" value="id_mahasiswa"><input type="hidden" name="id_nilai" value="<?= $mhs['id_mahasiswa'] ?>">
@@ -891,7 +995,17 @@ try {
                                             <p class="text-xs text-gray-500 mt-1">Menyukai: <?= htmlspecialchars($lk['judul'] ?? 'Unknown') ?></p>
                                         </td>
                                         <td class="p-3 text-center">
-                                            <form action="" method="POST" onsubmit="return confirm('Hapus like?');"><input type="hidden" name="target_tabel" value="tblike"><input type="hidden" name="id_kolom" value="id_like"><input type="hidden" name="id_nilai" value="<?= $lk['id_like'] ?>"><button type="submit" name="hapus_entitas" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash-can"></i></button></form>
+                                            <form action="" method="POST" onsubmit="return confirm('Hapus like?');">
+                                                <input type="hidden" name="target_tabel" value="likes">
+                                                <input type="hidden" name="id_kolom" value="id_like">
+                                                <input type="hidden" name="id_nilai" value="<?= $lk['id_like'] ?>">
+                                                <button type="submit" name="hapus_data_global" class="text-red-500 hover:text-red-700 font-bold p-2"><i class="fa-solid fa-trash-can"></i> Hapus</button>
+                                            </form><form action="" method="POST" onsubmit="return confirm('Hapus like?');">
+                                                <input type="hidden" name="target_tabel" value="likes">
+                                                <input type="hidden" name="id_kolom" value="id_like">
+                                                <input type="hidden" name="id_nilai" value="<?= $lk['id_like'] ?>">
+                                                <button type="submit" name="hapus_data_global" class="text-red-500 hover:text-red-700 font-bold p-2"><i class="fa-solid fa-trash-can"></i> Hapus</button>
+                                            </form>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
@@ -919,6 +1033,8 @@ try {
                     <input type="text" name="nim_edit" id="nim_edit" placeholder="NIM" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
                     <input type="text" name="nama_edit" id="nama_mahasiswa_edit" placeholder="Nama Lengkap" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
                     <input type="email" name="email_edit" id="email_edit" placeholder="Email" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
+                    <input type="text" name="prodi" id="prodi_edit" placeholder="Program Studi (Prodi)" class="p-2.5 border rounded-lg w-full">
+                    <input type="text" name="kontak" id="kontak_edit" placeholder="No. HP / WhatsApp (Kontak)" class="p-2.5 border rounded-lg w-full">
                 </div>
 
                 <div id="formEditAdmin" class="hidden space-y-3">
@@ -960,22 +1076,26 @@ try {
             });
 
             if (role === 'mahasiswa') {
-                document.getElementById('formMahasiswa').classList.remove('hidden');
-                document.querySelectorAll('#formMahasiswa input').forEach(el => el.removeAttribute('disabled'));
-                document.querySelector('input[name="nim"]').setAttribute('required', 'true');
-                document.querySelector('#formMahasiswa input[type="password"]').setAttribute('required', 'true');
+                document.getElementById('formEditMahasiswa').classList.remove('hidden');
+                document.getElementById('nim_edit').value = data.nim;
+                document.getElementById('nama_mahasiswa_edit').value = data.nama;
+                document.getElementById('email_edit').value = data.email;
+                
+                // TAMBAHKAN DUA BARIS INI
+                document.getElementById('prodi_edit').value = data.prodi || '';
+                document.getElementById('kontak_edit').value = data.kontak || '';
             } else if (role === 'admin') {
-                document.getElementById('formAdmin').classList.remove('hidden');
-                document.querySelectorAll('#formAdmin input').forEach(el => el.removeAttribute('disabled'));
+                document.getElementById('formEditAdmin').classList.remove('hidden');
+                document.querySelectorAll('#formEditAdmin input').forEach(el => el.removeAttribute('disabled'));
                 document.querySelector('input[name="username_admin"]').setAttribute('required', 'true');
                 document.querySelector('input[name="no_telp_admin"]').setAttribute('required', 'true');
-                document.querySelector('#formAdmin input[type="password"]').setAttribute('required', 'true');
+                document.querySelector('#formEditAdmin input[type="password"]').setAttribute('required', 'true');
             } else if (role === 'pengurus') {
-                document.getElementById('formPengurus').classList.remove('hidden');
-                document.querySelectorAll('#formPengurus input, #formPengurus select').forEach(el => el.removeAttribute('disabled'));
+                document.getElementById('formEditPengurus').classList.remove('hidden');
+                document.querySelectorAll('#formEditPengurus input, #formEditPengurus select').forEach(el => el.removeAttribute('disabled'));
                 document.querySelector('select[name="id_organisasi"]').setAttribute('required', 'true');
                 document.querySelector('input[name="no_telp_pengurus"]').setAttribute('required', 'true');
-                document.querySelector('#formPengurus input[type="password"]').setAttribute('required', 'true');
+                document.querySelector('#formEditPengurus input[type="password"]').setAttribute('required', 'true');
             }
         }
         if(document.getElementById('roleSelector')) window.onload = toggleForm;

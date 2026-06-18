@@ -36,29 +36,41 @@ $success = '';
 // ==========================================
 // TAHAP 1: REQUEST OTP
 // ==========================================
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_otp'])) {
-    $identifier = trim($_POST['identifier']); 
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['request_otp'])) {
+    $identifier = trim($_POST['identifier']);
     $user = null;
 
     // Menyesuaikan query dengan struktur database asli
     if ($role == 'mahasiswa') {
-        $stmt = $pdo->prepare("SELECT id_mahasiswa as id, email as kontak, nama FROM tbmahasiswa WHERE email = ? OR nim = ?");
+        // Mahasiswa: Cek berdasarkan Email atau NIM
+        $stmt = $pdo->prepare("SELECT id_mahasiswa as id, email, nama FROM tbmahasiswa WHERE email = ? OR nim = ?");
         $stmt->execute([$identifier, $identifier]);
         $user = $stmt->fetch();
+
     } elseif ($role == 'pengurus') {
-        // Menggunakan nama_pengurus sebagai nama dan nama_pengurus sebagai identifier login
-        $stmt = $pdo->prepare("SELECT id_pengurus as id, no_hp as kontak, nama_pengurus as nama FROM pengurus_organisasi WHERE nama_pengurus = ?");
+        // Pengurus: Cek berdasarkan ID Akses
+        $stmt = $pdo->prepare("SELECT id_pengurus as id, no_hp as kontak, nama FROM pengurus_organisasi WHERE id_akses = ?");
         $stmt->execute([$identifier]);
         $user = $stmt->fetch();
+
     } elseif ($role == 'admin') {
-        // Menggunakan nama_lengkap sebagai nama
-        $stmt = $pdo->prepare("SELECT id_admin as id, no_hp as kontak, nama_lengkap as nama FROM administrator WHERE username = ?");
+        // Admin: Cek berdasarkan ID Akses
+        $stmt = $pdo->prepare("SELECT id_admin as id, no_hp as kontak, nama_lengkap as nama FROM administrator WHERE id_akses = ?");
         $stmt->execute([$identifier]);
         $user = $stmt->fetch();
     }
 
     if ($user) {
         $otp = rand(100000, 999999);
+        $expires = date("Y-m-d H:i:s", strtotime('+15 minutes'));
+    if ($role == 'mahasiswa') {
+        $update = $pdo->prepare("UPDATE tbmahasiswa SET reset_token = ?, reset_expires = ? WHERE id_mahasiswa = ?");
+    } elseif ($role == 'pengurus') {
+        $update = $pdo->prepare("UPDATE pengurus_organisasi SET reset_token = ?, reset_expires = ? WHERE id_pengurus = ?");
+    } else {
+        $update = $pdo->prepare("UPDATE administrator SET reset_token = ?, reset_expires = ? WHERE id_admin = ?");
+    }
+    $update->execute([$otp, $expires, $user['id']]);
         
         // Simpan data reset ke Session sementara
         $_SESSION['reset_otp'] = $otp;
