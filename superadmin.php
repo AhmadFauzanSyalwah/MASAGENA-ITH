@@ -240,6 +240,7 @@ if (isset($_SESSION['is_superadmin']) && $_SERVER["REQUEST_METHOD"] == "POST") {
     // --- TAMBAH ORGANISASI BARU ---
     if (isset($_POST['tambah_organisasi'])) {
         $nama_organisasi = $_POST['nama_organisasi'];
+        $jenis           = $_POST['jenis']; // Menangkap jenis dari form
         $deskripsi       = $_POST['deskripsi'];
         $logo_final      = null;
 
@@ -265,12 +266,20 @@ if (isset($_SESSION['is_superadmin']) && $_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($tipe_pesan !== "error") {
             try {
-                $sql = "INSERT INTO organisasi (nama_organisasi, deskripsi, logo) VALUES (:nama, :deskripsi, :logo)";
+                // Menambahkan 'jenis' ke dalam perintah INSERT database
+                $sql = "INSERT INTO organisasi (nama_organisasi, jenis, deskripsi, logo) VALUES (:nama, :jenis, :deskripsi, :logo)";
                 $stmt = $pdo->prepare($sql);
-                $stmt->execute([':nama' => $nama_organisasi, ':deskripsi' => $deskripsi, ':logo' => $logo_final]);
-                $pesan = "Organisasi Baru Beserta Logo Berhasil Dibuat!"; $tipe_pesan = "success";
+                $stmt->execute([
+                    ':nama'      => $nama_organisasi,
+                    ':jenis'     => $jenis, 
+                    ':deskripsi' => $deskripsi, 
+                    ':logo'      => $logo_final
+                ]);
+                $pesan = "Organisasi berhasil ditambahkan!";
+                $tipe_pesan = "success";
             } catch (PDOException $e) {
-                $pesan = "Gagal menambah organisasi: " . $e->getMessage(); $tipe_pesan = "error";
+                $pesan = "Gagal menyimpan: " . $e->getMessage();
+                $tipe_pesan = "error";
             }
         }
     }
@@ -307,11 +316,23 @@ if (isset($_SESSION['is_superadmin']) && $_SERVER["REQUEST_METHOD"] == "POST") {
         $foto_string = !empty($uploaded_files) ? implode(',', $uploaded_files) : null;
 
         try {
-            $sql = "INSERT INTO konten_kegiatan (judul_kegiatan, isi_kegiatan, id_organisasi, foto) VALUES (:judul, :isi, :id_org, :foto)";
+            // Kita atur default id_pembuat = 0 karena yang upload adalah superadmin
+            $id_pembuat = 0; 
+            
+            // Sesuaikan nama kolom: judul, deskripsi, lampiran, id_pembuat
+            $sql = "INSERT INTO konten_kegiatan (judul, deskripsi, id_organisasi, lampiran, id_pembuat) VALUES (:judul, :isi, :id_org, :foto, :id_pembuat)";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([':judul' => $judul, ':isi' => $isi, ':id_org' => $id_org, ':foto' => $foto_string]);
+            $stmt->execute([
+                ':judul' => $judul, 
+                ':isi' => $isi, 
+                ':id_org' => $id_org, 
+                ':foto' => $foto_string,
+                ':id_pembuat' => $id_pembuat
+            ]);
             $pesan = "Konten Kegiatan Beserta Foto Berhasil Dipublikasikan!"; $tipe_pesan = "success";
+            
         } catch (PDOException $e) {
+            // Ini adalah bagian catch yang sebelumnya tertinggal
             $pesan = "Gagal menambah konten: " . $e->getMessage(); $tipe_pesan = "error";
         }
     }
@@ -400,12 +421,12 @@ try {
         if ($tab === 'kontrol_akun') {
             $data_mahasiswa = $pdo->query("SELECT * FROM tbmahasiswa ORDER BY id_mahasiswa DESC")->fetchAll() ?: [];
         } elseif ($tab === 'aspirasi') {
-            $queryAspirasi = "SELECT a.*, m.nama as nama_mahasiswa, (SELECT isi_komentar FROM komentar k WHERE k.id_aspirasi = a.id_aspirasi AND k.level_user = 'admin' ORDER BY k.id_komentar DESC LIMIT 1) as tanggapan_admin FROM aspirasi a LEFT JOIN tbmahasiswa m ON a.id_mahasiswa = m.id_mahasiswa ORDER BY a.id_aspirasi DESC";
+            $queryAspirasi = "SELECT a.*, m.nama as nama_mahasiswa, (SELECT isi_komentar FROM komentar k WHERE id_aspirasi = a.id_aspirasi AND k.level_user = 'admin' ORDER BY k.id_komentar DESC LIMIT 1) as tanggapan_admin FROM aspirasi a LEFT JOIN tbmahasiswa m ON a.id_mahasiswa = m.id_mahasiswa ORDER BY a.id_aspirasi DESC";
             $data_aspirasi = $pdo->query($queryAspirasi)->fetchAll() ?: [];
         } elseif ($tab === 'konten') {
             $data_konten = $pdo->query("SELECT k.*, o.nama_organisasi FROM konten_kegiatan k LEFT JOIN organisasi o ON k.id_organisasi = o.id_organisasi ORDER BY k.id_konten DESC")->fetchAll() ?: [];
         } elseif ($tab === 'pendaftaran') {
-            $data_pendaftaran = $pdo->query("SELECT p.*, m.nama as nama_mhs, m.nim, k.judul_kegiatan FROM pendaftaran p JOIN tbmahasiswa m ON p.id_mahasiswa = m.id_mahasiswa LEFT JOIN konten_kegiatan k ON p.id_konten = k.id_konten ORDER BY p.tanggal_daftar DESC")->fetchAll() ?: [];
+            $data_pendaftaran = $pdo->query("SELECT p.*, m.nama as nama_mhs, m.nim, k.judul FROM pendaftaran p JOIN tbmahasiswa m ON p.id_mahasiswa = m.id_mahasiswa LEFT JOIN konten_kegiatan k ON p.id_konten = k.id_konten ORDER BY p.tanggal_daftar DESC")->fetchAll() ?: [];
         } elseif ($tab === 'interaksi') {
             $data_komentar = $pdo->query("SELECT k.*, a.judul FROM komentar k JOIN aspirasi a ON k.id_aspirasi = a.id_aspirasi ORDER BY k.tanggal DESC")->fetchAll() ?: [];
             $data_like = $pdo->query("SELECT l.*, k.judul, m.nama FROM likes l JOIN konten_kegiatan k ON l.id_konten = k.id_konten JOIN tbmahasiswa m ON l.id_mahasiswa = m.id_mahasiswa ORDER BY l.id_like DESC")->fetchAll() ?: [];
@@ -555,9 +576,10 @@ try {
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
                     <h3 class="text-lg font-bold mb-4 flex items-center"><i class="fa-solid fa-user-plus mr-2 text-[#F59E0B]"></i> Tambah Pengguna Baru</h3>
                     <form action="" method="POST" class="space-y-4">
-                        <select id="roleSelector" name="role" onchange="toggleForm()" class="w-full p-3 border rounded-xl font-bold text-gray-700 bg-gray-50 focus:outline-none" required>
-                            <option value="mahasiswa">Mahasiswa (Umum)</option>
-                            <option value="admin">Administrator Kampus</option>
+                        <select name="role" onchange="ubahFormTambah(this.value)" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600" required>
+                            <option value="" disabled selected>-- Pilih Tipe Pengguna --</option>
+                            <option value="mahasiswa">Mahasiswa</option>
+                            <option value="admin">Administrator</option>
                             <option value="pengurus">Pengurus Organisasi</option>
                         </select>
                         
@@ -649,7 +671,11 @@ try {
                                 <td class="p-4 text-gray-500"><?= $mhs['email'] ?></td>
                                 <td class="p-4 text-gray-600"><?= htmlspecialchars($mhs['kontak'] ?? '-') ?></td> 
                                 <td class="p-4 text-center space-x-1">
-                                    <button type="button" onclick="bukaModalEdit('mahasiswa', '<?= $mhs['id_mahasiswa'] ?>', {nim: '<?= $mhs['nim'] ?>', nama: '<?= addslashes($mhs['nama']) ?>', email: '<?= $mhs['email'] ?>'})" class="text-amber-500 hover:text-amber-700 font-bold bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                                    <button type="button" 
+                                        onclick="bukaModalEdit('mahasiswa', '<?= $mhs['id_mahasiswa'] ?>', {nim: '<?= $mhs['nim'] ?>', nama: '<?= addslashes($mhs['nama']) ?>', email: '<?= $mhs['email'] ?>', prodi: '<?= addslashes($mhs['prodi'] ?? '') ?>', kontak: '<?= addslashes($mhs['kontak'] ?? '') ?>'})" 
+                                        class="text-amber-500 hover:text-amber-700 font-bold bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
+                                        <i class="fa-solid fa-pen-to-square"></i> Edit
+                                    </button>
                                     <form method="POST" onsubmit="return confirm('Hapus mahasiswa?');" class="inline-block">
                                         <input type="hidden" name="target_tabel" value="tbmahasiswa"><input type="hidden" name="id_kolom" value="id_mahasiswa"><input type="hidden" name="id_nilai" value="<?= $mhs['id_mahasiswa'] ?>">
                                         <button type="submit" name="hapus_entitas" class="text-red-500 hover:text-red-700 font-bold bg-red-50 px-3 py-1.5 rounded-lg border border-red-200"><i class="fa-solid fa-trash-can"></i> Hapus</button>
@@ -718,7 +744,7 @@ try {
                                     <span class="px-2 py-1 rounded text-xs font-bold <?= $png['status_verifikasi'] === 'Terverifikasi' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' ?>"><?= $png['status_verifikasi'] ?></span>
                                 </td>
                                 <td class="p-4 text-center space-x-2 flex justify-center">
-                                    <button type="button" onclick="bukaModalEdit('pengurus', '<?= $png['id_pengurus'] ?>', {id_organisasi: '<?= $png['id_organisasi'] ?>', nama: '<?= addslashes($png['nama_pengurus']) ?>', jabatan: '<?= $png['jabatan'] ?>', no_hp: '<?= $png['no_hp'] ?>'})" class="text-amber-500 hover:text-amber-700 font-bold bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                                    <button type="button"onclick="bukaModalEdit('mahasiswa', '<?= $row['id_mahasiswa'] ?>', {nim: '<?= $row['nim'] ?>', nama: '<?= addslashes($row['nama']) ?>', email: '<?= $row['email'] ?>', prodi: '<?= $row['prodi'] ?? '' ?>', kontak: '<?= $row['kontak'] ?? '' ?>'})"class="text-amber-500 hover:text-amber-700 font-bold bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
                                     <form method="POST" onsubmit="return confirm('Hapus Pengurus Organisasi?');" class="inline-block">
                                         <input type="hidden" name="target_tabel" value="pengurus_organisasi"><input type="hidden" name="id_kolom" value="id_pengurus"><input type="hidden" name="id_nilai" value="<?= $png['id_pengurus'] ?>">
                                         <button type="submit" name="hapus_entitas" class="text-red-500 hover:text-red-700 font-bold bg-red-50 px-3 py-1.5 rounded-lg border border-red-200"><i class="fa-solid fa-trash-can"></i> Hapus</button>
@@ -817,16 +843,97 @@ try {
 
             <?php if ($tab === 'organisasi'): ?>
                 <h1 class="text-2xl font-extrabold text-gray-800 mb-6">Manajemen Data Organisasi</h1>
-                <div class="form-card-custom bg-white mb-8">
-                    <div class="form-header-custom"><h3 class="text-xl font-bold flex items-center"><i class="fa-solid fa-plus-circle mr-2"></i> Tambah Organisasi Baru</h3></div>
+                
+                <div class="form-card-custom bg-white mb-8 shadow-sm rounded-xl overflow-hidden border border-gray-100">
+                    <div class="form-header-custom bg-[#1F3D68] text-white p-4">
+                        <h3 class="text-xl font-bold flex items-center"><i class="fa-solid fa-plus-circle mr-2"></i> Tambah Organisasi Baru</h3>
+                    </div>
                     <form action="" method="POST" enctype="multipart/form-data" class="p-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                            <div><label class="form-label-custom">Nama Organisasi</label><input type="text" name="nama_organisasi" required class="form-control-custom"></div>
-                            <div><label class="form-label-custom">Logo Organisasi</label><input type="file" name="logo" required accept="image/*" class="form-control-custom"></div>
+                            <div>
+                                <label class="form-label-custom font-bold text-gray-700 block mb-2">Nama Organisasi</label>
+                                <input type="text" name="nama_organisasi" required class="form-control-custom w-full p-3 border rounded-lg bg-gray-50">
+                            </div>
+                            <div>
+                                <label class="form-label-custom font-bold text-gray-700 block mb-2">Jenis Organisasi</label>
+                                <select name="jenis" required class="form-control-custom w-full p-3 border rounded-lg bg-gray-50">
+                                    <option value="">-- Pilih Jenis --</option>
+                                    <option value="BEM">BEM</option>
+                                    <option value="UKM">UKM</option>
+                                    <option value="SC">SC</option>
+                                    <option value="Himpunan">Himpunan</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="mb-4"><label class="form-label-custom">Deskripsi Singkat</label><textarea name="deskripsi" required class="form-control-custom" rows="3"></textarea></div>
-                        <button type="submit" name="tambah_organisasi" class="bg-[#1F3D68] hover:bg-blue-900 text-white font-bold py-3 px-6 rounded-xl w-full">Simpan Organisasi</button>
+                        <div class="mb-4">
+                            <label class="form-label-custom font-bold text-gray-700 block mb-2">Logo Organisasi</label>
+                            <input type="file" name="logo" required accept="image/*" class="form-control-custom w-full p-2.5 border rounded-lg bg-gray-50">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label-custom font-bold text-gray-700 block mb-2">Deskripsi Singkat</label>
+                            <textarea name="deskripsi" required class="form-control-custom w-full p-3 border rounded-lg bg-gray-50" rows="3"></textarea>
+                        </div>
+                        <button type="submit" name="tambah_organisasi" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl w-full transition">Simpan Organisasi</button>
                     </form>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-8">
+                    <div class="bg-indigo-600 text-white p-4 font-bold flex justify-between items-center">
+                        <span><i class="fa-solid fa-list mr-2"></i> Daftar Organisasi Terdaftar</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-gray-600">
+                            <thead class="bg-gray-50 text-xs font-bold text-gray-500 uppercase border-b">
+                                <tr>
+                                    <th class="p-4 w-16 text-center">Logo</th>
+                                    <th class="p-4">Nama Organisasi</th>
+                                    <th class="p-4">Jenis</th>
+                                    <th class="p-4">Deskripsi</th>
+                                    <th class="p-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <?php if(empty($data_organisasi)): ?>
+                                    <tr>
+                                        <td colspan="5" class="p-6 text-center text-gray-400 italic">Belum ada data organisasi di database.</td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach($data_organisasi as $org): ?>
+                                    <tr class="hover:bg-gray-50 transition">
+                                        <td class="p-4 text-center">
+                                            <?php if(!empty($org['logo']) && file_exists('uploads/' . $org['logo'])): ?>
+                                                <img src="uploads/<?= htmlspecialchars($org['logo']) ?>" alt="Logo" class="w-10 h-10 object-cover rounded-full mx-auto border border-gray-200">
+                                            <?php else: ?>
+                                                <div class="w-10 h-10 bg-gray-200 rounded-full mx-auto flex items-center justify-center text-gray-400"><i class="fa-solid fa-image"></i></div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="p-4 font-bold text-gray-800">
+                                            <?= htmlspecialchars($org['nama_organisasi']) ?>
+                                        </td>
+                                        <td class="p-4">
+                                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                                                <?= htmlspecialchars($org['jenis'] ?? 'Organisasi') ?>
+                                            </span>
+                                        </td>
+                                        <td class="p-4 text-xs text-gray-500 max-w-xs truncate">
+                                            <?= htmlspecialchars($org['deskripsi'] ?? '-') ?>
+                                        </td>
+                                        <td class="p-4 text-center">
+                                            <form action="" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus organisasi <?= htmlspecialchars($org['nama_organisasi']) ?>?');" class="inline-block">
+                                                <input type="hidden" name="target_tabel" value="organisasi">
+                                                <input type="hidden" name="id_kolom" value="id_organisasi">
+                                                <input type="hidden" name="id_nilai" value="<?= $org['id_organisasi'] ?>">
+                                                <button type="submit" name="hapus_entitas" class="text-red-500 hover:text-red-700 font-bold bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 transition">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             <?php endif; ?>
 
@@ -867,19 +974,46 @@ try {
                 </div>
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mt-8">
                     <table class="w-full text-left text-sm text-gray-600">
-                        <thead class="bg-gray-50 text-xs font-bold text-gray-500 uppercase border-b">
-                            <tr><th class="p-4 w-1/4">Judul Kegiatan</th><th class="p-4">Penyelenggara</th><th class="p-4 text-center">Aksi</th></tr>
+                        <thead>
+                            <tr class="bg-gray-100 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                <th class="px-5 py-3 border-b-2 border-gray-200">No</th>
+                                <th class="px-5 py-3 border-b-2 border-gray-200">Judul Kegiatan</th>
+                                <th class="px-5 py-3 border-b-2 border-gray-200">Deskripsi</th> 
+                                <th class="px-5 py-3 border-b-2 border-gray-200">Organisasi</th>
+                                <th class="px-5 py-3 border-b-2 border-gray-200">Aksi</th>
+                            </tr>
                         </thead>
-                        <tbody class="divide-y">
-                            <?php foreach($data_konten as $kon): ?>
-                            <tr>
-                                <td class="p-4 font-bold text-gray-800"><?= htmlspecialchars($kon['judul_kegiatan']) ?></td>
-                                <td class="p-4 text-xs font-bold text-amber-600"><?= htmlspecialchars($kon['nama_organisasi'] ?? 'Sistem Pusat') ?></td>
-                                <td class="p-4 text-center">
-                                    <form action="" method="POST" onsubmit="return confirm('Hapus konten ini?');">
-                                        <input type="hidden" name="target_tabel" value="konten_kegiatan"><input type="hidden" name="id_kolom" value="id_konten"><input type="hidden" name="id_nilai" value="<?= $kon['id_konten'] ?>">
-                                        <button type="submit" name="hapus_entitas" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash-can"></i></button>
-                                    </form>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <?php foreach ($data_konten as $index => $row): ?>
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center"><?= $index + 1; ?></td>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm font-semibold text-gray-800"><?= htmlspecialchars($row['judul'] ?? ''); ?></td>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-gray-600 max-w-xs truncate">
+                                    <?= htmlspecialchars($row['deskripsi'] ?? ''); ?>
+                                </td>
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-gray-700"><?= htmlspecialchars($row['nama_organisasi'] ?? '-'); ?></td>
+                                
+                                <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center">
+                                    <div class="flex items-center justify-center space-x-2">
+                                        <button type="button" 
+                                                onclick="bukaModalDetail(this)"
+                                                data-judul="<?= htmlspecialchars($row['judul'] ?? ''); ?>"
+                                                data-deskripsi="<?= htmlspecialchars($row['deskripsi'] ?? ''); ?>"
+                                                data-organisasi="<?= htmlspecialchars($row['nama_organisasi'] ?? '-'); ?>"
+                                                data-lampiran="<?= htmlspecialchars($row['lampiran'] ?? ''); ?>"
+                                                class="text-blue-500 hover:text-blue-700 font-bold bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 flex items-center shadow-sm text-xs transition-all">
+                                            <i class="fa-solid fa-eye mr-1.5"></i> Detail
+                                        </button>
+
+                                        <form action="" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus kegiatan ini?');" class="inline-block m-0">
+                                            <input type="hidden" name="target_tabel" value="konten_kegiatan">
+                                            <input type="hidden" name="id_kolom" value="id_konten">
+                                            <input type="hidden" name="id_nilai" value="<?= $row['id_konten'] ?>">
+                                            <button type="submit" name="hapus_entitas" class="text-red-500 hover:text-red-700 font-bold bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 flex items-center shadow-sm text-xs transition-all">
+                                                <i class="fa-solid fa-trash-can mr-1.5"></i> Hapus
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -899,8 +1033,7 @@ try {
                             <?php foreach($data_pendaftaran as $pend): ?>
                             <tr>
                                 <td class="p-4"><p class="font-bold text-gray-800"><?= htmlspecialchars($pend['nama_mhs']) ?></p><p class="text-xs text-gray-500"><?= htmlspecialchars($pend['nim']) ?></p></td>
-                                <td class="p-4 font-semibold text-gray-700"><?= htmlspecialchars($pend['judul_kegiatan']) ?></td>
-                                <td class="p-4 text-xs"><?= htmlspecialchars($pend['tanggal_daftar']) ?></td>
+                                <td class="p-4 font-semibold text-gray-700"><?= htmlspecialchars($pend['judul']) ?></td>                                <td class="p-4 text-xs"><?= htmlspecialchars($pend['tanggal_daftar']) ?></td>
                                 <td class="p-4 text-center">
                                     <span class="px-2 py-1 rounded text-xs font-bold <?= $pend['status_pendaftaran']=='Diterima'?'bg-green-100 text-green-700':($pend['status_pendaftaran']=='Ditolak'?'bg-red-100 text-red-700':'bg-amber-100 text-amber-700') ?>"><?= htmlspecialchars($pend['status_pendaftaran']) ?></span>
                                 </td>
@@ -1033,8 +1166,8 @@ try {
                     <input type="text" name="nim_edit" id="nim_edit" placeholder="NIM" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
                     <input type="text" name="nama_edit" id="nama_mahasiswa_edit" placeholder="Nama Lengkap" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
                     <input type="email" name="email_edit" id="email_edit" placeholder="Email" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
-                    <input type="text" name="prodi" id="prodi_edit" placeholder="Program Studi (Prodi)" class="p-2.5 border rounded-lg w-full">
-                    <input type="text" name="kontak" id="kontak_edit" placeholder="No. HP / WhatsApp (Kontak)" class="p-2.5 border rounded-lg w-full">
+                    <input type="text" name="prodi_edit" id="prodi_edit" placeholder="Program Studi (Prodi)" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
+                    <input type="text" name="kontak_edit" id="kontak_edit" placeholder="No. HP / WhatsApp (Kontak)" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
                 </div>
 
                 <div id="formEditAdmin" class="hidden space-y-3">
@@ -1065,42 +1198,30 @@ try {
     </div>
 
     <script>
+        // Fungsi untuk Tambah Data
         function toggleForm() {
             let role = document.getElementById('roleSelector').value;
             ['formMahasiswa', 'formAdmin', 'formPengurus'].forEach(id => document.getElementById(id).classList.add('hidden'));
             
-            // Nonaktifkan semua input dalam subform agar tidak bentrok atau mengirim string kosong
             document.querySelectorAll('#formMahasiswa input, #formAdmin input, #formPengurus input, #formPengurus select').forEach(el => {
                 el.removeAttribute('required');
                 el.setAttribute('disabled', 'true');
             });
-
+        
             if (role === 'mahasiswa') {
-                document.getElementById('formEditMahasiswa').classList.remove('hidden');
-                document.getElementById('nim_edit').value = data.nim;
-                document.getElementById('nama_mahasiswa_edit').value = data.nama;
-                document.getElementById('email_edit').value = data.email;
-                
-                // TAMBAHKAN DUA BARIS INI
-                document.getElementById('prodi_edit').value = data.prodi || '';
-                document.getElementById('kontak_edit').value = data.kontak || '';
+                document.getElementById('formMahasiswa').classList.remove('hidden');
+                document.querySelectorAll('#formMahasiswa input').forEach(el => { el.removeAttribute('disabled'); el.setAttribute('required', 'true'); });
             } else if (role === 'admin') {
-                document.getElementById('formEditAdmin').classList.remove('hidden');
-                document.querySelectorAll('#formEditAdmin input').forEach(el => el.removeAttribute('disabled'));
-                document.querySelector('input[name="username_admin"]').setAttribute('required', 'true');
-                document.querySelector('input[name="no_telp_admin"]').setAttribute('required', 'true');
-                document.querySelector('#formEditAdmin input[type="password"]').setAttribute('required', 'true');
+                document.getElementById('formAdmin').classList.remove('hidden');
+                document.querySelectorAll('#formAdmin input').forEach(el => { el.removeAttribute('disabled'); el.setAttribute('required', 'true'); });
             } else if (role === 'pengurus') {
-                document.getElementById('formEditPengurus').classList.remove('hidden');
-                document.querySelectorAll('#formEditPengurus input, #formEditPengurus select').forEach(el => el.removeAttribute('disabled'));
-                document.querySelector('select[name="id_organisasi"]').setAttribute('required', 'true');
-                document.querySelector('input[name="no_telp_pengurus"]').setAttribute('required', 'true');
-                document.querySelector('#formEditPengurus input[type="password"]').setAttribute('required', 'true');
+                document.getElementById('formPengurus').classList.remove('hidden');
+                document.querySelectorAll('#formPengurus input, #formPengurus select').forEach(el => { el.removeAttribute('disabled'); el.setAttribute('required', 'true'); });
             }
         }
         if(document.getElementById('roleSelector')) window.onload = toggleForm;
 
-        // MANIPULASI DATA POPULATE KE MODAL EDIT
+        // Fungsi untuk Edit Data (SUDAH DIPERBAIKI!)
         function bukaModalEdit(role, id, data) {
             document.getElementById('role_edit').value = role;
             document.getElementById('id_edit').value = id;
@@ -1112,6 +1233,8 @@ try {
                 document.getElementById('nim_edit').value = data.nim;
                 document.getElementById('nama_mahasiswa_edit').value = data.nama;
                 document.getElementById('email_edit').value = data.email;
+                document.getElementById('prodi_edit').value = data.prodi || '';
+                document.getElementById('kontak_edit').value = data.kontak || '';
             } else if (role === 'admin') {
                 document.getElementById('formEditAdmin').classList.remove('hidden');
                 document.getElementById('username_edit').value = data.username;
@@ -1130,6 +1253,122 @@ try {
             modal.classList.add('flex');
         }
     </script>
-    <?php endif; ?>
+    <?php endif; ?> <div id="modalDetailKegiatan" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 transition-all duration-300">
+        <div class="bg-white rounded-xl shadow-2xl w-11/12 md:w-3/5 p-6 max-h-[85vh] overflow-y-auto transform scale-95 transition-all">
+            
+            <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full mb-1 inline-block" id="modalDetailOrg">Organisasi</span>
+                    <h3 class="text-xl font-bold text-gray-900 mt-1" id="modalDetailJudul">Judul Kegiatan</h3>
+                </div>
+                <button onclick="tutupModalDetail()" class="text-gray-400 hover:text-gray-600 text-3xl font-light focus:outline-none transition-colors">&times;</button>
+            </div>
+            
+            <div class="mt-5 space-y-5">
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-800 border-l-4 border-indigo-500 pl-2 mb-2">Deskripsi Kegiatan</h4>
+                    <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 shadow-inner">
+                        <p id="modalDetailDeskripsi" class="text-sm text-gray-700 whitespace-pre-line leading-relaxed"></p>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-sm font-semibold text-gray-800 border-l-4 border-indigo-500 pl-2 mb-3">Galeri / Lampiran Kegiatan</h4>
+                    <div id="modalDetailGaleriContainer" class="bg-gray-50 rounded-xl p-4 border border-gray-100 flex flex-wrap justify-center items-center min-h-[150px]">
+                        </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-gray-100 flex justify-end">
+                <button type="button" onclick="tutupModalDetail()" class="bg-gray-800 hover:bg-gray-900 text-white font-semibold py-2 px-5 rounded-lg text-sm transition shadow-md hover:shadow-lg focus:outline-none">
+                    Tutup Detail
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function bukaModalDetail(element) {
+            // 1. Ambil data dari tombol
+            const judul = element.getAttribute('data-judul');
+            const deskripsi = element.getAttribute('data-deskripsi');
+            const organisasi = element.getAttribute('data-organisasi');
+            let lampiran = element.getAttribute('data-lampiran');
+
+            // 2. Isi teks ke dalam modal
+            document.getElementById('modalDetailJudul').innerText = judul;
+            document.getElementById('modalDetailDeskripsi').innerText = deskripsi;
+            document.getElementById('modalDetailOrg').innerText = organisasi;
+
+            // 3. Siapkan Kontainer Galeri
+            const galeriContainer = document.getElementById('modalDetailGaleriContainer');
+            galeriContainer.innerHTML = ''; 
+
+            // 4. Logika Pemanggilan Gambar Mendukung Banyak Foto
+            if (lampiran && lampiran.trim() !== '') {
+                // Pisahkan nama file jika ada banyak foto (biasanya dipisah dengan koma)
+                let daftarFoto = lampiran.split(',');
+
+                // Looping (ulangi) untuk setiap foto yang ditemukan
+                daftarFoto.forEach(function(foto) {
+                    let fileGambar = foto.trim(); 
+                    if (fileGambar === '') return; 
+
+                    const imgWrapper = document.createElement('div');
+                    imgWrapper.className = 'relative m-2 p-1 bg-white border border-gray-200 rounded-lg shadow-sm flex justify-center items-center';
+                    
+                    const img = document.createElement('img');
+                    let finalPath = '';
+
+                    // Cek apakah formatnya link luar atau nama file biasa
+                    if (fileGambar.startsWith('data:image') || fileGambar.startsWith('http')) {
+                        finalPath = fileGambar;
+                    } else {
+                        // Ambil murni nama filenya saja
+                        let namaFileBersih = fileGambar.split('/').pop();
+                        // Arahkan ke folder kegiatan
+                        finalPath = './uploads/kegiatan/' + namaFileBersih;
+                    }
+                    
+                    img.src = finalPath;
+                    img.className = 'max-h-[50vh] w-auto object-contain rounded-md shadow';
+                    
+                    // Pesan error jika salah satu foto gagal dimuat
+                    img.onerror = function() {
+                        imgWrapper.innerHTML = `
+                            <div class="text-center p-3 w-full bg-red-50 border border-red-200 rounded-lg">
+                                <p class="text-xs font-bold text-red-700">Gagal memuat:</p>
+                                <a href="${finalPath}" target="_blank" class="text-xs text-blue-600 underline break-all">${namaFileBersih}</a>
+                            </div>
+                        `;
+                    };
+
+                    imgWrapper.appendChild(img);
+                    galeriContainer.appendChild(imgWrapper);
+                });
+            } else {
+                // Jika database kosong (tidak ada foto sama sekali)
+                galeriContainer.innerHTML = `
+                    <div class="text-center p-8 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl w-full">
+                        <i class="fa-regular fa-image text-4xl mb-3 block text-gray-300"></i>
+                        <span class="font-medium text-sm text-gray-500">Tidak ada lampiran foto</span>
+                        <p class="text-xs mt-1">Kegiatan ini tidak memiliki galeri.</p>
+                    </div>
+                `;
+            }
+
+            // 5. Tampilkan Modal
+            let modal = document.getElementById('modalDetailKegiatan');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+        } // <--- INI ADALAH TANDA KURUNG KURAWAL YANG SEBELUMNYA TERHAPUS
+
+        function tutupModalDetail() {
+            let modal = document.getElementById('modalDetailKegiatan');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    </script>
 </body>
 </html>
