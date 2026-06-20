@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 18 Jun 2026 pada 14.58
+-- Waktu pembuatan: 19 Jun 2026 pada 18.27
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -39,13 +39,6 @@ CREATE TABLE `administrator` (
   `reset_expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data untuk tabel `administrator`
---
-
-INSERT INTO `administrator` (`id_admin`, `username`, `nama_lengkap`, `password`, `no_hp`, `id_akses`, `status_verifikasi`, `reset_token`, `reset_expires`) VALUES
-(1, 'admin_kampus', 'Administrator', '$2y$10$qu8S96J2sRC6WfI3Nb2VsupZ1.X.h05ORFfiBOed8zwNYRAGuDz6.', NULL, NULL, 'Belum', NULL, NULL);
-
 -- --------------------------------------------------------
 
 --
@@ -77,13 +70,6 @@ CREATE TABLE `komentar` (
   `id_komentar_parent` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data untuk tabel `komentar`
---
-
-INSERT INTO `komentar` (`id_komentar`, `isi_komentar`, `id_mahasiswa`, `id_konten`, `id_komentar_parent`, `created_at`) VALUES
-(1, 'Wah, acaranya sangat menarik min! Nggak sabar buat ikutan.', 3, 2, NULL, '2026-06-16 00:23:37');
 
 -- --------------------------------------------------------
 
@@ -126,13 +112,6 @@ CREATE TABLE `likes` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data untuk tabel `likes`
---
-
-INSERT INTO `likes` (`id_like`, `id_mahasiswa`, `id_konten`, `created_at`) VALUES
-(12, 3, 2, '2026-06-16 00:41:02');
-
 -- --------------------------------------------------------
 
 --
@@ -170,9 +149,15 @@ CREATE TABLE `pendaftaran` (
   `id_mahasiswa` int(11) NOT NULL,
   `id_konten` int(11) NOT NULL,
   `tanggal_daftar` timestamp NOT NULL DEFAULT current_timestamp(),
-  `status_pendaftaran` enum('menunggu','diterima','ditolak') DEFAULT 'menunggu',
-  `kuota_maks` int(11) DEFAULT 0
+  `status_pendaftaran` enum('menunggu','diterima','ditolak') DEFAULT 'menunggu'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `pendaftaran`
+--
+
+INSERT INTO `pendaftaran` (`id_pendaftaran`, `id_mahasiswa`, `id_konten`, `tanggal_daftar`, `status_pendaftaran`) VALUES
+(1, 55, 6, '2026-06-19 16:22:07', 'menunggu');
 
 -- --------------------------------------------------------
 
@@ -193,14 +178,6 @@ CREATE TABLE `pengurus_organisasi` (
   `reset_expires` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data untuk tabel `pengurus_organisasi`
---
-
-INSERT INTO `pengurus_organisasi` (`id_pengurus`, `id_organisasi`, `nama_pengurus`, `jabatan`, `password`, `no_hp`, `id_akses`, `status_verifikasi`, `reset_token`, `reset_expires`) VALUES
-(2, 1, 'Budi Santoso', 'Ketua', '$2y$10$t6Eliq.1g540dJCNHh8zOeq2eXTPDbNLdgsMnqkvrpnhlk.gXSMwG', NULL, NULL, 'Belum', NULL, NULL),
-(6, 6, 'Fajar Coding', 'Inti', '$2y$10$t6Eliq.1g540dJCNHh8zOeq2eXTPDbNLdgsMnqkvrpnhlk.gXSMwG', NULL, NULL, 'Belum', NULL, NULL);
-
 -- --------------------------------------------------------
 
 --
@@ -214,7 +191,6 @@ CREATE TABLE `tbmahasiswa` (
   `email` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
   `prodi` varchar(50) DEFAULT NULL,
-  `angkatan` varchar(4) DEFAULT NULL,
   `kontak` varchar(20) DEFAULT NULL,
   `is_verified` enum('0','1') DEFAULT '0',
   `verification_token` varchar(6) DEFAULT NULL,
@@ -227,9 +203,8 @@ CREATE TABLE `tbmahasiswa` (
 -- Dumping data untuk tabel `tbmahasiswa`
 --
 
-INSERT INTO `tbmahasiswa` (`id_mahasiswa`, `nim`, `nama`, `email`, `password`, `prodi`, `angkatan`, `kontak`, `is_verified`, `verification_token`, `created_at`, `reset_token`, `reset_expires`) VALUES
-(3, '241011001', 'Andi Prasetyo', 'andi@mahasiswa.ith.ac.id', '$2y$10$qPJV5xk3fITtOFFsrszLK.Jy3B2xHHoBLDt9AigLJmD0mn8c0fw7G', 'Ilmu Komputer', '2024', NULL, '1', NULL, '2026-06-18 12:37:50', NULL, NULL),
-(45, '241011002', 'Rina Melati', 'rina.melati@ith.ac.id', '$2y$10$qPJV5xk3fITtOFFsrszLK.Jy3B2xHHoBLDt9AigLJmD0mn8c0fw7G', 'Sistem Informasi', '2024', NULL, '1', NULL, '2026-06-18 12:37:50', NULL, NULL);
+INSERT INTO `tbmahasiswa` (`id_mahasiswa`, `nim`, `nama`, `email`, `password`, `prodi`, `kontak`, `is_verified`, `verification_token`, `created_at`, `reset_token`, `reset_expires`) VALUES
+(55, '241011087', 'Arya Ahmad', 'afriandata34@gmail.com', '$2y$10$TXNMXEXR9kx50ePux71Fxu8JCESRs8KLd/u.MT9qaDhMFB7mXNO3O', 'Ilmu Komputer', '087862394435', '1', NULL, '2026-06-19 05:37:48', NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -329,7 +304,7 @@ ALTER TABLE `komentar`
 -- AUTO_INCREMENT untuk tabel `konten_kegiatan`
 --
 ALTER TABLE `konten_kegiatan`
-  MODIFY `id_konten` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_konten` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT untuk tabel `likes`
@@ -341,25 +316,25 @@ ALTER TABLE `likes`
 -- AUTO_INCREMENT untuk tabel `organisasi`
 --
 ALTER TABLE `organisasi`
-  MODIFY `id_organisasi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+  MODIFY `id_organisasi` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
 -- AUTO_INCREMENT untuk tabel `pendaftaran`
 --
 ALTER TABLE `pendaftaran`
-  MODIFY `id_pendaftaran` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_pendaftaran` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT untuk tabel `pengurus_organisasi`
 --
 ALTER TABLE `pengurus_organisasi`
-  MODIFY `id_pengurus` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_pengurus` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT untuk tabel `tbmahasiswa`
 --
 ALTER TABLE `tbmahasiswa`
-  MODIFY `id_mahasiswa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+  MODIFY `id_mahasiswa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
 
 --
 -- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
