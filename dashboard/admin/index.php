@@ -7,18 +7,18 @@ if ($_SESSION['peran'] != 'admin') {
     exit();
 }
 
-// Statistik
-$total_users = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+// Statistik (Sudah disesuaikan ke tabel administrator)
+$total_users = $pdo->query("SELECT COUNT(*) FROM administrator")->fetchColumn();
 $total_organisasi = $pdo->query("SELECT COUNT(*) FROM organisasi")->fetchColumn();
 $total_konten = $pdo->query("SELECT COUNT(*) FROM konten_kegiatan")->fetchColumn();
-$pending_verifikasi = $pdo->query("SELECT COUNT(*) FROM users WHERE status_verifikasi = 'pending' AND peran = 'pengurus'")->fetchColumn();
+$pending_verifikasi = $pdo->query("SELECT COUNT(*) FROM administrator WHERE status_verifikasi = 'pending' AND id_akses = 1")->fetchColumn(); 
+// Catatan: sesuaikan 'id_akses = 1' atau 'peran' jika kolom peran dipisah
 
-// 5 User pending terbaru (pengurus)
+// 5 User pending terbaru (Sudah disesuaikan ke tabel administrator)
 $stmt = $pdo->query("
-    SELECT id_user, nama, email, created_at 
-    FROM users 
-    WHERE status_verifikasi = 'pending' AND peran = 'pengurus'
-    ORDER BY created_at DESC 
+    SELECT id_admin AS id_user, nama_lengkap AS nama, username, status_verifikasi, reset_token 
+    FROM administrator 
+    WHERE status_verifikasi = 'pending'
     LIMIT 5
 ");
 $pending_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -61,7 +61,6 @@ include '../../include/header.php';
     </div>
 
     <div style="display: flex; flex-wrap: wrap; gap: 2rem;">
-        <!-- Daftar User Pending Verifikasi -->
         <div style="flex: 1; min-width: 250px; background: white; border-radius: 12px; padding: 1rem; box-shadow: var(--shadow-sm);">
             <h3>⏳ Verifikasi Akun Pengurus</h3>
             <?php if (count($pending_users) > 0): ?>
@@ -69,7 +68,7 @@ include '../../include/header.php';
                     <?php foreach ($pending_users as $u): ?>
                         <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
                             <strong><?= htmlspecialchars($u['nama']) ?></strong><br>
-                            <small><?= $u['email'] ?></small>
+                            <small>Username: <?= htmlspecialchars($u['username']) ?></small>
                             <div style="margin-top: 0.3rem;">
                                 <a href="verifikasi_akun.php?id=<?= $u['id_user'] ?>&action=verify" class="btn-sm" style="background-color: #28a745; color: white;">Verifikasi</a>
                                 <a href="verifikasi_akun.php?id=<?= $u['id_user'] ?>&action=reject" class="btn-sm" style="background-color: #dc3545; color: white;">Tolak</a>
@@ -83,7 +82,6 @@ include '../../include/header.php';
             <?php endif; ?>
         </div>
 
-        <!-- Konten Terbaru -->
         <div style="flex: 2; min-width: 300px; background: white; border-radius: 12px; padding: 1rem; box-shadow: var(--shadow-sm);">
             <h3>📄 Konten Terbaru</h3>
             <?php if (count($latest_konten) > 0): ?>
