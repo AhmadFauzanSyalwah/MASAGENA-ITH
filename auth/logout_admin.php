@@ -5,6 +5,6 @@ $_SESSION = array();
 session_destroy();
 
 // Alihkan ke halaman login utama
-header("Location: login.php");
+header("Location: login_admin.php");
 exit;
 ?>

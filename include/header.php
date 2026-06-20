@@ -57,8 +57,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <?php else: ?>
                             <a href="/MASAGENA-ITH/dashboard/admin/kelola_user.php"><i class="fas fa-history"></i> Log Aktivitas</a>
                         <?php endif; ?>
-                        <hr>
-                        <a href="/MASAGENA-ITH/auth/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        <hr>               
+                        <?php
+                            // Menentukan link logout berdasarkan peran
+                            $logout_link = ($peran === 'admin') ? "../../auth/logout_admin.php" : "../../auth/logout.php";
+                        ?>
+                        <a href="<?= $logout_link; ?>" onclick="return confirm('Apakah Anda yakin ingin keluar?');">
+                            <i class="fa-solid fa-right-from-bracket"></i> Logout
+                        </a>
                     </div>
                 </div>
             <?php else: ?>

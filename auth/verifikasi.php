@@ -1,139 +1,140 @@
 <?php
-require_once '../../config/session_check.php';
-require_once '../../config/database.php';
+session_start();
+require_once '../config/database.php';
 
-if ($_SESSION['peran'] != 'admin') {
-    header("Location: ../" . $_SESSION['peran'] . "/index.php");
-    exit();
+if (!isset($_SESSION['id_belum_verifikasi'])) {
+    header("Location: login.php");
+    exit;
 }
 
-$message = '';
-$status = '';
+$message = "";
+$messageType = "";
 
-// 1. PROSES AKSI VERIFIKASI / TOLAK (Disulut saat tombol diklik)
-if (isset($_GET['id']) && isset($_GET['action'])) {
-    $id_target = intval($_GET['id']);
-    $action = $_GET['action'];
-    $type = isset($_GET['type']) ? $_GET['type'] : 'mahasiswa'; // default tipe data
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['verify_otp'])) {
+    $otp = $_POST['otp'];
+    $id_mahasiswa = $_SESSION['id_belum_verifikasi'];
 
-    // Menentukan target tabel dan kolom status berdasarkan tipe user
-    // (Sesuaikan nama tabel & kolom status jika nanti ada tabel 'pengurus' khusus)
-    if ($type === 'mahasiswa') {
-        $table = 'mahasiswa';
-        $status_column = 'is_verified';
-        $id_column = 'id_mahasiswa';
-        $new_status = ($action === 'verify') ? 1 : 0; // Tabel mahasiswa pakai angka (1/0)
+    if (!empty($otp)) {
+        try {
+            $sql = "SELECT * FROM tbmahasiswa WHERE id_mahasiswa = :id AND verification_token = :otp LIMIT 1";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':id' => $id_mahasiswa,
+                ':otp' => $otp
+            ]);
+            
+            $user = $stmt->fetch();
+
+            if ($user) {
+                $updateSql = "UPDATE tbmahasiswa SET verification_token = NULL WHERE id_mahasiswa = :id";
+                $updateStmt = $pdo->prepare($updateSql);
+                $updateStmt->execute([':id' => $id_mahasiswa]);
+
+                // SET SESSION LOGIN MAHASISWA
+                $_SESSION['is_logged_in'] = true;
+                $_SESSION['peran']   = 'mahasiswa';
+                $_SESSION['user_id'] = $user['id_mahasiswa'];
+                $_SESSION['nama']    = $user['nama_lengkap'];
+
+                // Hapus sesi verifikasi sementara
+                unset($_SESSION['id_belum_verifikasi']);
+
+                // Arahkan ke halaman dashboard mahasiswa
+                header("Location: ../dashboard/mahasiswa/index.php");
+                exit;
+            } else { // <--- KURUNGNYA SUDAH DIPERBAIKI
+                $message = "Kode OTP salah atau sudah kedaluwarsa!";
+                $messageType = "error";
+            }
+        } catch (PDOException $e) {
+            $message = "Terjadi kesalahan database: " . $e->getMessage();
+            $messageType = "error";
+        }
     } else {
-        $table = 'administrator';
-        $status_column = 'status_verifikasi';
-        $id_column = 'id_admin';
-        $new_status = ($action === 'verify') ? 'terverifikasi' : 'ditolak'; // Tabel admin pakai string
-    }
-
-    try {
-        $stmt = $pdo->prepare("UPDATE $table SET $status_column = ? WHERE $id_column = ?");
-        $stmt->execute([$new_status, $id_target]);
-        
-        $msg_text = ($action === 'verify') ? "Akun berhasil diverifikasi!" : "Akun telah ditolak!";
-        header("Location: verifikasi_akun.php?msg=" . urlencode($msg_text) . "&status=success");
-        exit();
-    } catch (PDOException $e) {
-        $message = "Gagal memperbarui status verifikasi: " . $e->getMessage();
-        $status = 'danger';
+        $message = "Harap masukkan kode OTP!";
+        $messageType = "error";
     }
 }
-
-// 2. AMBIL DATA PENDING DARI TABEL MAHASISWA (is_verified = 0)
-try {
-    $stmt_mhs = $pdo->query("
-        SELECT id_mahasiswa AS id, nim, nama, email, 'mahasiswa' AS tipe_user 
-        FROM mahasiswa 
-        WHERE is_verified = 0 OR is_verified IS NULL
-        ORDER BY id_mahasiswa DESC
-    ");
-    $pending_mahasiswa = $stmt_mhs->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    $pending_mahasiswa = []; // Set kosong jika ada kendala struktur tabel
-}
-
-// 3. AMBIL DATA PENDING DARI TABEL ADMINISTRATOR (status_verifikasi = 'pending')
-try {
-    $stmt_admin = $pdo->query("
-        SELECT id_admin AS id, username AS nim, nama_lengkap AS nama, 'admin' AS email, 'admin' AS tipe_user 
-        FROM administrator 
-        WHERE status_verifikasi = 'pending'
-        ORDER BY id_admin DESC
-    ");
-    $pending_admin = $stmt_admin->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    $pending_admin = [];
-}
-
-// Gabungkan semua data antrean pending ke dalam satu array list
-$all_pending = array_merge($pending_mahasiswa, $pending_admin);
-
-include '../../include/header.php';
 ?>
 
-<div class="container" style="padding: 2rem; background: white; border-radius: 12px; margin-top: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-    <h2>⏳ Persetujuan & Verifikasi Akun Baru</h2>
-    <p style="color: #6c757d;">Periksa dan aktifkan akun pendaftar pengurus atau mahasiswa baru agar dapat mengakses sistem.</p>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi Akun - MASAGENA ITH</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#ededed] min-h-screen flex flex-col relative z-0">
 
-    <?php if (isset($_GET['msg'])): ?>
-        <div style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; background-color: #d4edda; color: #155724; font-weight: 500;">
-            <?= htmlspecialchars($_GET['msg']) ?>
-        </div>
-    <?php endif; ?>
+    <div class="absolute top-0 left-0 w-[22%] h-[55%] bg-[#1F3D68] z-[-1]"></div>
+    <div class="absolute top-[55%] left-0 w-[22%] h-[45%] bg-[#F59E0B] z-[-1]"></div>
 
-    <?php if ($message): ?>
-        <div style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; background-color: #f8d7da; color: #721c24;">
-            <?= htmlspecialchars($message) ?>
-        </div>
-    <?php endif; ?>
+    <div class="flex-grow flex items-center justify-center p-4 md:p-8">
+        
+        <div class="bg-white rounded-[24px] shadow-[15px_15px_0px_0px_#d4d4d4] flex flex-col md:flex-row max-w-[900px] w-full min-h-[500px] overflow-hidden">
+            
+            <div class="md:w-[42%] flex flex-col">
+                <div class="flex-grow bg-white flex items-center justify-center p-6 md:p-8">
+                    <img src="asset/logo-masagena.png" alt="Masagena ITH Logo" class="w-[90%] max-w-[280px] object-contain">
+                </div>
+                <div class="bg-[#1F3D68] h-[35%] flex items-center justify-center p-6">
+                    <div class="text-white text-[13px] text-center font-semibold leading-relaxed space-y-1.5">
+                        <p>Media Akses Seputar</p>
+                        <p>Agenda dan Kegiatan</p>
+                        <p>Institut Teknologi</p>
+                        <p>Bacharuddin Jusuf Habibie</p>
+                    </div>
+                </div>
+            </div>
 
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
-            <thead>
-                <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                    <th style="padding: 0.75rem 1rem;">Nama Lengkap</th>
-                    <th style="padding: 0.75rem 1rem;">NIM / Username</th>
-                    <th style="padding: 0.75rem 1rem;">Kontak / Email</th>
-                    <th style="padding: 0.75rem 1rem;">Kategori Peran</th>
-                    <th style="padding: 0.75rem 1rem; text-align: center;">Aksi Persetujuan</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (count($all_pending) > 0): ?>
-                    <?php foreach ($all_pending as $user): ?>
-                        <tr style="border-bottom: 1px solid #dee2e6;">
-                            <td style="padding: 0.75rem 1rem;"><strong><?= htmlspecialchars($user['nama']) ?></strong></td>
-                            <td style="padding: 0.75rem 1rem;"><code style="background: #f1f3f5; padding: 0.2rem 0.4rem; border-radius: 4px;"><?= htmlspecialchars($user['nim']) ?></code></td>
-                            <td style="padding: 0.75rem 1rem; color: #495057;"><?= htmlspecialchars($user['email']) ?></td>
-                            <td style="padding: 0.75rem 1rem;">
-                                <span style="background: <?= $user['tipe_user'] === 'mahasiswa' ? '#e3f2fd' : '#e8eaf6' ?>; color: <?= $user['tipe_user'] === 'mahasiswa' ? '#0d47a1' : '#1a237e' ?>; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">
-                                    <?= $user['tipe_user'] ?>
-                                </span>
-                            </td>
-                            <td style="padding: 0.75rem 1rem; text-align: center; white-space: nowrap;">
-                                <a href="verifikasi_akun.php?id=<?= $user['id'] ?>&type=<?= $user['tipe_user'] ?>&action=verify" style="background: #28a745; color: white; padding: 0.4rem 0.8rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; margin-right: 0.4rem; font-weight: 500;">Setujui</a>
-                                <a href="verifikasi_akun.php?id=<?= $user['id'] ?>&type=<?= $user['tipe_user'] ?>&action=reject" style="background: #dc3545; color: white; padding: 0.4rem 0.8rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500;" onclick="return confirm('Apakah Anda yakin ingin menolak pendaftaran dari <?= htmlspecialchars($user['nama']) ?>?')">Tolak</a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="5" style="padding: 3rem; text-align: center; color: #6c757d;">
-                            🎉 Bagus! Tidak ada akun baru yang sedang tertahan dalam antrean verifikasi.
-                        </td>
-                    </tr>
+            <div class="md:w-[58%] px-12 py-10 flex flex-col justify-center bg-white">
+                <div class="text-center mb-8">
+                    <h2 class="text-[28px] font-bold text-[#1F3D68]">Verifikasi Akun</h2>
+                    <div class="text-gray-500 text-[13px] mt-3 font-semibold leading-relaxed">
+                        <p>Silahkan melakukan verifikasi</p>
+                        <p>Dengan masukkan kode otp</p>
+                        <p>Yang akan dikirim ke email</p>
+                    </div>
+                </div>
+
+                <?php if($message != ""): ?>
+                    <div class="<?= $messageType == 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700' ?> border px-4 py-2 rounded-lg mb-6 text-center text-sm font-semibold">
+                        <?= $message; ?>
+                    </div>
                 <?php endif; ?>
-            </tbody>
-        </table>
+
+                <form action="" method="POST" class="space-y-6">
+                    <div class="relative w-4/5 mx-auto">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fa-regular fa-user text-gray-500"></i>
+                        </div>
+                        <input type="text" name="otp" required placeholder="OTP" class="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-[#1F3D68] text-sm font-bold text-gray-700 placeholder-gray-500 transition">
+                    </div>
+
+                    <div class="w-4/5 mx-auto mt-6">
+                        <button type="submit" name="verify_otp" class="w-full bg-[#F59E0B] hover:bg-[#d98b09] text-white font-bold py-3.5 px-4 rounded-lg focus:outline-none text-xs transition duration-200 uppercase tracking-wide">
+                            LOGIN
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
-    <div style="margin-top: 2rem; border-top: 1px solid #dee2e6; padding-top: 1rem;">
-        <a href="index.php" style="text-decoration: none; color: #007bff; font-weight: 500;">← Kembali ke Dashboard Utama</a>
+    <div class="bg-[#1F3D68] text-white flex flex-col md:flex-row justify-between items-center px-8 py-4 w-full relative z-10 border-t-2 border-[#152e52]">
+        <div class="text-xs font-semibold mb-2 md:mb-0">
+            &copy; 2026 MASAGENA ITH. All rights reserved
+        </div>
+        <div class="font-bold text-lg tracking-widest flex items-center">
+            MASAGENA &nbsp;<span class="text-[#F59E0B]">ITH</span>
+        </div>
     </div>
-</div>
 
-<?php include '../../include/footer.php'; ?>
+</body>
+</html>

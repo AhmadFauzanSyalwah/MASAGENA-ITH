@@ -6,7 +6,8 @@ if (session_status() == PHP_SESSION_NONE) {
 
 // 1. Cek apakah session user_id sudah ada
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['peran'])) {
-    header("Location: ../auth/login.php");
+    // DISESUAIKAN: Mundur 2 tingkat agar keluar dari dashboard/mahasiswa/ atau dashboard/admin/
+    header("Location: ../../auth/login.php");
     exit();
 }
 
@@ -17,7 +18,7 @@ $peran = $_SESSION['peran'];
 $user = false;
 
 try {
-    // 2. Ambil data dari tabel yang sesuai dengan peran session
+    // 2. Ambil data dari tabel yang sesuai dengan peran session (Sudah dicocokkan dengan SQL)
     if ($peran === 'admin') {
         $stmt = $pdo->prepare("SELECT id_admin AS id, nama_lengkap AS nama, 'admin' AS peran FROM administrator WHERE id_admin = ?");
         $stmt->execute([$user_id]);
@@ -37,7 +38,8 @@ try {
     // 3. Jika user tidak ditemukan di tabel manapun, hancurkan session
     if (!$user) {
         session_destroy();
-        header("Location: ../auth/login.php?error=" . urlencode("Sesi tidak valid, silakan login kembali"));
+        // DISESUAIKAN: Mundur 2 tingkat
+        header("Location: ../../auth/login.php?error=" . urlencode("Sesi tidak valid, silakan login kembali"));
         exit();
     }
 
