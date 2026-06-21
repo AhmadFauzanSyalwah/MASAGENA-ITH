@@ -95,6 +95,39 @@ include '../../include/header.php';
             padding: 0.2rem 0.8rem;
             font-size: 0.75rem;
         }
+        /* Efek Bulatan Indikator di Foto (Khas Instagram Carousel) */
+    .photo-wrapper {
+    position: relative;
+    display: inline-block;
+}
+.indicator-dot {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+}
+
+/* Efek Modal/Pop-up Foto Full Screen saat Di-tab */
+.modal-foto {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9);
+    align-items: center;
+    justify-content: center;
+}
+.modal-foto img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(255,255,255,0.1);
+}
+
     </style>
 
     <div class="dashboard-welcome">
@@ -214,6 +247,21 @@ include '../../include/header.php';
                 }
             });
         });
-    </script>
+        // Fitur Tab Foto agar Menampilkan Ukuran Penuh (Full Screen)
+document.querySelectorAll('.card img').forEach(foto => {
+    foto.style.cursor = 'pointer'; // Ubah kursor jadi bentuk jari tangan
+    foto.addEventListener('click', function() {
+        const srcFoto = this.getAttribute('src');
+        if(srcFoto) {
+            document.getElementById('imgFull').setAttribute('src', srcFoto);
+            document.getElementById('popupFoto').style.display = 'flex';
+        }
+    });
+});
+    </script> 
+
+    <div id="popupFoto" class="modal-foto" onclick="this.style.display='none'">
+        <img id="imgFull" src="" alt="Foto Full">
+    </div>
 
 <?php include '../../include/footer.php'; ?>
