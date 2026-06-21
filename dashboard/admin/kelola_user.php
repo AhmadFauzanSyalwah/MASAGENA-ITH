@@ -1,289 +1,475 @@
 <?php
-require_once '../../config/session_check.php';
+session_start();
+// Pastikan path ke database sesuai dengan struktur folder Anda
 require_once '../../config/database.php';
 
-// Pastikan hanya admin yang bisa mengakses halaman ini
-if ($_SESSION['peran'] != 'admin') {
-    header("Location: ../" . $_SESSION['peran'] . "/index.php");
-    exit();
+// Proteksi Halaman: Pastikan yang mengakses adalah Admin
+if (!isset($_SESSION['peran']) || $_SESSION['peran'] !== 'admin') {
+    echo "<script>alert('Anda tidak memiliki akses ke halaman ini!'); window.location.href='../../auth/login.php';</script>";
+    exit;
 }
 
-$pesan = '';
-$tipe_pesan = '';
+$pesan = "";
+$tipe_pesan = "";
 
-// Menentukan tab aktif untuk filter tampilan tabel data (default: admin)
-$tab = isset($_GET['tab']) ? $_GET['tab'] : 'admin';
+// Menentukan tab aktif (default: mahasiswa)
+$tab = isset($_GET['tab']) ? $_GET['tab'] : 'mahasiswa';
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// --- PROSES AKSI: TAMBAH USER ---
-if (isset($_POST['tambah_user'])) {
-    $peran = $_POST['peran'];
+// ==========================================
+// 1. PROSES HAPUS DATA USER
+// ==========================================
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['hapus_user'])) {
+    $id_target = $_POST['id_target'];
+    $jenis_user = $_POST['jenis_user']; // 'mahasiswa' atau 'pengurus'
     
-    if ($peran === 'mahasiswa') {
-        $nim = trim($_POST['username']); // Di tab mahasiswa, input username difungsikan sebagai NIM
-        $nama = trim($_POST['nama_lengkap']);
-        $email = trim($_POST['email']);
-        $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-        $prodi = trim($_POST['prodi']);
-        $kontak = trim($_POST['kontak']);
-
-        try {
-            $stmt_cek = $pdo->prepare("SELECT COUNT(*) FROM mahasiswa WHERE nim = ? OR email = ?");
-            $stmt_cek->execute([$nim, $email]);
-            if ($stmt_cek->fetchColumn() > 0) {
-                $pesan = "NIM atau Email mahasiswa sudah terdaftar di sistem.";
-                $tipe_pesan = "danger";
-            } else {
-                $stmt_ins = $pdo->prepare("INSERT INTO mahasiswa (nim, nama, email, password, prodi, kontak, is_verified, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, NOW())");
-                $stmt_ins->execute([$nim, $nama, $email, $password, $prodi, $kontak]);
-                $pesan = "Mahasiswa bernama <strong>" . htmlspecialchars($nama) . "</strong> berhasil ditambahkan.";
-                $tipe_pesan = "success";
-                $tab = 'mahasiswa';
-            }
-        } catch (PDOException $e) {
-            $pesan = "Gagal menambah mahasiswa: " . $e->getMessage();
-            $tipe_pesan = "danger";
+    try {
+        if ($jenis_user === 'mahasiswa') {
+            $stmt = $pdo->prepare("DELETE FROM tbmahasiswa WHERE id_mahasiswa = ?");
+            $stmt->execute([$id_target]);
+        } else {
+            $stmt = $pdo->prepare("DELETE FROM pengurus_organisasi WHERE id_pengurus = ?");
+            $stmt->execute([$id_target]);
         }
-    } else {
-        // Tambah ke tabel administrator
-        $username = trim($_POST['username']);
-        $nama_lengkap = trim($_POST['nama_lengkap']);
-        $password = SHA2(trim($_POST['password']), 256); // Menggunakan SHA2 sesuai skema tabel admin kamu
-        $no_hp = trim($_POST['kontak']);
-        $id_akses = ($peran === 'admin') ? 1 : 2; // Contoh pembagian id_akses peran
-
-        try {
-            $stmt_cek = $pdo->prepare("SELECT COUNT(*) FROM administrator WHERE username = ?");
-            $stmt_cek->execute([$username]);
-            if ($stmt_cek->fetchColumn() > 0) {
-                $pesan = "Username administrator sudah terdaftar.";
-                $tipe_pesan = "danger";
-            } else {
-                // Di sini diasumsikan status_verifikasi langsung 'terverifikasi'
-                $stmt_ins = $pdo->prepare("INSERT INTO administrator (username, nama_lengkap, password, no_hp, id_akses, status_verifikasi) VALUES (?, ?, SHA2(?, 256), ?, ?, 'terverifikasi')");
-                $stmt_ins->execute([$username, $nama_lengkap, $_POST['password'], $no_hp, $id_akses]);
-                $pesan = "Admin baru bernama <strong>" . htmlspecialchars($username) . "</strong> berhasil ditambahkan.";
-                $tipe_pesan = "success";
-                $tab = 'admin';
-            }
-        } catch (PDOException $e) {
-            $pesan = "Gagal menambah administrator: " . $e->getMessage();
-            $tipe_pesan = "danger";
-        }
+        $pesan = "Akun berhasil dihapus secara permanen.";
+        $tipe_pesan = "success";
+        // Redirect agar URL bersih
+        header("Location: kelola_user.php?tab=" . $tab . "&msg=del_success");
+        exit;
+    } catch (PDOException $e) {
+        $pesan = "Gagal menghapus data: " . $e->getMessage();
+        $tipe_pesan = "error";
     }
 }
 
-// --- PROSES AKSI: HAPUS USER ---
-if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
-    $id_target = intval($_GET['id']);
-    $type = isset($_GET['type']) ? $_GET['type'] : 'admin';
+// ==========================================
+// 2. PROSES TAMBAH MAHASISWA
+// ==========================================
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah_mahasiswa'])) {
+    $nim      = trim($_POST['nim']);
+    $nama     = trim($_POST['nama']);
+    $prodi    = trim($_POST['prodi']);
+    $email    = trim($_POST['email']);
+    $no_hp    = trim($_POST['no_hp']); 
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
     try {
-        if ($type === 'mahasiswa') {
-            $stmt_del = $pdo->prepare("DELETE FROM mahasiswa WHERE id_mahasiswa = ?");
-            $stmt_del->execute([$id_target]);
-            $pesan = "Data mahasiswa berhasil dihapus permanen.";
-            $tipe_pesan = "success";
-            $tab = 'mahasiswa';
+        // Cek duplikasi NIM atau Email
+        $cek = $pdo->prepare("SELECT * FROM tbmahasiswa WHERE nim = ? OR email = ?");
+        $cek->execute([$nim, $email]);
+        if ($cek->rowCount() > 0) {
+            $pesan = "Gagal! NIM atau Email mahasiswa tersebut sudah terdaftar.";
+            $tipe_pesan = "error";
         } else {
-            // Proteksi agar tidak menghapus akun yang sedang dipakai login
-            if ($id_target == $_SESSION['id_admin'] || $id_target == 1) { // Ganti ke session id_admin kamu
-                $pesan = "Anda tidak dapat menghapus akun administrator utama atau akun sendiri.";
-                $tipe_pesan = "danger";
-            } else {
-                $stmt_del = $pdo->prepare("DELETE FROM administrator WHERE id_admin = ?");
-                $stmt_del->execute([$id_target]);
-                $pesan = "Data administrator berhasil dihapus.";
-                $tipe_pesan = "success";
-            }
-            $tab = 'admin';
+            $stmt = $pdo->prepare("INSERT INTO tbmahasiswa (nim, nama, prodi, email, kontak, password) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$nim, $nama, $prodi, $email, $no_hp, $password]);
+            header("Location: kelola_user.php?tab=mahasiswa&msg=add_success");
+            exit;
         }
     } catch (PDOException $e) {
-        $pesan = "Gagal menghapus data: Data terikat dengan relasi tabel lain.";
-        $tipe_pesan = "danger";
+        // Fallback jika nama tabel database menggunakan 'mahasiswa' dan kolom 'kontak'
+        if (strpos($e->getMessage(), "tbmahasiswa") !== false) {
+            try {
+                $stmt = $pdo->prepare("INSERT INTO mahasiswa (nim, nama, prodi, email, kontak, password) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$nim, $nama, $prodi, $email, $no_hp, $password]);
+                header("Location: kelola_user.php?tab=mahasiswa&msg=add_success");
+                exit;
+            } catch (PDOException $ex) {
+                $pesan = "Gagal menambah mahasiswa: " . $ex->getMessage();
+                $tipe_pesan = "error";
+            }
+        } else {
+            $pesan = "Gagal menambah mahasiswa: " . $e->getMessage();
+            $tipe_pesan = "error";
+        }
     }
 }
 
-// --- AMBIL DATA USER BERDASARKAN TAB YANG AKTIF ---
-$semua_user = [];
+// ==========================================
+// 3. PROSES TAMBAH PENGURUS
+// ==========================================
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah_pengurus'])) {
+    $id_organisasi = $_POST['id_organisasi'];
+    $nama_pengurus = trim($_POST['nama_pengurus']);
+    $jabatan       = trim($_POST['jabatan']);
+    $no_hp         = trim($_POST['no_hp']);
+    $password      = password_hash($_POST['password'], PASSWORD_DEFAULT);
+
+    try {
+        $cek = $pdo->prepare("SELECT * FROM pengurus_organisasi WHERE nama_pengurus = ? AND id_organisasi = ?");
+        $cek->execute([$nama_pengurus, $id_organisasi]);
+        
+        if ($cek->rowCount() > 0) {
+            $pesan = "Gagal! Pengurus dengan nama ini sudah terdaftar di organisasi tersebut.";
+            $tipe_pesan = "error";
+        } else {
+            $sql = "INSERT INTO pengurus_organisasi (id_organisasi, nama_pengurus, jabatan, no_hp, password, status_verifikasi) 
+                    VALUES (?, ?, ?, ?, ?, 'Belum')";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$id_organisasi, $nama_pengurus, $jabatan, $no_hp, $password]);
+            header("Location: kelola_user.php?tab=pengurus&msg=add_success");
+            exit;
+        }
+    } catch (PDOException $e) {
+        $pesan = "Gagal menambah pengurus: " . $e->getMessage();
+        $tipe_pesan = "error";
+    }
+}
+
+// Tangkap Pesan Redirect
+if (isset($_GET['msg'])) {
+    if ($_GET['msg'] == 'del_success') { $pesan = "Akun berhasil dihapus permanen."; $tipe_pesan = "success"; }
+    if ($_GET['msg'] == 'add_success') { $pesan = "Akun pengguna baru berhasil didaftarkan!"; $tipe_pesan = "success"; }
+}
+
+// ==========================================
+// 4. READ DATA ORGANISASI (Untuk Form Pengurus)
+// ==========================================
+$data_organisasi = [];
+try {
+    $data_organisasi = $pdo->query("SELECT id_organisasi, nama_organisasi FROM organisasi ORDER BY nama_organisasi ASC")->fetchAll();
+} catch (PDOException $e) { }
+
+// ==========================================
+// 5. READ DATA MAHASISWA & PENGURUS
+// ==========================================
+$data_mahasiswa = [];
+$data_pengurus = [];
+
 try {
     if ($tab === 'mahasiswa') {
-        $stmt_user = $pdo->query("SELECT id_mahasiswa AS id, nim AS pengenal, nama, email, prodi AS ekstra, is_verified AS status FROM mahasiswa ORDER BY id_mahasiswa DESC");
-        $semua_user = $stmt_user->fetchAll(PDO::FETCH_ASSOC);
-    } else {
-        $stmt_user = $pdo->query("SELECT id_admin AS id, username AS pengenal, nama_lengkap AS nama, no_hp AS email, status_verifikasi AS ekstra, id_akses AS status FROM administrator ORDER BY id_admin DESC");
-        $semua_user = $stmt_user->fetchAll(PDO::FETCH_ASSOC);
+        if (!empty($search)) {
+            $stmt = $pdo->prepare("SELECT * FROM tbmahasiswa WHERE nama LIKE ? OR nim LIKE ? ORDER BY id_mahasiswa DESC");
+            $stmt->execute(["%$search%", "%$search%"]);
+            $data_mahasiswa = $stmt->fetchAll();
+        } else {
+            $data_mahasiswa = $pdo->query("SELECT * FROM tbmahasiswa ORDER BY id_mahasiswa DESC")->fetchAll();
+        }
+    } else if ($tab === 'pengurus') {
+        if (!empty($search)) {
+            $stmt = $pdo->prepare("
+                SELECT p.*, o.nama_organisasi 
+                FROM pengurus_organisasi p 
+                LEFT JOIN organisasi o ON p.id_organisasi = o.id_organisasi 
+                WHERE p.nama_pengurus LIKE ? OR p.id_akses LIKE ? 
+                ORDER BY p.id_pengurus DESC
+            ");
+            $stmt->execute(["%$search%", "%$search%"]);
+            $data_pengurus = $stmt->fetchAll();
+        } else {
+            $data_pengurus = $pdo->query("
+                SELECT p.*, o.nama_organisasi 
+                FROM pengurus_organisasi p 
+                LEFT JOIN organisasi o ON p.id_organisasi = o.id_organisasi 
+                ORDER BY p.id_pengurus DESC
+            ")->fetchAll();
+        }
     }
 } catch (PDOException $e) {
-    die("Gagal mengambil data user: " . $e->getMessage());
+    if (strpos($e->getMessage(), "tbmahasiswa' doesn't exist") !== false) {
+        if (!empty($search)) {
+            $stmt = $pdo->prepare("SELECT * FROM mahasiswa WHERE nama LIKE ? OR nim LIKE ? ORDER BY id_mahasiswa DESC");
+            $stmt->execute(["%$search%", "%$search%"]);
+            $data_mahasiswa = $stmt->fetchAll();
+        } else {
+            $data_mahasiswa = $pdo->query("SELECT * FROM mahasiswa ORDER BY id_mahasiswa DESC")->fetchAll();
+        }
+    } else {
+        $pesan = "Error SQL: " . $e->getMessage();
+        $tipe_pesan = "error";
+    }
 }
 
+// Include Header
 include '../../include/header.php';
 ?>
 
 <style>
-    .user-management-grid {
-        display: grid;
-        grid-template-columns: 1fr 2fr;
-        gap: 2rem;
-        align-items: start;
-        margin-top: 1.5rem; 
-    }
-    .user-management-grid .profil-form {
-        max-width: 100%; 
-        margin: 0; 
-        box-shadow: var(--shadow-sm); 
-        background: #fff;
-        padding: 1.5rem;
-        border-radius: 8px;
-    }
-    .table-responsive-container {
-        width: 100%;
-        overflow-x: auto;
-        border-radius: 8px; 
-        box-shadow: var(--shadow-sm); 
-        background: #fff;
-        padding: 1rem;
-    }
-    .role-badge {
-        display: inline-block;
-        padding: 0.2rem 0.6rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        border-radius: 30px;
-        text-transform: uppercase;
-    }
-    .role-admin { background-color: #fee2e2; color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.15); }
-    .role-mahasiswa { background-color: #dcfce7; color: #16a34a; border: 1px solid rgba(22, 163, 74, 0.15); }
-    .btn-delete { background-color: #dc3545; color: white; padding: 0.3rem 0.6rem; border-radius: 4px; text-decoration: none; font-size: 0.85rem;}
-    .btn-delete:hover { background-color: #b91c1c; }
+    .page-title { margin-bottom: 20px; font-size: 24px; color: #1F3D68; font-family: 'Montserrat', sans-serif; }
+    .alert { padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
+    .alert-success { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .alert-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
     
-    .tab-nav { display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 2px solid #dee2e6; }
-    .tab-link { padding: 0.6rem 1.2rem; text-decoration: none; font-weight: bold; border-radius: 6px 6px 0 0; color: #495057; background: #f8f9fa; }
-    .tab-active { background: #007bff; color: white !important; }
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 30px; border: 1px solid #eee; }
+    .card-header { margin-bottom: 20px; border-bottom: 2px solid #f3f4f6; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+    
+    /* GAYA TAB */
+    .tab-container { display: flex; gap: 10px; }
+    .tab-item { padding: 10px 20px; text-decoration: none; color: #4b5563; font-weight: 600; font-size: 14px; border-radius: 8px; transition: 0.2s; border: 1px solid #e5e7eb; background: #f9fafb; }
+    .tab-item:hover { background-color: #e5e7eb; color: #1F3D68; }
+    .tab-item.active { background-color: #F59E0B; color: white; border-color: #F59E0B; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2); }
 
-    input, select { width: 100%; padding: 0.5rem; margin-bottom: 0.8rem; border: 1px solid #ccc; border-radius: 4px; }
+    /* TOOLBAR KANAN */
+    .toolbar-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .search-box { display: flex; gap: 10px; }
+    .search-input { padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; outline: none; width: 220px; font-family: 'Inter', sans-serif; }
+    .search-input:focus { border-color: #F59E0B; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1); }
+    .btn-search { background: #1F3D68; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+    .btn-search:hover { background: #162c4a; }
+    
+    .btn-add { background: #10b981; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-add:hover { background: #059669; }
+
+    .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+    .data-table th { background: #f9fafb; color: #6b7280; text-transform: uppercase; font-size: 12px; }
+    
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #f3f4f6; color: #374151; }
+    .badge-id { background: #e0e7ff; color: #4338ca; font-family: monospace; border: 1px solid #c7d2fe; }
+    
+    .btn-danger { background: #ef4444; color: #fff; padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+    .btn-danger:hover { background: #dc2626; }
+
+    /* STYLING MODAL (POP-UP) */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: 0.3s ease; }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+    .modal-content { background: white; width: 90%; max-width: 500px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2); transform: translateY(-20px); transition: 0.3s ease; max-height: 90vh; overflow-y: auto; }
+    .modal-overlay.active .modal-content { transform: translateY(0); }
+    .modal-header { background: #f9fafb; padding: 15px 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+    .modal-header h3 { margin: 0; color: #1F3D68; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+    .btn-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #6b7280; transition: 0.2s; }
+    .btn-close:hover { color: #ef4444; }
+    .modal-body { padding: 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 14px; }
+    .form-control { width: 100%; padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 8px; font-family: 'Inter', sans-serif; outline: none; transition: 0.2s; box-sizing: border-box; }
+    .form-control:focus { border-color: #F59E0B; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1); }
+    .btn-submit { background: #1F3D68; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 14px; width: 100%; cursor: pointer; border: none; font-weight: bold; margin-top: 10px;}
+    .btn-submit:hover { background: #162c4a; }
 </style>
 
-<div class="main-container">
-    
-    <h2 style="margin-bottom: 0.25rem;">Kelola Pengguna Sistem</h2>
-    <p style="color: #6c757d; font-size: 0.85rem; margin-bottom: 1.5rem;">
-        Manajemen autentikasi registrasi, konfigurasi akun, dan pemetaan hak akses peran terpisah.
-    </p>
+<div style="padding: 20px;">
+    <h1 class="page-title"><i class="fa-solid fa-users" style="color: #F59E0B;"></i> Kelola Akun Pengguna</h1>
 
-    <?php if (!empty($pesan)): ?>
-        <div style="padding: 1rem; margin-bottom: 1.5rem; border-radius: 8px; background-color: <?= $tipe_pesan === 'success' ? '#d4edda' : '#f8d7da' ?>; color: <?= $tipe_pesan === 'success' ? '#155724' : '#721c24' ?>;">
-            <?= $pesan ?>
+    <?php if ($pesan): ?>
+        <div class="alert <?= $tipe_pesan == 'success' ? 'alert-success' : 'alert-error' ?>">
+            <i class="fa-solid <?= $tipe_pesan == 'success' ? 'fa-circle-check' : 'fa-circle-exclamation' ?>"></i> <?= $pesan ?>
         </div>
     <?php endif; ?>
 
-    <div class="tab-nav">
-        <a href="kelola_user.php?tab=admin" class="tab-link <?= $tab === 'admin' ? 'tab-active' : '' ?>">🛡️ Data Admin</a>
-        <a href="kelola_user.php?tab=mahasiswa" class="tab-link <?= $tab === 'mahasiswa' ? 'tab-active' : '' ?>">🎓 Data Mahasiswa</a>
-    </div>
-
-    <div class="user-management-grid">
-        
-        <div class="profil-form"> 
-            <h3 style="margin-bottom: 0.5rem; font-size: 1.1rem;">Form Input Data</h3>
-            <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 1rem;">
+    <div class="card">
+        <div class="card-header">
+            <div class="tab-container">
+                <a href="?tab=mahasiswa" class="tab-item <?= $tab == 'mahasiswa' ? 'active' : '' ?>">
+                    <i class="fa-solid fa-user-graduate"></i> Akun Mahasiswa
+                </a>
+                <a href="?tab=pengurus" class="tab-item <?= $tab == 'pengurus' ? 'active' : '' ?>">
+                    <i class="fa-solid fa-user-tie"></i> Akun Pengurus Organisasi
+                </a>
+            </div>
             
-            <form action="kelola_user.php?tab=<?= $tab ?>" method="POST">
-                <label for="peran">Pilih Target Tabel Peran</label> 
-                <select id="peran" name="peran" onchange="sesuaikanForm(this.value)" required> 
-                    <option value="admin" <?= $tab === 'admin' ? 'selected' : '' ?>>Administrator Sistem</option>
-                    <option value="mahasiswa" <?= $tab === 'mahasiswa' ? 'selected' : '' ?>>Mahasiswa</option>
-                </select>
+            <div class="toolbar-right">
+                <form action="" method="GET" class="search-box">
+                    <input type="hidden" name="tab" value="<?= $tab ?>">
+                    <input type="text" name="search" class="search-input" placeholder="Cari nama atau NIM/ID..." value="<?= htmlspecialchars($search) ?>">
+                    <button type="submit" class="btn-search"><i class="fa-solid fa-search"></i></button>
+                </form>
 
-                <label id="label_pengenal" for="username">Username / NIM</label> 
-                <input type="text" id="username" name="username" required> 
-
-                <label for="nama_lengkap">Nama Lengkap</label> 
-                <input type="text" id="nama_lengkap" name="nama_lengkap" required> 
-                
-                <label for="email">Alamat Email</label> 
-                <input type="email" id="email" name="email" required> 
-                
-                <label for="password">Kata Sandi</label> 
-                <input type="password" id="password" name="password" required> 
-
-                <div id="field_mahasiswa" style="display: <?= $tab === 'mahasiswa' ? 'block' : 'none' ?>;">
-                    <label for="prodi">Program Studi</label> 
-                    <input type="text" id="prodi" name="prodi"> 
-                </div>
-
-                <label for="kontak">No. HP / Kontak</label> 
-                <input type="text" id="kontak" name="kontak" required> 
-                
-                <button type="submit" name="tambah_user" style="background: #007bff; color:white; border:none; padding:0.7rem; width:100%; border-radius:5px; cursor:pointer; font-weight:bold;"> 
-                    Simpan Data Akun
-                </button>
-            </form>
+                <?php if ($tab === 'mahasiswa'): ?>
+                    <button type="button" class="btn-add" onclick="bukaModal('modalTambahMahasiswa')">
+                        <i class="fa-solid fa-plus"></i> Tambah Mahasiswa
+                    </button>
+                <?php elseif ($tab === 'pengurus'): ?>
+                    <button type="button" class="btn-add" onclick="bukaModal('modalTambahPengurus')">
+                        <i class="fa-solid fa-plus"></i> Tambah Pengurus
+                    </button>
+                <?php endif; ?>
+            </div>
         </div>
 
-        <div class="table-responsive-container">
-            <table style="width: 100%; border-collapse: collapse; text-align: left;"> 
-                <thead>
-                    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                        <th style="padding:0.5rem;">No</th>
-                        <th style="padding:0.5rem;"><?= $tab === 'mahasiswa' ? 'NIM / Nama' : 'Username / Nama' ?></th>
-                        <th style="padding:0.5rem;"><?= $tab === 'mahasiswa' ? 'Email' : 'No. HP' ?></th>
-                        <th style="padding:0.5rem;"><?= $tab === 'mahasiswa' ? 'Prodi' : 'Status' ?></th>
-                        <th style="padding:0.5rem; text-align: center;">Tindakan</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (count($semua_user) > 0): ?>
-                        <?php $no = 1; foreach ($semua_user as $user): ?>
-                            <tr style="border-bottom: 1px solid #eee;">
-                                <td style="padding:0.7rem 0.5rem;"><?= $no++ ?></td>
-                                <td style="padding:0.7rem 0.5rem;">
-                                    <strong><?= htmlspecialchars($user['pengenal']) ?></strong><br>
-                                    <small style="color:#6c757d;"><?= htmlspecialchars($user['nama']) ?></small>
+        <div style="overflow-x: auto;">
+            <table class="data-table">
+                <?php if ($tab === 'mahasiswa'): ?>
+                    <thead>
+                        <tr>
+                            <th>NIM</th>
+                            <th>Nama Mahasiswa</th>
+                            <th>Program Studi</th>
+                            <th>Email & Kontak</th>
+                            <th style="text-align: center;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($data_mahasiswa)): ?>
+                            <tr><td colspan="5" style="text-align: center; color: #9ca3af; padding: 20px;">Tidak ada data mahasiswa ditemukan.</td></tr>
+                        <?php else: ?>
+                            <?php foreach($data_mahasiswa as $mhs): ?>
+                            <tr>
+                                <td style="font-weight: bold;"><?= htmlspecialchars($mhs['nim']) ?></td>
+                                <td style="color: #1F3D68; font-weight: 600;"><?= htmlspecialchars($mhs['nama'] ?? $mhs['nama_mahasiswa'] ?? '-') ?></td>
+                                <td><span class="badge"><?= htmlspecialchars($mhs['prodi'] ?? '-') ?></span></td>
+                                <td>
+                                    <div style="font-size: 13px;"><i class="fa-solid fa-envelope" style="color:#9ca3af;"></i> <?= htmlspecialchars($mhs['email'] ?? '-') ?></div>
+                                    <div style="font-size: 13px; margin-top: 4px;"><i class="fa-solid fa-phone" style="color:#9ca3af;"></i> <?= htmlspecialchars($mhs['kontak'] ?? $mhs['no_hp'] ?? '-') ?></div>
                                 </td>
-                                <td style="padding:0.7rem 0.5rem;"><?= htmlspecialchars($user['email'] ?: '-') ?></td>
-                                <td style="padding:0.7rem 0.5rem;">
-                                    <span class="role-badge <?= $tab === 'mahasiswa' ? 'role-mahasiswa' : 'role-admin' ?>">
-                                        <?= htmlspecialchars($user['ekstra'] ?: 'Aktif') ?>
-                                    </span>
-                                </td>
-                                <td style="text-align: center; padding:0.7rem 0.5rem;">
-                                    <a href="kelola_user.php?id=<?= $user['id'] ?>&action=delete&type=<?= $tab ?>" 
-                                       class="btn-delete" 
-                                       onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?');"> 
-                                        Hapus
-                                    </a>
+                                <td style="text-align: center;">
+                                    <form action="" method="POST" onsubmit="return confirm('Hapus akun Mahasiswa <?= htmlspecialchars($mhs['nama'] ?? $mhs['nama_mahasiswa'] ?? '') ?>?');">
+                                        <input type="hidden" name="id_target" value="<?= $mhs['id_mahasiswa'] ?>">
+                                        <input type="hidden" name="jenis_user" value="mahasiswa">
+                                        <button type="submit" name="hapus_user" class="btn-danger"><i class="fa-solid fa-trash"></i> Hapus</button>
+                                    </form>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+
+                <?php elseif ($tab === 'pengurus'): ?>
+                    <thead>
                         <tr>
-                            <td colspan="5" style="text-align: center; color: #6c757d; padding: 3rem 0;">
-                                📭 Tidak ditemukan data di dalam kategori ini.
-                            </td>
+                            <th>ID Akses</th>
+                            <th>Nama Pengurus</th>
+                            <th>Organisasi & Jabatan</th>
+                            <th>Kontak WA</th>
+                            <th style="text-align: center;">Aksi</th>
                         </tr>
-                    <?php endif; ?>
-                </tbody>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($data_pengurus)): ?>
+                            <tr><td colspan="5" style="text-align: center; color: #9ca3af; padding: 20px;">Tidak ada data pengurus ditemukan.</td></tr>
+                        <?php else: ?>
+                            <?php foreach($data_pengurus as $pg): ?>
+                            <tr>
+                                <td>
+                                    <?php if(!empty($pg['id_akses'])): ?>
+                                        <span class="badge badge-id"><?= htmlspecialchars($pg['id_akses']) ?></span>
+                                    <?php else: ?>
+                                        <span style="color: #ef4444; font-size: 12px;">Belum Verifikasi</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="color: #1F3D68; font-weight: 600;"><?= htmlspecialchars($pg['nama_pengurus']) ?></td>
+                                <td>
+                                    <div><span class="badge" style="background:#fef3c7; color:#d97706;"><?= htmlspecialchars($pg['nama_organisasi'] ?? '-') ?></span></div>
+                                    <div style="font-size: 13px; margin-top: 4px; color: #4b5563;"><i class="fa-solid fa-sitemap"></i> <?= htmlspecialchars($pg['jabatan']) ?></div>
+                                </td>
+                                <td><div style="font-size: 13px;"><i class="fa-solid fa-phone" style="color:#9ca3af;"></i> <?= htmlspecialchars($pg['no_hp'] ?? '-') ?></div></td>
+                                <td style="text-align: center;">
+                                    <form action="" method="POST" onsubmit="return confirm('Hapus akun Pengurus <?= htmlspecialchars($pg['nama_pengurus']) ?>?');">
+                                        <input type="hidden" name="id_target" value="<?= $pg['id_pengurus'] ?>">
+                                        <input type="hidden" name="jenis_user" value="pengurus">
+                                        <button type="submit" name="hapus_user" class="btn-danger"><i class="fa-solid fa-trash"></i> Hapus</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                <?php endif; ?>
             </table>
         </div>
+    </div>
+</div>
 
+<div id="modalTambahMahasiswa" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-user-graduate" style="color: #10b981;"></i> Tambah Akun Mahasiswa</h3>
+            <button class="btn-close" onclick="tutupModal('modalTambahMahasiswa')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <form action="" method="POST">
+                <div class="form-group">
+                    <label>NIM Mahasiswa</label>
+                    <input type="text" name="nim" class="form-control" placeholder="Masukkan NIM..." required>
+                </div>
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" name="nama" class="form-control" placeholder="Masukkan nama mahasiswa..." required>
+                </div>
+                <div class="form-group">
+                    <label>Program Studi</label>
+                    <input type="text" name="prodi" class="form-control" placeholder="Contoh: Sistem Informasi" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" class="form-control" placeholder="email@contoh.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nomor HP / WA</label>
+                        <input type="number" name="no_hp" class="form-control" placeholder="08xxxxxxxx">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Password Login</label>
+                    <input type="password" name="password" class="form-control" placeholder="Buat password akun..." required>
+                </div>
+                <button type="submit" name="tambah_mahasiswa" class="btn-submit">Simpan Mahasiswa</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modalTambahPengurus" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-user-tie" style="color: #10b981;"></i> Tambah Akun Pengurus</h3>
+            <button class="btn-close" onclick="tutupModal('modalTambahPengurus')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <form action="" method="POST">
+                <div class="form-group">
+                    <label>Organisasi</label>
+                    <select name="id_organisasi" class="form-control" required>
+                        <option value="">-- Pilih Organisasi --</option>
+                        <?php foreach($data_organisasi as $org): ?>
+                            <option value="<?= $org['id_organisasi'] ?>"><?= htmlspecialchars($org['nama_organisasi']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nama Pengurus</label>
+                    <input type="text" name="nama_pengurus" class="form-control" placeholder="Masukkan nama pengurus..." required>
+                </div>
+                <div class="form-group">
+                    <label>Jabatan</label>
+                    <input type="text" name="jabatan" class="form-control" placeholder="Contoh: Ketua Umum, Anggota" required>
+                </div>
+                <div class="form-group">
+                    <label>Nomor WhatsApp</label>
+                    <input type="number" name="no_hp" class="form-control" placeholder="08xxxxxxxx" required>
+                </div>
+                <div class="form-group">
+                    <label>Password Login</label>
+                    <input type="password" name="password" class="form-control" placeholder="Buat password login pengurus..." required>
+                </div>
+                <button type="submit" name="tambah_pengurus" class="btn-submit">Simpan Pengurus</button>
+            </form>
+        </div>
     </div>
 </div>
 
 <script>
-function sesuaikanForm(val) {
-    var fieldMhs = document.getElementById('field_mahasiswa');
-    var labelPengenal = document.getElementById('label_pengenal');
-    if(val === 'mahasiswa') {
-        fieldMhs.style.display = 'block';
-        labelPengenal.innerText = 'NIM (Nomor Induk Mahasiswa)';
-    } else {
-        fieldMhs.style.display = 'none';
-        labelPengenal.innerText = 'Username Administrator';
+    // Membuka modal sesuai ID
+    function bukaModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
     }
-}
-// Jalankan fungsi saat halaman pertama kali dimuat untuk sinkronisasi awal
-sesuaikanForm(document.getElementById('peran').value);
+
+    // Menutup modal sesuai ID
+    function tutupModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    // Menutup modal jika user mengklik area abu-abu (overlay)
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.classList.remove('active');
+        }
+    }
+
+    // Pertahankan posisi scroll setelah halaman refresh / submit data
+    document.addEventListener("DOMContentLoaded", function() {
+        if (sessionStorage.getItem("scrollPositionUser") !== null) {
+            window.scrollTo({
+                top: sessionStorage.getItem("scrollPositionUser"),
+                behavior: "instant"
+            });
+        }
+    });
+
+    window.addEventListener("beforeunload", function() {
+        sessionStorage.setItem("scrollPositionUser", window.scrollY);
+    });
 </script>
 
 <?php include '../../include/footer.php'; ?>

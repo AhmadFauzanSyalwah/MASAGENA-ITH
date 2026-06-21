@@ -542,7 +542,7 @@ try {
             <?php endif; ?>
 
             <?php if ($tab === 'dashboard'): ?>
-                <div class="mb-8"><h1 class="text-3xl font-extrabold text-gray-800">God-Mode Dashboard</h1></div>
+                <div class="mb-8"><h1 class="text-3xl font-extrabold text-gray-800">SuperAdmin Dashboard</h1></div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     <div class="bg-white p-5 rounded-2xl shadow border flex items-center justify-between">
                         <div><p class="text-[10px] font-bold text-gray-400">MAHASISWA</p><h3 class="text-2xl font-black mt-1"><?= $counts['mahasiswa'] ?></h3></div>

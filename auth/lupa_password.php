@@ -1,7 +1,6 @@
 <?php
 session_start();
-require_once '../../config/session_check.php';
-require_once '../../config/database.php';
+require_once '../config/database.php';
 
 // Fungsi Kirim WA via Fonnte
 function kirimWA($nomor_hp, $pesan) {
@@ -49,29 +48,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['request_otp'])) {
         $user = $stmt->fetch();
 
     } elseif ($role == 'pengurus') {
-        // Pengurus: Cek berdasarkan ID Akses
-        $stmt = $pdo->prepare("SELECT id_pengurus as id, no_hp as kontak, nama FROM pengurus_organisasi WHERE id_akses = ?");
-        $stmt->execute([$identifier]);
+        // Pengurus: Cek berdasarkan Nama Pengurus atau ID Akses
+        $stmt = $pdo->prepare("SELECT id_pengurus as id, no_hp as kontak, nama_pengurus as nama FROM pengurus_organisasi WHERE nama_pengurus = ? OR id_akses = ?");
+        $stmt->execute([$identifier, $identifier]);
         $user = $stmt->fetch();
 
     } elseif ($role == 'admin') {
-        // Admin: Cek berdasarkan ID Akses
-        $stmt = $pdo->prepare("SELECT id_admin as id, no_hp as kontak, nama_lengkap as nama FROM administrator WHERE id_akses = ?");
-        $stmt->execute([$identifier]);
+        // Admin: Cek berdasarkan Username atau ID Akses
+        $stmt = $pdo->prepare("SELECT id_admin as id, no_hp as kontak, nama_lengkap as nama FROM administrator WHERE username = ? OR id_akses = ?");
+        $stmt->execute([$identifier, $identifier]);
         $user = $stmt->fetch();
     }
 
     if ($user) {
         $otp = rand(100000, 999999);
         $expires = date("Y-m-d H:i:s", strtotime('+15 minutes'));
-    if ($role == 'mahasiswa') {
-        $update = $pdo->prepare("UPDATE tbmahasiswa SET reset_token = ?, reset_expires = ? WHERE id_mahasiswa = ?");
-    } elseif ($role == 'pengurus') {
-        $update = $pdo->prepare("UPDATE pengurus_organisasi SET reset_token = ?, reset_expires = ? WHERE id_pengurus = ?");
-    } else {
-        $update = $pdo->prepare("UPDATE administrator SET reset_token = ?, reset_expires = ? WHERE id_admin = ?");
-    }
-    $update->execute([$otp, $expires, $user['id']]);
+        
+        if ($role == 'mahasiswa') {
+            $update = $pdo->prepare("UPDATE tbmahasiswa SET reset_token = ?, reset_expires = ? WHERE id_mahasiswa = ?");
+        } elseif ($role == 'pengurus') {
+            $update = $pdo->prepare("UPDATE pengurus_organisasi SET reset_token = ?, reset_expires = ? WHERE id_pengurus = ?");
+        } else {
+            $update = $pdo->prepare("UPDATE administrator SET reset_token = ?, reset_expires = ? WHERE id_admin = ?");
+        }
+        $update->execute([$otp, $expires, $user['id']]);
         
         // Simpan data reset ke Session sementara
         $_SESSION['reset_otp'] = $otp;
@@ -95,7 +95,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['request_otp'])) {
                 $mail->Port       = 587;
 
                 $mail->setFrom('adminmasagena@gmail.com', 'Admin Masagena ITH');
-                $mail->addAddress($user['kontak'], $user['nama']);
+                
+                // PERBAIKAN DI SINI: Menggunakan email untuk mahasiswa, bukan kontak
+                $mail->addAddress($user['email'], $user['nama']);
+                
                 $mail->isHTML(true);
                 $mail->Subject = 'Kode OTP Reset Password - MASAGENA ITH';
                 $mail->Body    = "Halo <b>{$user['nama']}</b>,<br>Kode OTP untuk melakukan reset password Anda adalah: <h2 style='color:blue;'>{$otp}</h2>Jangan bagikan kode ini kepada siapapun.";

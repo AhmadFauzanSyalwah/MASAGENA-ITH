@@ -13,10 +13,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $identifier = trim($_POST['identifier']); 
         $password = trim($_POST['password']);
 
-        if (!empty($identifier) && !empty($password)) {
-            $sql = "SELECT * FROM tbmahasiswa WHERE email = :email OR nim = :nim";
+        // Menambahkan pencarian berdasarkan 'nama'
+            $sql = "SELECT * FROM tbmahasiswa WHERE email = :email OR nim = :nim OR nama = :nama";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([':email' => $identifier,':nim'   => $identifier]);
+            $stmt->execute([
+                ':email' => $identifier,
+                ':nim'   => $identifier,
+                ':nama'  => $identifier
+            ]);
             $user = $stmt->fetch();
 
             // Jika User ditemukan dan password benar
@@ -140,7 +144,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $error = "ID Akses verifikasi wajib diisi!";
         }
     }
-}
 ?>
 
 <!DOCTYPE html>
@@ -198,7 +201,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                 <i class="fa-regular fa-user text-gray-500"></i>
                             </div>
-                            <input type="text" name="identifier" required placeholder="Nama Lengkap / No HP Pengurus" class="w-full pl-11 pr-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-[#1F3D68] text-sm font-semibold text-gray-700 placeholder-gray-500 transition">
+                            <input type="text" name="identifier" required placeholder="Nama Lengkap" class="w-full pl-11 pr-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-[#1F3D68] text-sm font-semibold text-gray-700 placeholder-gray-500 transition">
                         </div>
 
                         <div class="relative">

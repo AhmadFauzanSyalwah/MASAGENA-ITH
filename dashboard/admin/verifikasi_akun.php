@@ -1,154 +1,259 @@
 <?php
-require_once '../../config/session_check.php';
+session_start();
+// Pastikan path ke database sesuai dengan struktur folder Anda
 require_once '../../config/database.php';
 
-if ($_SESSION['peran'] != 'admin') {
-    header("Location: ../" . $_SESSION['peran'] . "/index.php");
-    exit();
+// Proteksi Halaman: Pastikan yang mengakses adalah Admin
+if (!isset($_SESSION['peran']) || $_SESSION['peran'] !== 'admin') {
+    echo "<script>alert('Anda tidak memiliki akses ke halaman ini!'); window.location.href='../../auth/login.php';</script>";
+    exit;
 }
 
-// Menentukan tab aktif (default: admin)
-$tab = isset($_GET['tab']) ? $_GET['tab'] : 'admin';
-$search = isset($_GET['search']) ? trim($_GET['search']) : '';
-$message = isset($_GET['msg']) ? $_GET['msg'] : '';
-$status = isset($_GET['status']) ? $_GET['status'] : '';
+$pesan = "";
+$tipe_pesan = "";
 
-$list_data = [];
+// =========================================================================
+// 1. FUNGSI GATEWAY WHATSAPP (FONNTE) - Diadopsi dari Superadmin
+// =========================================================================
+function kirimWA($nomor_hp, $pesan) {
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+      CURLOPT_URL => 'https://api.fonnte.com/send',
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+      CURLOPT_CUSTOMREQUEST => 'POST',
+      CURLOPT_POSTFIELDS => array(
+        'target' => $nomor_hp,
+        'message' => $pesan,
+        'countryCode' => '62',
+      ),
+      CURLOPT_HTTPHEADER => array(
+        'Authorization: KjgzbjYq9r4TE32YtJvY' // Token Fonnte Anda
+      ),
+    ));
+    $response = curl_exec($curl);
+    curl_close($curl);
+    return $response;
+}
+
+// ==========================================
+// 2. PROSES VERIFIKASI AKUN & KIRIM WA
+// ==========================================
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['verifikasi_pengurus'])) {
+    $id_pengurus_verif = $_POST['id_pengurus'];
+    
+    try {
+        // Ambil data pengurus sekaligus nama organisasinya
+        $stmt_cek = $pdo->prepare("
+            SELECT p.*, o.nama_organisasi 
+            FROM pengurus_organisasi p 
+            LEFT JOIN organisasi o ON p.id_organisasi = o.id_organisasi 
+            WHERE p.id_pengurus = ?
+        ");
+        $stmt_cek->execute([$id_pengurus_verif]);
+        $pengurus_data = $stmt_cek->fetch();
+
+        if ($pengurus_data) {
+            // Cek jika nomor HP kosong, batalkan proses verifikasi
+            if (empty($pengurus_data['no_hp'])) {
+                $pesan = "Gagal! Nomor HP Pengurus belum diisi. Harap lengkapi di menu Manajemen Pengurus agar WA bisa dikirim.";
+                $tipe_pesan = "error";
+            } else {
+                // Generate ID Akses Baru (Format: PGR-Tahun-4Digit)
+                $id_akses_baru = "PGR-" . date("Y") . "-" . rand(1000, 9999);
+                
+                // Update Database
+                $stmt = $pdo->prepare("UPDATE pengurus_organisasi SET id_akses = ?, status_verifikasi = 'Terverifikasi' WHERE id_pengurus = ?");
+                
+                if($stmt->execute([$id_akses_baru, $id_pengurus_verif])) {
+                    // Pesan WhatsApp yang akan dikirim
+                    // Pesan WhatsApp yang akan dikirim
+                $pesan_wa = "🔑 VERIFIKASI AKUN PENGURUS ORGANISASI\n\n"
+                        . "Halo " . $pengurus_data['nama_pengurus'] . ",\n"
+                        . "Akun Pengurus Organisasi Anda telah diverifikasi oleh Superadmin.\n\n"
+                        . "Berikut adalah ID AKSES login Anda:\n"
+                        . "👉 [" . $id_akses_baru . "]\n\n"
+                        . "Jaga kerahasiaan kode ini";
+                    
+                    // Eksekusi pengiriman WA
+                    kirimWA($pengurus_data['no_hp'], $pesan_wa);
+                    
+                    $pesan = "Pengurus Organisasi berhasil diverifikasi! ID Akses [" . $id_akses_baru . "] telah dikirim via WhatsApp.";
+                    $tipe_pesan = "success";
+                }
+            }
+        }
+    } catch (PDOException $e) {
+        $pesan = "Terjadi kesalahan: " . $e->getMessage();
+        $tipe_pesan = "error";
+    }
+}
+
+// ==========================================
+// 3. READ DATA PENGURUS (DENGAN PENCARIAN)
+// ==========================================
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$data_pengurus = [];
 
 try {
-    if ($tab === 'mahasiswa') {
-        // AMBIL DATA DARI TABEL MAHASISWA
-        if (!empty($search)) {
-            $stmt = $pdo->prepare("SELECT id_mahasiswa, nim, nama, email, prodi, kontak, is_verified FROM mahasiswa WHERE nama LIKE ? OR nim LIKE ? ORDER BY id_mahasiswa DESC");
-            $stmt->execute(["%$search%", "%$search%"]);
-        } else {
-            $stmt = $pdo->query("SELECT id_mahasiswa, nim, nama, email, prodi, kontak, is_verified FROM mahasiswa ORDER BY id_mahasiswa DESC");
-        }
-        $list_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (!empty($search)) {
+        // Mode Pencarian
+        $query = "
+            SELECT p.*, o.nama_organisasi 
+            FROM pengurus_organisasi p 
+            LEFT JOIN organisasi o ON p.id_organisasi = o.id_organisasi 
+            WHERE p.nama_pengurus LIKE :search OR p.id_akses LIKE :search OR o.nama_organisasi LIKE :search
+            ORDER BY p.id_pengurus DESC
+        ";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([':search' => "%$search%"]);
+        $data_pengurus = $stmt->fetchAll() ?: [];
     } else {
-        // AMBIL DATA DARI TABEL ADMINISTRATOR
-        if (!empty($search)) {
-            $stmt = $pdo->prepare("SELECT id_admin, username, nama_lengkap, no_hp, status_verifikasi FROM administrator WHERE nama_lengkap LIKE ? OR username LIKE ? ORDER BY id_admin DESC");
-            $stmt->execute(["%$search%", "%$search%"]);
-        } else {
-            $stmt = $pdo->query("SELECT id_admin, username, nama_lengkap, no_hp, status_verifikasi FROM administrator ORDER BY id_admin DESC");
-        }
-        $list_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Mode Tampil Semua
+        $query = "
+            SELECT p.*, o.nama_organisasi 
+            FROM pengurus_organisasi p 
+            LEFT JOIN organisasi o ON p.id_organisasi = o.id_organisasi 
+            ORDER BY p.status_verifikasi ASC, p.id_pengurus DESC
+        ";
+        $data_pengurus = $pdo->query($query)->fetchAll() ?: [];
     }
 } catch (PDOException $e) {
-    die("Gagal mengambil data database: " . $e->getMessage());
+    die("Error SQL: " . $e->getMessage());
 }
 
+// Include Header
 include '../../include/header.php';
 ?>
 
-<div class="container" style="padding: 2rem; background: white; border-radius: 12px; margin-top: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+<style>
+    .page-title { margin-bottom: 20px; font-size: 24px; color: #1F3D68; font-family: 'Montserrat', sans-serif; }
+    .alert { padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
+    .alert-success { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .alert-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
     
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
-        <div>
-            <h2 style="margin: 0;">👥 Manajemen Data Pengguna</h2>
-            <p style="margin: 0.5rem 0 0 0; color: #6c757d;">Kelola semua data pengguna berdasarkan kategori peran masing-masing.</p>
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 30px; border: 1px solid #eee; }
+    .card-header { margin-bottom: 20px; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+    .card-header h3 { font-size: 18px; color: #1F3D68; display: flex; align-items: center; gap: 8px; margin: 0; }
+    
+    /* Search Box Styles */
+    .search-box { display: flex; gap: 10px; }
+    .search-input { padding: 8px 15px; border: 1px solid #d1d5db; border-radius: 8px; outline: none; width: 250px; font-family: 'Inter', sans-serif; }
+    .search-input:focus { border-color: #F59E0B; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1); }
+    .btn-search { background: #1F3D68; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+    .btn-search:hover { background: #162c4a; }
+    .btn-reset { background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; padding: 8px 15px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 13px; display: flex; align-items: center;}
+    
+    .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+    .data-table th { background: #f9fafb; color: #6b7280; text-transform: uppercase; font-size: 12px; }
+    
+    /* Badge Status */
+    .badge-status { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; text-align: center; }
+    .status-verified { background: #d1fae5; color: #065f46; }
+    .status-unverified { background: #fee2e2; color: #991b1b; }
+    .badge-id { background: #f3f4f6; color: #1F3D68; padding: 4px 8px; border-radius: 6px; font-family: monospace; font-weight: bold; border: 1px solid #e5e7eb; }
+    
+    /* Tombol Aksi */
+    .btn { padding: 8px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; }
+    .btn-success { background: #10b981; color: #fff; }
+    .btn-success:hover { background: #059669; }
+    .btn-disabled { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
+</style>
+
+<div style="padding: 20px;">
+    <h1 class="page-title"><i class="fa-solid fa-user-check" style="color: #F59E0B;"></i> Verifikasi Akun Pengurus</h1>
+
+    <?php if ($pesan): ?>
+        <div class="alert <?= $tipe_pesan == 'success' ? 'alert-success' : 'alert-error' ?>">
+            <i class="fa-solid <?= $tipe_pesan == 'success' ? 'fa-circle-check' : 'fa-circle-exclamation' ?>"></i> <?= $pesan ?>
         </div>
-    </div>
+    <?php endif; ?>
 
-    <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid #dee2e6; padding-bottom: 1px;">
-        <a href="kelola_user.php?tab=admin" style="padding: 0.6rem 1.2rem; text-decoration: none; font-weight: bold; border-radius: 6px 6px 0 0; <?= $tab === 'admin' ? 'background: #007bff; color: white;' : 'color: #495057; background: #f8f9fa;' ?>">
-            🛡️ Admin / Administrator
-        </a>
-        <a href="kelola_user.php?tab=mahasiswa" style="padding: 0.6rem 1.2rem; text-decoration: none; font-weight: bold; border-radius: 6px 6px 0 0; <?= $tab === 'mahasiswa' ? 'background: #007bff; color: white;' : 'color: #495057; background: #f8f9fa;' ?>">
-            🎓 Mahasiswa
-        </a>
-    </div>
-
-    <form method="GET" action="" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
-        <input type="hidden" name="tab" value="<?= htmlspecialchars($tab) ?>">
-        <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="<?= $tab === 'mahasiswa' ? 'Cari NIM atau Nama Mahasiswa...' : 'Cari Username atau Nama Admin...' ?>" style="flex: 1; padding: 0.6rem 1rem; border: 1px solid #ced4da; border-radius: 6px;">
-        <button type="submit" style="background: #6c757d; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer;">Cari</button>
-        <?php if (!empty($search)): ?>
-            <a href="kelola_user.php?tab=<?= $tab ?>" style="background: #e2e3e5; color: #383d41; padding: 0.6rem 1.2rem; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center;">Reset</a>
-        <?php endif; ?>
-    </form>
-
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-list-check"></i> Daftar Antrean Verifikasi</h3>
             
-            <?php if ($tab === 'mahasiswa'): ?>
+            <form action="" method="GET" class="search-box">
+                <input type="text" name="search" class="search-input" placeholder="Cari Nama / ID Akses..." value="<?= htmlspecialchars($search) ?>">
+                <button type="submit" class="btn-search"><i class="fa-solid fa-search"></i> Cari</button>
+                <?php if (!empty($search)): ?>
+                    <a href="verifikasi_akun.php" class="btn-reset">Reset</a>
+                <?php endif; ?>
+            </form>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="data-table">
                 <thead>
-                    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                        <th style="padding: 0.75rem;">NIM</th>
-                        <th style="padding: 0.75rem;">Nama</th>
-                        <th style="padding: 0.75rem;">Email</th>
-                        <th style="padding: 0.75rem;">Prodi</th>
-                        <th style="padding: 0.75rem;">Kontak</th>
-                        <th style="padding: 0.75rem;">Status</th>
-                        <th style="padding: 0.75rem; text-align: center;">Aksi</th>
+                    <tr>
+                        <th>Nama Pengurus</th>
+                        <th>Organisasi</th>
+                        <th>Kontak WA</th>
+                        <th>Status</th>
+                        <th>ID Akses (Login)</th>
+                        <th style="text-align: center;">Aksi Verifikasi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (count($list_data) > 0): ?>
-                        <?php foreach ($list_data as $mhs): ?>
-                            <tr style="border-bottom: 1px solid #dee2e6;">
-                                <td style="padding: 0.75rem;"><?= htmlspecialchars($mhs['nim']) ?></td>
-                                <td style="padding: 0.75rem;"><strong><?= htmlspecialchars($mhs['nama']) ?></strong></td>
-                                <td style="padding: 0.75rem;"><?= htmlspecialchars($mhs['email']) ?></td>
-                                <td style="padding: 0.75rem;"><?= htmlspecialchars($mhs['prodi'] ?: '-') ?></td>
-                                <td style="padding: 0.75rem;"><?= htmlspecialchars($mhs['kontak'] ?: '-') ?></td>
-                                <td style="padding: 0.75rem;">
-                                    <span style="background: <?= $mhs['is_verified'] == 1 ? '#d4edda' : '#fff3cd' ?>; color: <?= $mhs['is_verified'] == 1 ? '#155724' : '#856404' ?>; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">
-                                        <?= $mhs['is_verified'] == 1 ? 'Aktif' : 'Pending' ?>
-                                    </span>
-                                </td>
-                                <td style="padding: 0.75rem; text-align: center; white-space: nowrap;">
-                                    <a href="edit_mahasiswa.php?id=<?= $mhs['id_mahasiswa'] ?>" style="background: #ffc107; color: black; padding: 0.3rem 0.6rem; border-radius: 4px; text-decoration: none; font-size: 0.85rem; margin-right: 0.3rem;">Edit</a>
-                                    <a href="hapus_mahasiswa.php?id=<?= $mhs['id_mahasiswa'] ?>" style="background: #dc3545; color: white; padding: 0.3rem 0.6rem; border-radius: 4px; text-decoration: none; font-size: 0.85rem;" onclick="return confirm('Hapus mahasiswa <?= htmlspecialchars($mhs['nama']) ?>?')">Hapus</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
+                    <?php if (empty($data_pengurus)): ?>
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: #6b7280; padding: 30px 0;">
+                                📭 Tidak ditemukan data pengurus yang sesuai.
+                            </td>
+                        </tr>
                     <?php else: ?>
-                        <tr><td colspan="7" style="padding: 2rem; text-align: center; color: #6c757d;">Data mahasiswa tidak ditemukan.</td></tr>
+                        <?php foreach($data_pengurus as $pg): ?>
+                            <?php 
+                                $status_teks = strtolower(htmlspecialchars($pg['status_verifikasi']));
+                                $is_verified = ($status_teks === 'sudah' || $status_teks === 'terverifikasi');
+                            ?>
+                        <tr>
+                            <td style="font-weight: bold; color: #1F3D68;"><?= htmlspecialchars($pg['nama_pengurus']) ?></td>
+                            <td><?= htmlspecialchars($pg['nama_organisasi'] ?? '-') ?></td>
+                            <td>
+                                <?php if (!empty($pg['no_hp'])): ?>
+                                    <i class="fa-brands fa-whatsapp" style="color: #25D366;"></i> <?= htmlspecialchars($pg['no_hp']) ?>
+                                <?php else: ?>
+                                    <span style="color: #ef4444; font-size: 12px;">Belum Diisi</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <span class="badge-status <?= $is_verified ? 'status-verified' : 'status-unverified' ?>">
+                                    <?= $is_verified ? '<i class="fa-solid fa-check-circle"></i> Terverifikasi' : '<i class="fa-solid fa-clock"></i> Belum Verifikasi' ?>
+                                </span>
+                            </td>
+                            <td>
+                                <?php if ($is_verified && !empty($pg['id_akses'])): ?>
+                                    <span class="badge-id"><?= htmlspecialchars($pg['id_akses']) ?></span>
+                                <?php else: ?>
+                                    <span style="color: #9ca3af; font-size: 12px; font-style: italic;">Menunggu Verifikasi</span>
+                                <?php endif; ?>
+                            </td>
+                            <td style="text-align: center;">
+                                <?php if (!$is_verified): ?>
+                                    <form action="" method="POST" onsubmit="return confirm('Verifikasi akun <?= htmlspecialchars($pg['nama_pengurus']) ?>? Sistem akan otomatis mengirimkan ID Akses login ke WhatsApp mereka.');">
+                                        <input type="hidden" name="id_pengurus" value="<?= $pg['id_pengurus'] ?>">
+                                        <button type="submit" name="verifikasi_pengurus" class="btn btn-success">
+                                            <i class="fa-solid fa-paper-plane"></i> Verifikasi & Kirim WA
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <button class="btn btn-disabled" disabled>
+                                        <i class="fa-solid fa-check"></i> Selesai
+                                    </button>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>
-
-            <?php else: ?>
-                <thead>
-                    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
-                        <th style="padding: 0.75rem;">Nama Lengkap</th>
-                        <th style="padding: 0.75rem;">Username</th>
-                        <th style="padding: 0.75rem;">No. HP</th>
-                        <th style="padding: 0.75rem;">Status</th>
-                        <th style="padding: 0.75rem; text-align: center;">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (count($list_data) > 0): ?>
-                        <?php foreach ($list_data as $admin): ?>
-                            <tr style="border-bottom: 1px solid #dee2e6;">
-                                <td style="padding: 0.75rem;"><strong><?= htmlspecialchars($admin['nama_lengkap']) ?></strong></td>
-                                <td style="padding: 0.75rem;"><?= htmlspecialchars($admin['username']) ?></td>
-                                <td style="padding: 0.75rem;"><?= htmlspecialchars($admin['no_hp'] ?: '-') ?></td>
-                                <td style="padding: 0.75rem;">
-                                    <span style="background: #d4edda; color: #155724; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">
-                                        <?= htmlspecialchars($admin['status_verifikasi']) ?>
-                                    </span>
-                                </td>
-                                <td style="padding: 0.75rem; text-align: center; white-space: nowrap;">
-                                    <a href="edit_user.php?id=<?= $admin['id_admin'] ?>" style="background: #ffc107; color: black; padding: 0.3rem 0.6rem; border-radius: 4px; text-decoration: none; font-size: 0.85rem; margin-right: 0.3rem;">Edit</a>
-                                    <a href="hapus_user.php?id=<?= $admin['id_admin'] ?>" style="background: #dc3545; color: white; padding: 0.3rem 0.6rem; border-radius: 4px; text-decoration: none; font-size: 0.85rem;" onclick="return confirm('Hapus admin <?= htmlspecialchars($admin['username']) ?>?')">Hapus</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr><td colspan="5" style="padding: 2rem; text-align: center; color: #6c757d;">Data administrator tidak ditemukan.</td></tr>
-                    <?php endif; ?>
-                </tbody>
-            <?php endif; ?>
-
-        </table>
-    </div>
-
-    <div style="margin-top: 1.5rem; border-top: 1px solid #dee2e6; padding-top: 1rem;">
-        <a href="index.php" style="text-decoration: none; color: #007bff; font-weight: 500;">← Kembali ke Dashboard</a>
+            </table>
+        </div>
     </div>
 </div>
 
-<?php include '../../include/footer.php'; ?>
+<?php 
+// Include Footer
+include '../../include/footer.php'; 
+?>

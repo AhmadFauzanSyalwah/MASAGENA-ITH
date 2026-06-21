@@ -96,11 +96,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
                 <?php elseif ($peran === 'admin'): ?>
                     <li><a href="/MASAGENA-ITH/dashboard/admin/index.php" class="<?= $current_page == 'index.php' ? 'active' : '' ?>">Dashboard</a></li>
-                    <li><a href="/MASAGENA-ITH/dashboard/admin/manajemen_organisasi.php">Manajemen Organisasi</a></li>
-                    <li><a href="/MASAGENA-ITH/dashboard/admin/manajemen_pengurus.php">Manajemen Pengurus</a></li>
-                    <li><a href="/MASAGENA-ITH/dashboard/admin/verifikasi_akun.php">Verifikasi Akun</a></li>
-                    <li><a href="/MASAGENA-ITH/dashboard/admin/pengawasan_konten.php">Pengawasan Konten</a></li>
-                    <li><a href="/MASAGENA-ITH/dashboard/admin/kelola_user.php">Kelola User</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/admin/manajemen_organisasi.php" class="<?= $current_page == 'manajemen_organisasi.php' ? 'active' : '' ?>">Manajemen Organisasi</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/admin/manajemen_pengurus.php" class="<?= $current_page == 'manajemen_pengurus.php' ? 'active' : '' ?>">Manajemen Pengurus</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/admin/verifikasi_akun.php" class="<?= $current_page == 'verifikasi_akun.php' ? 'active' : '' ?>">Verifikasi Akun</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/admin/pengawasan_konten.php" class="<?= $current_page == 'pengawasan_konten.php' ? 'active' : '' ?>">Pengawasan Konten</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/admin/kelola_user.php" class="<?= $current_page == 'kelola_user.php' ? 'active' : '' ?>">Kelola User</a></li>
 
                 <?php else: // guest ?>
                     <li><a href="/MASAGENA-ITH/index.php" class="<?= $current_page == 'index.php' ? 'active' : '' ?>">Beranda</a></li>
