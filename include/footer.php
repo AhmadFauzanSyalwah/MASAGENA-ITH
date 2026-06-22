@@ -7,7 +7,7 @@
     <div class="footer-container">
         <!-- Kiri: Logo + Teks Brand (horizontal) -->
         <div class="footer-brand-horizontal">
-            <img src="/MASAGENA-ITH/assets/img/logo.png" alt="Logo MASAGENA-ITH" class="footer-logo">
+            <img src="/masagena-ith/assets/img/logo.png" alt="Logo MASAGENA-ITH" class="footer-logo">
             <div class="footer-brand-text">
                 <h3>MASAGENA-ITH</h3>
                 <p>Media Akses Seputar Agenda dan Kegiatan Mahasiswa<br>Institut Teknologi Bacharuddin Jusuf Habibie</p>
