@@ -400,6 +400,12 @@ include '../../include/header.php';
     </div>
 </div>
 
+<style>
+    .hidden {
+        display: none !important;
+    }
+</style>
+
 <div id="modalTambahPengurus" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
@@ -422,8 +428,25 @@ include '../../include/header.php';
                     <input type="text" name="nama_pengurus" class="form-control" placeholder="Masukkan nama pengurus..." required>
                 </div>
                 <div class="form-group">
-                    <label>Jabatan</label>
-                    <input type="text" name="jabatan" class="form-control" placeholder="Contoh: Ketua Umum, Anggota" required>
+                    <label>Jabatan di Organisasi</label>
+                    <select id="tambah_p_jabatan_select" class="form-control" onchange="toggleJabatanUser('tambah')" style="margin-bottom: 8px;">
+                        <option value="Ketua">Ketua</option>
+                        <option value="Wakil Ketua">Wakil Ketua</option>
+                        <option value="Sekretaris">Sekretaris</option>
+                        <option value="Bendahara">Bendahara</option>
+                        <option value="Lainnya">Lainnya (Ketik Manual...)</option>
+                    </select>
+                    
+                    <input type="hidden" name="jabatan" id="tambah_p_jabatan_asli" value="Ketua">
+                    
+                    <input type="text" id="tambah_p_jabatan_custom" class="form-control hidden" placeholder="Ketik nama jabatan lainnya di sini...">
+                </div>
+                <div class="form-group">
+                    <label>Level Pengurus</label>
+                    <select name="peran" class="form-control">
+                        <option value="pengurus" selected>Pengurus Inti</option>
+                        <option value="admin">Pengurus Departemen</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Nomor WhatsApp</label>
@@ -469,6 +492,34 @@ include '../../include/header.php';
 
     window.addEventListener("beforeunload", function() {
         sessionStorage.setItem("scrollPositionUser", window.scrollY);
+    });
+
+        // Fungsi untuk menyembunyikan/menampilkan form input ketik manual secara dinamis
+    function toggleJabatanUser(mode) {
+        const jabatSelect = document.getElementById(`${mode}_p_jabatan_select`);
+        const jabatCustom = document.getElementById(`${mode}_p_jabatan_custom`);
+        const jabatAsli = document.getElementById(`${mode}_p_jabatan_asli`);
+
+        if (jabatSelect.value === 'Lainnya') {
+            // Jika pilih 'Lainnya', hapus class hidden agar form muncul, dan buat jadi required
+            jabatCustom.classList.remove('hidden');
+            jabatCustom.setAttribute('required', 'required');
+            jabatCustom.value = '';
+            jabatAsli.value = ''; // Kosongkan dulu sampai user mengetik sendiri
+            jabatCustom.focus();
+        } else {
+            // Jika pilih selain 'Lainnya', sembunyikan kembali form input text
+            jabatCustom.classList.add('hidden');
+            jabatCustom.removeAttribute('required');
+            jabatAsli.value = jabatSelect.value; // Isi value asli dengan opsi yang dipilih
+        }
+    }
+
+    // Event listener otomatis untuk mendengarkan ketikan user di input custom
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.id === 'tambah_p_jabatan_custom') {
+            document.getElementById('tambah_p_jabatan_asli').value = e.target.value;
+        }
     });
 </script>
 

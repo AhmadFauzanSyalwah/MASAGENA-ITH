@@ -127,6 +127,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['user_id'] = $pengurus_sukses['id_pengurus'];   
                     $_SESSION['nama']    = $pengurus_sukses['nama_pengurus']; // PERBAIKAN: Menyesuaikan nama kolom database 
                     $_SESSION['id_organisasi'] = $pengurus_sukses['id_organisasi'];
+                    $_SESSION['level'] = $pengurus_sukses['level'];
                     
                     // Hapus session temporary
                     unset($_SESSION['pending_pengurus_data']);
