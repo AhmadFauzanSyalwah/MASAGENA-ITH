@@ -241,6 +241,7 @@ if (isset($_SESSION['is_superadmin']) && $_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['tambah_organisasi'])) {
         $nama_organisasi = $_POST['nama_organisasi'];
         $jenis           = $_POST['jenis']; // Menangkap jenis dari form
+        $pembina         = $_POST['pembina'];
         $deskripsi       = $_POST['deskripsi'];
         $logo_final      = null;
 
@@ -266,12 +267,13 @@ if (isset($_SESSION['is_superadmin']) && $_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($tipe_pesan !== "error") {
             try {
-                // Menambahkan 'jenis' ke dalam perintah INSERT database
-                $sql = "INSERT INTO organisasi (nama_organisasi, jenis, deskripsi, logo) VALUES (:nama, :jenis, :deskripsi, :logo)";
+                // Tambahkan 'pembina' ke dalam perintah INSERT database
+                $sql = "INSERT INTO organisasi (nama_organisasi, jenis, pembina, deskripsi, logo) VALUES (:nama, :jenis, :pembina, :deskripsi, :logo)";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute([
                     ':nama'      => $nama_organisasi,
-                    ':jenis'     => $jenis, 
+                    ':jenis'     => $jenis,
+                    ':pembina'   => $pembina, // <-- Bind data pembina
                     ':deskripsi' => $deskripsi, 
                     ':logo'      => $logo_final
                 ]);
@@ -870,7 +872,7 @@ try {
                         <h3 class="text-xl font-bold flex items-center"><i class="fa-solid fa-plus-circle mr-2"></i> Tambah Organisasi Baru</h3>
                     </div>
                     <form action="" method="POST" enctype="multipart/form-data" class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                             <div>
                                 <label class="form-label-custom font-bold text-gray-700 block mb-2">Nama Organisasi</label>
                                 <input type="text" name="nama_organisasi" required class="form-control-custom w-full p-3 border rounded-lg bg-gray-50">
@@ -886,14 +888,22 @@ try {
                                 </select>
                             </div>
                         </div>
+
                         <div class="mb-4">
-                            <label class="form-label-custom font-bold text-gray-700 block mb-2">Logo Organisasi</label>
-                            <input type="file" name="logo" required accept="image/*" class="form-control-custom w-full p-2.5 border rounded-lg bg-gray-50">
+                            <label class="form-label-custom font-bold text-gray-700 block mb-2">Nama Pembina</label>
+                            <input type="text" name="pembina" required class="form-control-custom w-full p-3 border rounded-lg bg-gray-50" placeholder="Masukkan nama pembina...">
                         </div>
+
                         <div class="mb-4">
                             <label class="form-label-custom font-bold text-gray-700 block mb-2">Deskripsi Singkat</label>
                             <textarea name="deskripsi" required class="form-control-custom w-full p-3 border rounded-lg bg-gray-50" rows="3"></textarea>
                         </div>
+
+                        <div class="mb-4">
+                            <label class="form-label-custom font-bold text-gray-700 block mb-2">Logo Organisasi (Maks. 2MB)</label>
+                            <input type="file" name="logo" class="form-control-custom w-full p-3 border rounded-lg bg-gray-50" accept="image/png, image/jpeg, image/jpg">
+                        </div>
+
                         <button type="submit" name="tambah_organisasi" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl w-full transition">Simpan Organisasi</button>
                     </form>
                 </div>
@@ -904,55 +914,52 @@ try {
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm text-gray-600">
-                            <thead class="bg-gray-50 text-xs font-bold text-gray-500 uppercase border-b">
-                                <tr>
-                                    <th class="p-4 w-16 text-center">Logo</th>
-                                    <th class="p-4">Nama Organisasi</th>
-                                    <th class="p-4">Jenis</th>
-                                    <th class="p-4">Deskripsi</th>
-                                    <th class="p-4 text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                <?php if(empty($data_organisasi)): ?>
-                                    <tr>
-                                        <td colspan="5" class="p-6 text-center text-gray-400 italic">Belum ada data organisasi di database.</td>
-                                    </tr>
-                                <?php else: ?>
-                                    <?php foreach($data_organisasi as $org): ?>
-                                    <tr class="hover:bg-gray-50 transition">
-                                        <td class="p-4 text-center">
-                                            <?php if(!empty($org['logo']) && file_exists('uploads/' . $org['logo'])): ?>
-                                                <img src="uploads/<?= htmlspecialchars($org['logo']) ?>" alt="Logo" class="w-10 h-10 object-cover rounded-full mx-auto border border-gray-200">
-                                            <?php else: ?>
-                                                <div class="w-10 h-10 bg-gray-200 rounded-full mx-auto flex items-center justify-center text-gray-400"><i class="fa-solid fa-image"></i></div>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="p-4 font-bold text-gray-800">
-                                            <?= htmlspecialchars($org['nama_organisasi']) ?>
-                                        </td>
-                                        <td class="p-4">
-                                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
-                                                <?= htmlspecialchars($org['jenis'] ?? 'Organisasi') ?>
-                                            </span>
-                                        </td>
-                                        <td class="p-4 text-xs text-gray-500 max-w-xs truncate">
-                                            <?= htmlspecialchars($org['deskripsi'] ?? '-') ?>
-                                        </td>
-                                        <td class="p-4 text-center">
-                                            <form action="" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus organisasi <?= htmlspecialchars($org['nama_organisasi']) ?>?');" class="inline-block">
-                                                <input type="hidden" name="target_tabel" value="organisasi">
-                                                <input type="hidden" name="id_kolom" value="id_organisasi">
-                                                <input type="hidden" name="id_nilai" value="<?= $org['id_organisasi'] ?>">
-                                                <button type="submit" name="hapus_entitas" class="text-red-500 hover:text-red-700 font-bold bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 transition">
-                                                    <i class="fa-solid fa-trash-can"></i>
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
+                            <thead class="bg-[#1F3D68] text-white text-xs font-bold uppercase tracking-wider">
+    <tr>
+        <th class="p-4 text-center" style="width: 80px;">Logo</th>
+        <th class="p-4">Nama Organisasi</th>
+        <th class="p-4">Jenis</th>
+        <th class="p-4">Pembina</th>
+        <th class="p-4">Deskripsi</th>
+        <th class="p-4 text-center">Aksi</th>
+    </tr>
+        </thead>
+        <tbody class="divide-y">
+            <?php if (empty($data_organisasi)): ?>
+                <tr>
+                    <td colspan="6" class="p-4 text-center text-gray-400">Belum ada data organisasi.</td>
+                </tr>
+            <?php else: ?>
+                <?php foreach($data_organisasi as $org): ?>
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="p-4 text-center">
+                        <?php if (!empty($org['logo']) && file_exists('uploads/' . $org['logo'])): ?>
+                            <img src="uploads/<?= htmlspecialchars($org['logo']) ?>" style="width: 45px; height: 45px; object-fit: cover; border-radius: 50%; border: 1px solid #ccc; margin: 0 auto;" alt="Logo">
+                        <?php else: ?>
+                            <div style="width: 45px; height: 45px; border-radius: 50%; background: #e5e7eb; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; color: #6b7280; font-weight: bold; border: 1px solid #ccc; margin: 0 auto;">No Img</div>
+                        <?php endif; ?>
+                    </td>
+
+                    <td class="p-4 font-bold text-[#1F3D68]"><?= htmlspecialchars($org['nama_organisasi'] ?? '-') ?></td>
+                    
+                    <td class="p-4"><span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded"><?= htmlspecialchars($org['jenis'] ?? 'Umum') ?></span></td>
+                    
+                    <td class="p-4 font-medium text-gray-700"><?= htmlspecialchars($org['pembina'] ?? '-') ?></td>
+
+                    <td class="p-4 text-gray-500 max-w-[200px] truncate" title="<?= htmlspecialchars($org['deskripsi'] ?? '') ?>"><?= htmlspecialchars($org['deskripsi'] ?? '-') ?></td>
+                    
+                    <td class="p-4 text-center">
+                        <form action="" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus organisasi <?= htmlspecialchars($org['nama_organisasi']) ?>?');">
+                            <input type="hidden" name="id_organisasi" value="<?= $org['id_organisasi'] ?>">
+                            <button type="submit" name="hapus_organisasi" class="bg-red-500 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-red-600 transition">
+                                <i class="fa-solid fa-trash-can"></i> Hapus
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
                         </table>
                     </div>
                 </div>

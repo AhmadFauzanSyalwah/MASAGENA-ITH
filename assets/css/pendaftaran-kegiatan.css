@@ -22,7 +22,7 @@
         margin: 0;
         font-family: 'Inter', Arial, sans-serif;
         color: var(--text-dark);
-        background: linear-gradient(90deg, #14395f, #2d71ba);
+        background: var(--white)
     }
 
     a {

@@ -1,17 +1,14 @@
 <?php
-// Koneksi database MASAGENA-ITH
-// Jika project kamu sudah punya connection.php yang berjalan, kamu boleh tetap pakai file lama.
-
 $host = 'localhost';
-$user = 'root';
-$pass = 'Bintang30';
-$db   = 'masagena-ith';
+$dbname = 'masagena-ith';
+$username = 'root';
+$password = '';
 
-$conn = mysqli_connect($host, $user, $pass, $db);
-
-if (!$conn) {
-    die('Koneksi database gagal: ' . mysqli_connect_error());
+try {
+    // Variabel ini wajib bernama $pdo agar sesuai dengan superadmin.php
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e) {
+    die("Koneksi gagal: " . $e->getMessage());
 }
-
-mysqli_set_charset($conn, 'utf8mb4');
-?>
+?>  
