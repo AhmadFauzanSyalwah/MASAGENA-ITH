@@ -1336,15 +1336,15 @@ try {
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Jabatan</label>
-                            <select name="edit_jabatan_select" id="edit_jabatan_select" onchange="toggleEditJabatan(this)" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 bg-white text-black">
-                                <option value="" hidden>-- Pilih Jabatan --</option>
+                            <select name="jabatan" id="jabatan" onchange="toggleJabatan(this)" class="w-full border p-2 rounded ...">
                                 <option value="Ketua">Ketua</option>
                                 <option value="Wakil Ketua">Wakil Ketua</option>
                                 <option value="Sekretaris">Sekretaris</option>
                                 <option value="Bendahara">Bendahara</option>
-                                <option value="Lainnya">Lainnya...</option>
+                                <option value="Lainnya">Lainnya</option>
                             </select>
-                            <input type="text" name="edit_jabatan_custom" id="edit_jabatan_custom" placeholder="Ketik jabatan baru..." class="hidden w-full mt-2 px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 text-black">
+
+                            <input type="text" name="jabatan_custom" id="jabatan_custom" class="hidden w-full border p-2 rounded mt-2" placeholder="Ketik nama jabatan...">
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Level Pengurus</label>
@@ -1402,12 +1402,25 @@ try {
             ['formMahasiswa', 'formAdmin', 'formPengurus'].forEach(id => document.getElementById(id).classList.add('hidden'));
             
             // Menonaktifkan semua input yang tidak terlihat agar tidak error saat disubmit
-            document.querySelectorAll('#formMahasiswa input, #formAdmin input, #formPengurus input, #formPengurus select').forEach(el => {
-                el.removeAttribute('required');
+            document.getElementById('formMahasiswa').classList.add('hidden');
+            document.querySelectorAll('#formMahasiswa input').forEach(el => {
                 el.setAttribute('disabled', 'true');
+                el.removeAttribute('required');
+            });
+            
+            document.getElementById('formAdmin').classList.add('hidden');
+            document.querySelectorAll('#formAdmin input').forEach(el => {
+                el.setAttribute('disabled', 'true');
+                el.removeAttribute('required');
+            });
+            
+            document.getElementById('formPengurus').classList.add('hidden');
+            document.querySelectorAll('#formPengurus input, #formPengurus select').forEach(el => {
+                el.setAttribute('disabled', 'true');
+                el.removeAttribute('required');
             });
 
-            // Memunculkan form sesuai yang dipilih
+            // 2. Tampilkan form sesuai dengan role yang dipilih
             if (role === 'mahasiswa') {
                 document.getElementById('formMahasiswa').classList.remove('hidden');
                 document.querySelectorAll('#formMahasiswa input').forEach(el => {
@@ -1424,8 +1437,36 @@ try {
                 document.getElementById('formPengurus').classList.remove('hidden');
                 document.querySelectorAll('#formPengurus input, #formPengurus select').forEach(el => {
                     el.removeAttribute('disabled');
-                    el.setAttribute('required', 'true');
+                    
+                    // Pengecualian required agar tombol "Daftarkan Pengguna" tidak macet
+                    if (el.id === 'jabatan_custom' || el.name === 'no_telp_pengurus') {
+                        el.removeAttribute('required');
+                    } else {
+                        el.setAttribute('required', 'true');
+                    }
                 });
+
+                // Otomatis jalankan fungsi cek jabatan saat form pengurus terbuka
+                var selectJabatan = document.getElementById('jabatan');
+                if (selectJabatan) {
+                    toggleJabatan(selectJabatan);
+                }
+            }
+        }
+
+        function toggleJabatan(selectElement) {
+            var inputCustom = document.getElementById('jabatan_custom');
+            if (inputCustom) {
+                if (selectElement.value === 'Lainnya') {
+                    // Munculkan kolom jika memilih 'Lainnya'
+                    inputCustom.classList.remove('hidden');
+                    inputCustom.setAttribute('required', 'true');
+                } else {
+                    // Sembunyikan jika memilih selain 'Lainnya'
+                    inputCustom.classList.add('hidden');
+                    inputCustom.removeAttribute('required');
+                    inputCustom.value = '';
+                }
             }
         }
         if(document.getElementById('roleSelector')) window.onload = toggleForm;
