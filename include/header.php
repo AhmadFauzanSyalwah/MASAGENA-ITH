@@ -79,21 +79,21 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <ul class="nav-menu">
                 <?php if ($peran === 'mahasiswa'): ?>
                     <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/index.php" class="<?= $current_page == 'index.php' ? 'active' : '' ?>">Beranda</a></li>
-                    <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/agenda.php">Agenda</a></li>
-                    <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/kegiatan.php">Kegiatan</a></li>
-                    <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/organisasi.php">Organisasi</a></li>
-                    <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/aspirasi.php">Aspirasi</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/agenda.php" class="<?= $current_page == 'agenda.php' ? 'active' : '' ?>">Agenda</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/kegiatan.php" class="<?= $current_page == 'kegiatan.php' ? 'active' : '' ?>">Kegiatan</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/organisasi.php" class="<?= $current_page == 'organisasi.php' ? 'active' : '' ?>">Organisasi</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/aspirasi.php" class="<?= $current_page == 'aspirasi.php' ? 'active' : '' ?>">Aspirasi</a></li>
 
                 <?php elseif ($peran === 'pengurus'): ?>
-                <li><a href="/MASAGENA-ITH/dashboard/pengurus/index.php" class="<?= $current_page == 'index.php' ? 'active' : '' ?>">Dashboard</a></li>
-                <li><a href="/MASAGENA-ITH/dashboard/pengurus/kelola_konten.php">Kelola Konten</a></li>
-                <li><a href="/MASAGENA-ITH/dashboard/pengurus/pendaftaran.php">Pendaftaran</a></li>
-                <li><a href="/MASAGENA-ITH/dashboard/pengurus/aspirasi_masuk.php">Aspirasi Masuk</a></li>
-                
-                <?php if ($level === 'Pengurus Inti'): ?>
-                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/profil_organisasi.php">Profil Organisasi</a></li>
-                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/manajemen_pengurus.php">Manajemen Pengurus</a></li>
-                <?php endif; ?>
+                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/index.php" class="<?= $current_page == 'index.php' ? 'active' : '' ?>">Dashboard</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/kelola_konten.php" class="<?= $current_page == 'kelola_konten.php' ? 'active' : '' ?>">Kelola Konten</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/pendaftaran.php" class="<?= $current_page == 'pendaftaran.php' ? 'active' : '' ?>">Pendaftaran</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/aspirasi_masuk.php" class="<?= $current_page == 'aspirasi_masuk.php' ? 'active' : '' ?>">Aspirasi Masuk</a></li>
+                    
+                    <?php if ($level === 'Pengurus Inti'): ?>
+                        <li><a href="/MASAGENA-ITH/dashboard/pengurus/profil_organisasi.php" class="<?= $current_page == 'profil_organisasi.php' ? 'active' : '' ?>">Profil Organisasi</a></li>
+                        <li><a href="/MASAGENA-ITH/dashboard/pengurus/manajemen_pengurus.php" class="<?= $current_page == 'manajemen_pengurus.php' ? 'active' : '' ?>">Manajemen Pengurus</a></li>
+                    <?php endif; ?>
 
                 <?php elseif ($peran === 'admin'): ?>
                     <li><a href="/MASAGENA-ITH/dashboard/admin/index.php" class="<?= $current_page == 'index.php' ? 'active' : '' ?>">Dashboard</a></li>

@@ -1,73 +1,111 @@
 <?php
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../include/components.php';
+require_once '../../config/session_check.php';
 
-$schemaReady = aspirasi_schema_ready($conn);
-$mahasiswa = active_mahasiswa($conn);
-$rows = null;
+// Pastikan menggunakan $pdo (objek PDO)
+$schemaReady = aspirasi_schema_ready($pdo);
+$mahasiswa = active_mahasiswa($pdo);
+$aspirasiList = [];
 
 if ($schemaReady && $mahasiswa) {
-    $idMahasiswa = (int) $mahasiswa['id_mahasiswa'];
-
-    $stmt = mysqli_prepare($conn, "
-        SELECT 
-            aspirasi.*, 
-            organisasi.nama_organisasi
-        FROM aspirasi
-        LEFT JOIN organisasi 
-            ON aspirasi.id_organisasi = organisasi.id_organisasi
-        WHERE aspirasi.id_mahasiswa = ?
-        ORDER BY aspirasi.tanggal DESC
-    ");
-
-    if (!$stmt) {
-        die('Prepare aspirasi saya gagal: ' . mysqli_error($conn));
+    try {
+        // Menggunakan Prepared Statement PDO
+        $stmt = $pdo->prepare("
+            SELECT 
+                a.*, 
+                o.nama_organisasi
+            FROM aspirasi a
+            LEFT JOIN organisasi o ON a.id_organisasi = o.id_organisasi
+            WHERE a.id_mahasiswa = ?
+            ORDER BY a.created_at DESC
+        ");
+        
+        $stmt->execute([ (int) $mahasiswa['id_mahasiswa'] ]);
+        $aspirasiList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    } catch (PDOException $e) {
+        die('Query aspirasi saya gagal: ' . $e->getMessage());
     }
-
-    mysqli_stmt_bind_param($stmt, 'i', $idMahasiswa);
-    mysqli_stmt_execute($stmt);
-
-    $rows = mysqli_stmt_get_result($stmt);
-
-    mysqli_stmt_close($stmt);
 }
 
 require_once __DIR__ . '/../../include/header.php';
 ?>
 
-<div class="page-light">
-    <section class="section-heading-row">
-        <div>
-            <h2>Aspirasi Saya</h2>
-            <div class="heading-line"></div>
-            <p class="lead-text">Daftar aspirasi non-anonim milik mahasiswa aktif.</p>
-        </div>
+<style>
+    /* Tambahan style khusus halaman aspirasi saya (menyesuaikan style.css root) */
+    .code-chip {
+        display: inline-block;
+        padding: 0.3rem 0.8rem;
+        border-radius: 30px;
+        background-color: rgba(255, 160, 7, 0.15);
+        color: var(--accent-dark);
+        font-weight: 700;
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }
 
-        <div class="heading-actions">
-            <a href="aspirasi.php" class="btn-heading">Kirim Aspirasi</a>
-            <a href="cek_status_aspirasi.php" class="btn-heading btn-status">Cek Kode Aspirasi</a>
-        </div>
-    </section>
+    /* Status Badge (asumsi class ini dihasilkan dari fungsi status_aspirasi_badge) */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.4rem 1rem;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .badge-process { color: #92400e; background: #fef3c7; }
+    .badge-done { color: var(--success); background: #dcfce7; }
+    .badge-rejected { color: var(--danger); background: #fee2e2; }
+
+    .empty-cell {
+        color: var(--text-muted);
+        text-align: center;
+        font-style: italic;
+        padding: 2rem !important;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+    }
+</style>
+
+<!-- Banner Welcome langsung di luar seperti organisasi.php -->
+<div class="dashboard-welcome">
+    <h1>Aspirasi Saya</h1>
+    <p>Daftar aspirasi non-anonim milik mahasiswa aktif.</p>
+</div>
+
+<!-- Sisa konten dibungkus main-content -->
+<div class="main-content">
+    <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <a href="aspirasi.php" class="btn">Kirim Aspirasi Baru</a>
+        <a href="cek_status_aspirasi.php" class="btn" style="background-color: var(--success); color: var(--white);">Cek Kode Aspirasi</a>
+    </div>
 
     <?php if (!$schemaReady) { ?>
         <?php schema_warning(); ?>
     <?php } ?>
 
     <?php if ($mahasiswa) { ?>
-        <div class="alert neutral">
+        <div class="alert" style="background-color: rgba(255, 160, 7, 0.15); color: var(--primary); border-left-color: var(--accent);">
             Mode mahasiswa:
             <strong><?= h($mahasiswa['nama']); ?></strong>
-            — <?= h($mahasiswa['nim']); ?>.
+            — <?= h($mahasiswa['nim']); ?>.<br>
             Aspirasi anonim tidak muncul di halaman ini. Cek aspirasi anonim memakai kode aspirasi.
         </div>
     <?php } else { ?>
-        <div class="alert danger">
+        <div class="error">
             Data mahasiswa tidak ditemukan. Pastikan data mahasiswa tersedia di tabel <strong>tbmahasiswa</strong>.
         </div>
     <?php } ?>
 
-    <section class="table-card">
-        <table>
+    <div class="table-responsive">
+        <table class="aspirasi-table">
             <thead>
                 <tr>
                     <th>Kode</th>
@@ -81,23 +119,21 @@ require_once __DIR__ . '/../../include/header.php';
             </thead>
 
             <tbody>
-                <?php if ($rows && mysqli_num_rows($rows) > 0) { ?>
-                    <?php while ($row = mysqli_fetch_assoc($rows)) { ?>
+                <?php if (!empty($aspirasiList)) { ?>
+                    <?php foreach ($aspirasiList as $row) { ?>
                         <tr>
                             <td>
-                                <span class="code-chip small">
+                                <span class="code-chip">
                                     <?= h($row['kode_aspirasi'] ?? '-'); ?>
                                 </span>
                             </td>
-
-                            <td><?= h($row['judul'] ?? '-'); ?></td>
+                            <td style="font-weight: 500; color: var(--primary);"><?= h($row['judul'] ?? '-'); ?></td>
                             <td><?= h($row['kategori'] ?? '-'); ?></td>
                             <td><?= h($row['nama_organisasi'] ?: 'Umum'); ?></td>
-                            <td><?= h(tanggal_indo($row['tanggal'] ?? '')); ?></td>
+                            <td style="white-space: nowrap;"><?= h(tanggal_indo($row['created_at'] ?? '')); ?></td>
                             <td><?= status_aspirasi_badge($row['status'] ?? 'proses'); ?></td>
-
                             <td>
-                                <a class="table-link" href="detail_aspirasi.php?id=<?= (int) $row['id_aspirasi']; ?>">
+                                <a class="btn-sm" href="detail_aspirasi.php?id=<?= (int) $row['id_aspirasi']; ?>">
                                     Detail
                                 </a>
                             </td>
@@ -106,13 +142,13 @@ require_once __DIR__ . '/../../include/header.php';
                 <?php } else { ?>
                     <tr>
                         <td colspan="7" class="empty-cell">
-                            Belum ada aspirasi non-anonim.
+                            Belum ada aspirasi non-anonim yang Anda kirimkan.
                         </td>
                     </tr>
                 <?php } ?>
             </tbody>
         </table>
-    </section>
+    </div>
 </div>
 
 <?php

@@ -96,42 +96,41 @@ include '../../include/header.php';
             font-size: 0.75rem;
         }
         /* Efek Bulatan Indikator di Foto (Khas Instagram Carousel) */
-    .photo-wrapper {
-    position: relative;
-    display: inline-block;
-}
-.indicator-dot {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-}
+        .photo-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .indicator-dot {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
 
-/* Efek Modal/Pop-up Foto Full Screen saat Di-tab */
-.modal-foto {
-    display: none;
-    position: fixed;
-    z-index: 9999;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.9);
-    align-items: center;
-    justify-content: center;
-}
-.modal-foto img {
-    max-width: 90%;
-    max-height: 90%;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(255,255,255,0.1);
-}
-
+        /* Efek Modal/Pop-up Foto Full Screen saat Di-tab */
+        .modal-foto {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-foto img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(255,255,255,0.1);
+        }
     </style>
 
     <div class="dashboard-welcome">
-        <h1>Selamat datang, <?= htmlspecialchars($_SESSION['nama']) ?></h1>
+        <h1>Selamat datang, <?= htmlspecialchars($_SESSION['nama'] ?? 'Mahasiswa') ?></h1>
         <p>Ini adalah portal informasi kegiatan kemahasiswaan ITH.</p>
     </div>
 
@@ -142,34 +141,31 @@ include '../../include/header.php';
                 <div class="kegiatan-list">
                     <?php foreach ($kegiatan_terbaru as $k): ?>
                         <div class="card" data-id="<?= $k['id_konten'] ?>">
-                            <h3><a href="detail_kegiatan.php?id=<?= $k['id_konten'] ?>"><?= htmlspecialchars($k['judul']) ?></a></h3>
+                            <h3><a href="detail_kegiatan.php?id_konten=<?= $k['id_konten'] ?>"><?= htmlspecialchars($k['judul']) ?></a></h3>
                             <p class="meta">Organisasi: <?= htmlspecialchars($k['nama_organisasi']) ?> | 🗓️ <?= $k['tanggal_kegiatan'] ?></p>
                             <p><?= nl2br(htmlspecialchars(substr($k['deskripsi'], 0, 150))) ?>...</p>
+                            
                             <div class="card-actions">
                                 <div class="interaction-group">
-                                    <!-- Tombol Like -->
                                     <div class="interaction">
                                         <button class="heart-btn" data-id="<?= $k['id_konten'] ?>">
                                             <i class="far fa-heart heart-icon"></i>
                                             <span class="like-count"><?= $k['total_likes'] ?></span>
                                         </button>
                                     </div>
-                                    <!-- Tombol Komentar (link ke detail dengan anchor #komentar) -->
                                     <div class="interaction">
-                                        <a href="detail_kegiatan.php?id=<?= $k['id_konten'] ?>#komentar" class="komentar-link">
+                                        <a href="detail_kegiatan.php?id_konten=<?= $k['id_konten'] ?>#komentar" class="komentar-link">
                                             <i class="far fa-comment"></i>
                                             <span class="komentar-count"><?= $k['total_komentar'] ?></span>
                                         </a>
                                     </div>
-                                    <!-- Tombol Share -->
                                     <div class="interaction">
-                                        <button class="share-link" data-url="<?= 'http://' . $_SERVER['HTTP_HOST'] . '/MASAGENA-ITH/dashboard/mahasiswa/detail_kegiatan.php?id=' . $k['id_konten'] ?>">
+                                        <button class="share-link" data-url="<?= 'http://' . $_SERVER['HTTP_HOST'] . '/MASAGENA-ITH/dashboard/mahasiswa/detail_kegiatan.php?id_konten=' . $k['id_konten'] ?>">
                                             <i class="fas fa-share-alt"></i> Share
                                         </button>
                                     </div>
                                 </div>
-                                <!-- Tombol Lihat Detail -->
-                                <a href="detail_kegiatan.php?id=<?= $k['id_konten'] ?>" class="btn-sm">Lihat Detail</a>
+                                <a href="detail_kegiatan.php?id_konten=<?= $k['id_konten'] ?>" class="btn-sm">Lihat Detail</a>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -185,7 +181,7 @@ include '../../include/header.php';
                 <ul class="pengumuman-list">
                     <?php foreach ($pengumuman as $p): ?>
                         <li>
-                            <a href="detail_kegiatan.php?id=<?= $p['id_konten'] ?>"><?= htmlspecialchars($p['judul']) ?></a>
+                            <a href="detail_kegiatan.php?id_konten=<?= $p['id_konten'] ?>"><?= htmlspecialchars($p['judul']) ?></a>
                             <span class="date"><?= date('d/m/Y', strtotime($p['created_at'])) ?></span>
                         </li>
                     <?php endforeach; ?>
@@ -247,17 +243,18 @@ include '../../include/header.php';
                 }
             });
         });
+
         // Fitur Tab Foto agar Menampilkan Ukuran Penuh (Full Screen)
-document.querySelectorAll('.card img').forEach(foto => {
-    foto.style.cursor = 'pointer'; // Ubah kursor jadi bentuk jari tangan
-    foto.addEventListener('click', function() {
-        const srcFoto = this.getAttribute('src');
-        if(srcFoto) {
-            document.getElementById('imgFull').setAttribute('src', srcFoto);
-            document.getElementById('popupFoto').style.display = 'flex';
-        }
-    });
-});
+        document.querySelectorAll('.card img').forEach(foto => {
+            foto.style.cursor = 'pointer'; // Ubah kursor jadi bentuk jari tangan
+            foto.addEventListener('click', function() {
+                const srcFoto = this.getAttribute('src');
+                if(srcFoto) {
+                    document.getElementById('imgFull').setAttribute('src', srcFoto);
+                    document.getElementById('popupFoto').style.display = 'flex';
+                }
+            });
+        });
     </script> 
 
     <div id="popupFoto" class="modal-foto" onclick="this.style.display='none'">
