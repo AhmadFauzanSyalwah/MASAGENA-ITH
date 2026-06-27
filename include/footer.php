@@ -1,20 +1,18 @@
 <?php
 // include/footer.php
 ?>
-</main> <!-- penutup .main-container dari header.php -->
+</main> <!-- penutup .main-container dari header -->
 
 <footer class="main-footer">
     <div class="footer-container">
-        <!-- Kiri: Logo + Teks Brand (horizontal) -->
         <div class="footer-brand-horizontal">
-            <img src="/masagena-ith/assets/img/logo.png" alt="Logo MASAGENA-ITH" class="footer-logo">
+            <img src="/masagena-ith/assets/img/logo.png" alt="MASAGENA-ITH" class="footer-logo">
             <div class="footer-brand-text">
                 <h3>MASAGENA-ITH</h3>
                 <p>Media Akses Seputar Agenda dan Kegiatan Mahasiswa<br>Institut Teknologi Bacharuddin Jusuf Habibie</p>
             </div>
         </div>
 
-        <!-- Kanan: Grid link layanan, informasi, sosial media -->
         <div class="footer-links-grid">
             <div class="footer-col">
                 <h4>Tentang Kami</h4>
@@ -29,7 +27,7 @@
                 <ul>
                     <li><a href="/MASAGENA-ITH/faq.php">FAQ</a></li>
                     <li><a href="/MASAGENA-ITH/kebijakan-privasi.php">Kebijakan Privasi</a></li>
-                    <li><a href="/MASAGENA-ITH/syarat-ketentuan.php">Syarat & Ketentuan</a></li>
+                    <li><a href="/MASAGENA-ITH/syarat-ketentuan.php">Syarat &amp; Ketentuan</a></li>
                 </ul>
             </div>
             <div class="footer-col">
@@ -57,10 +55,11 @@
         </div>
     </div>
     <div class="footer-bottom">
-        <p>&copy; 2026 MASAGENA-ITH. All rights reserved. Developed by Tim RPL ITH.</p>
+        <p>&copy; <?= date('Y') ?> MASAGENA-ITH. All rights reserved. Developed by Tim RPL ITH.</p>
     </div>
 </footer>
 
+<!-- JS tambahan jika ada -->
 <script src="/MASAGENA-ITH/assets/js/script.js"></script>
 </body>
 </html>

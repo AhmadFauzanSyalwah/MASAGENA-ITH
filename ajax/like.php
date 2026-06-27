@@ -1,44 +1,41 @@
 <?php
 // ajax/like.php
 session_start();
-header('Content-Type: application/json');
-
-if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['error' => 'Unauthorized']);
-    exit();
-}
-
 require_once '../config/database.php';
 
-$id_konten = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-if (!$id_konten) {
-    echo json_encode(['error' => 'Invalid ID']);
-    exit();
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(['status' => 'error', 'message' => 'Not logged in']);
+    exit;
 }
 
-$user_id = $_SESSION['user_id'];
+$id_konten = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+if ($id_konten <= 0) {
+    echo json_encode(['status' => 'error', 'message' => 'Invalid ID']);
+    exit;
+}
 
-// Cek apakah user sudah like
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM likes WHERE id_user = ? AND id_konten = ?");
-$stmt->execute([$user_id, $id_konten]);
-$liked = $stmt->fetchColumn() > 0;
+$id_mahasiswa = $_SESSION['user_id'];
 
-if ($liked) {
+// Cek apakah sudah like
+$check = $pdo->prepare("SELECT id_like FROM likes WHERE id_mahasiswa = ? AND id_konten = ?");
+$check->execute([$id_mahasiswa, $id_konten]);
+$existing = $check->fetch();
+
+if ($existing) {
     // Unlike
-    $stmt = $pdo->prepare("DELETE FROM likes WHERE id_user = ? AND id_konten = ?");
-    $stmt->execute([$user_id, $id_konten]);
+    $delete = $pdo->prepare("DELETE FROM likes WHERE id_like = ?");
+    $delete->execute([$existing['id_like']]);
     $status = 'unliked';
 } else {
     // Like
-    $stmt = $pdo->prepare("INSERT INTO likes (id_user, id_konten) VALUES (?, ?)");
-    $stmt->execute([$user_id, $id_konten]);
+    $insert = $pdo->prepare("INSERT INTO likes (id_mahasiswa, id_konten, created_at) VALUES (?, ?, NOW())");
+    $insert->execute([$id_mahasiswa, $id_konten]);
     $status = 'liked';
 }
 
-// Hitung total like terbaru
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM likes WHERE id_konten = ?");
-$stmt->execute([$id_konten]);
-$likes = $stmt->fetchColumn();
+// Hitung total like
+$count = $pdo->prepare("SELECT COUNT(*) FROM likes WHERE id_konten = ?");
+$count->execute([$id_konten]);
+$total = $count->fetchColumn();
 
-echo json_encode(['status' => $status, 'likes' => $likes]);
-?>
+echo json_encode(['status' => $status, 'likes' => $total]);

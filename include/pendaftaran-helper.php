@@ -118,4 +118,12 @@ if (!function_exists('pendaftaran_lampiran_src')) {
         return $baseUrl . '/uploads/kegiatan/' . $lampiran;
     }
 }
+
+// Tambahkan fungsi highlightText
+if (!function_exists('highlightText')) {
+    function highlightText($text, $keyword) {
+        if (empty($keyword)) return $text;
+        return preg_replace('/(' . preg_quote($keyword, '/') . ')/i', '<span class="highlight">$1</span>', $text);
+    }
+}
 ?>
