@@ -159,9 +159,40 @@ include '../../include/header.php';
     
     .modal-header { background: #f9fafb; padding: 15px 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
     .modal-header h3 { margin: 0; color: #1F3D68; font-size: 18px; display: flex; align-items: center; gap: 8px; }
-    .btn-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #6b7280; transition: 0.2s; }
-    .btn-close:hover { color: #ef4444; }
-    
+
+    .close-btn {
+        background: transparent;
+        border: none;
+        font-size: 24px; /* Ukuran disesuaikan agar pas di tengah */
+        font-weight: 300;
+        color: #a0aec0;
+        cursor: pointer;
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        
+        /* PENTING: Wajib 0 dan border-box agar poros lingkaran presisi di tengah */
+        padding: 0; 
+        margin: 0;
+        box-sizing: border-box;
+        
+        /* Mengunci titik poros rotasi tepat di pusat lingkaran */
+        transform-origin: center center; 
+        
+        /* Animasi transisi halus */
+        transition: transform 0.25s ease-in-out, background-color 0.25s ease-in-out, color 0.25s ease-in-out;
+    }
+
+    /* Efek Hover - Berputar Murni di Tempat */
+    .close-btn:hover {
+        background-color: #fee2e2;
+        color: #ef4444;
+        transform: rotate(90deg); /* Berputar pas di tengah tanpa goyang */
+    }
+        
     .modal-body { padding: 20px; }
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 14px; }
@@ -261,50 +292,76 @@ include '../../include/header.php';
     </div>
 </div>
 
+<style>
+.hidden {
+    display: none !important;
+}
+</style>
+
 <div id="modalEdit" class="modal-overlay">
     <div class="modal-content">
-        <div class="modal-header">
-            <h3><i class="fa-solid fa-user-pen" style="color: #F59E0B;"></i> Edit Data Pengurus</h3>
-            <button class="btn-close" onclick="tutupModalEdit()"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <h2 style="margin: 0;">Edit Data Pengurus</h2>
+            <button type="button" class="close-btn" onclick="tutupModal('modalEdit')">&times;</button>
         </div>
         <div class="modal-body">
             <form action="" method="POST">
-                <input type="hidden" name="id_pengurus_edit" id="edit_id">
-                <input type="hidden" name="tab_aktif_edit" class="input-tab-aktif">
+                <input type="hidden" name="tab_aktif" value="<?= $tab ?>">
+                <input type="hidden" name="id_pengurus" id="edit_id">
                 
                 <div class="form-group">
                     <label>Organisasi</label>
                     <select name="id_organisasi" id="edit_organisasi" class="form-control" required>
-                        <?php foreach($data_organisasi as $org): ?>
-                            <option value="<?= $org['id_organisasi'] ?>"><?= htmlspecialchars($org['nama_organisasi']) ?></option>
-                        <?php endforeach; ?>
+                        <option value="" hidden>-- Pilih Organisasi --</option>
+                        <?php
+                        // Memuat daftar organisasi dari database
+                        $stmtOrg = $pdo->query("SELECT id_organisasi, nama_organisasi FROM organisasi ORDER BY nama_organisasi ASC");
+                        while ($org = $stmtOrg->fetch(PDO::FETCH_ASSOC)) {
+                            echo '<option value="'.$org['id_organisasi'].'">'.htmlspecialchars($org['nama_organisasi']).'</option>';
+                        }
+                        ?>
                     </select>
                 </div>
-
+                
                 <div class="form-group">
-                    <label>Nama Lengkap Pengurus</label>
-                    <input type="text" name="nama_pengurus" id="edit_nama" class="form-control" required>
+                    <label>Nama Lengkap</label>
+                    <input type="text" name="nama" id="edit_nama" class="form-control" placeholder="Masukkan nama pengurus..." required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Jabatan di Organisasi</label>
+                    <select id="edit_jabatan_select" class="form-control" onchange="toggleJabatanCustom('edit')" style="margin-bottom: 8px;">
+                        <option value="Ketua">Ketua</option>
+                        <option value="Wakil Ketua">Wakil Ketua</option>
+                        <option value="Sekretaris">Sekretaris</option>
+                        <option value="Bendahara">Bendahara</option>
+                        <option value="Lainnya">Lainnya (Ketik Manual...)</option>
+                    </select>
+                    <input type="hidden" name="jabatan" id="edit_jabatan_asli">
+                    <input type="text" id="edit_jabatan_custom" class="form-control hidden" placeholder="Ketik nama jabatan lainnya di sini...">
                 </div>
 
                 <div class="form-group">
-                    <label>Jabatan (Cth: Ketua Umum, Anggota)</label>
-                    <input type="text" name="jabatan" id="edit_jabatan" class="form-control" required>
+                    <label>Level Pengurus</label>
+                    <select name="level" id="edit_level" class="form-control" required>
+                        <option value="" hidden>-- Pilih Level Pengurus --</option>
+                        <option value="Pengurus Inti">Pengurus Inti</option>
+                        <option value="Pengurus Departemen">Pengurus Departemen</option>
+                    </select>
                 </div>
-
+                
                 <div class="form-group">
-                    <label>Nomor WhatsApp</label>
-                    <input type="number" name="no_hp" id="edit_nohp" class="form-control" placeholder="08xxxxxxxx" required>
+                    <label>No. HP / WhatsApp</label>
+                    <input type="text" name="nohp" id="edit_nohp" class="form-control" placeholder="Contoh: 08123456789" required>
                 </div>
-
+                
                 <div class="form-group">
-                    <label>Reset Password (Opsional)</label>
-                    <input type="password" name="password_baru" class="form-control" placeholder="Ketik password baru jika ingin diubah">
-                    <span class="help-text">Kosongkan jika tidak ingin mengubah password saat ini.</span>
+                    <label>Password Baru (Opsional)</label>
+                    <input type="password" name="password" class="form-control" placeholder="Kosongkan jika tidak ingin diubah">
+                    <small style="color: #6c757d; font-size: 12px; margin-top: 4px; display: block;">Biarkan kosong jika Anda tidak ingin mengganti password pengurus ini.</small>
                 </div>
-
-                <button type="submit" name="edit_pengurus" class="btn btn-submit">
-                    <i class="fa-solid fa-save"></i> Simpan Perubahan
-                </button>
+                
+                <button type="submit" name="edit_pengurus" class="btn-submit">Simpan Perubahan</button>
             </form>
         </div>
     </div>
@@ -376,21 +433,108 @@ include '../../include/header.php';
         } else { perbaruiTabel(); }
     }
 
-    // FUNGSI MODAL EDIT - MENGIRIM ID ORGANISASI KINI
+// FUNGSI MODAL EDIT YANG SUDAH DIPERBAIKI DAN ANTI-ERROR
     function bukaModalEdit(id, nama, jabatan, nohp, id_organisasi) {
-        document.getElementById('edit_id').value = id;
-        document.getElementById('edit_nama').value = nama;
-        document.getElementById('edit_jabatan').value = jabatan;
-        document.getElementById('edit_nohp').value = nohp;
-        
-        // Memilih organisasi di dropdown agar sesuai dengan organisasi saat ini
-        document.getElementById('edit_organisasi').value = id_organisasi; 
-        
-        document.getElementById('modalEdit').classList.add('active');
+        try {
+            // Isi form data standar dengan aman
+            const editId = document.getElementById('edit_id');
+            if (editId) editId.value = id;
+
+            const editNama = document.getElementById('edit_nama');
+            if (editNama) editNama.value = nama;
+
+            const editNohp = document.getElementById('edit_nohp');
+            if (editNohp) editNohp.value = nohp;
+
+            const editOrganisasi = document.getElementById('edit_organisasi');
+            if (editOrganisasi) editOrganisasi.value = id_organisasi; 
+            
+            // Logika Sinkronisasi Dropdown Jabatan Edit
+            const jabatSelect = document.getElementById('edit_jabatan_select');
+            const jabatCustom = document.getElementById('edit_jabatan_custom');
+            const jabatAsli = document.getElementById('edit_jabatan_asli');
+            const opsiUtama = ['Ketua', 'Wakil Ketua', 'Sekretaris', 'Bendahara'];
+
+            if (jabatAsli) jabatAsli.value = jabatan || '';
+
+            if (jabatSelect) {
+                if (jabatan && opsiUtama.includes(jabatan)) {
+                    jabatSelect.value = jabatan;
+                    if (jabatCustom) {
+                        jabatCustom.classList.add('hidden');
+                        jabatCustom.removeAttribute('required');
+                        jabatCustom.value = '';
+                    }
+                } else if (jabatan) {
+                    jabatSelect.value = 'Lainnya';
+                    if (jabatCustom) {
+                        jabatCustom.classList.remove('hidden');
+                        jabatCustom.setAttribute('required', 'required');
+                        jabatCustom.value = jabatan;
+                    }
+                } else {
+                    jabatSelect.value = 'Ketua'; // Default
+                    if (jabatAsli) jabatAsli.value = 'Ketua';
+                    if (jabatCustom) jabatCustom.classList.add('hidden');
+                }
+            }
+            
+            // Buka Modalnya
+            const modal = document.getElementById('modalEdit');
+            if (modal) {
+                modal.classList.add('active');
+            } else {
+                console.error("Kotak HTML Modal Edit tidak ditemukan di file ini!");
+            }
+        } catch (error) {
+            console.error("Terjadi error di fungsi bukaModalEdit:", error);
+        }
     }
 
-    function tutupModalEdit() {
-        document.getElementById('modalEdit').classList.remove('active');
+    // FUNGSI TOGGLE UNTUK MENYEMBUNYIKAN/MENAMPILKAN INPUT KETIK MANUAL
+    function toggleJabatanCustom(mode) {
+        try {
+            const jabatSelect = document.getElementById(`${mode}_jabatan_select`);
+            const jabatCustom = document.getElementById(`${mode}_jabatan_custom`);
+            const jabatAsli = document.getElementById(`${mode}_jabatan_asli`);
+
+            if (jabatSelect && jabatSelect.value === 'Lainnya') {
+                if (jabatCustom) {
+                    jabatCustom.classList.remove('hidden');
+                    jabatCustom.setAttribute('required', 'required');
+                    jabatCustom.value = '';
+                    jabatCustom.focus();
+                }
+                if (jabatAsli) jabatAsli.value = '';
+            } else {
+                if (jabatCustom) {
+                    jabatCustom.classList.add('hidden');
+                    jabatCustom.removeAttribute('required');
+                }
+                if (jabatAsli && jabatSelect) jabatAsli.value = jabatSelect.value;
+            }
+        } catch (e) {
+            console.error("Terjadi error di toggleJabatanCustom:", e);
+        }
+    }
+
+    // Event listener otomatis untuk mengalirkan teks yang diketik manual ke sistem PHP
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.id === 'tambah_jabatan_custom') {
+            const inputAsli = document.getElementById('tambah_jabatan_asli');
+            if (inputAsli) inputAsli.value = e.target.value;
+        }
+        if (e.target && e.target.id === 'edit_jabatan_custom') {
+            const inputAsliEdit = document.getElementById('edit_jabatan_asli');
+            if (inputAsliEdit) inputAsliEdit.value = e.target.value;
+        }
+    });
+
+        function tutupModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('active');
+        }
     }
 </script>
 

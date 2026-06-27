@@ -27,7 +27,11 @@ if ($peran === 'mahasiswa') {
     <title>MASAGENA-ITH | <?= ucfirst($peran) ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<<<<<<< HEAD
     <link rel="stylesheet" href="/masagena-ith/assets/css/style.css">
+=======
+    <link rel="stylesheet" href="/MASAGENA-ITH/assets/css/style.css">
+>>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c
 </head>
 <body>
 
@@ -36,7 +40,7 @@ if ($peran === 'mahasiswa') {
     <div class="header-top">
         <div class="brand-area">
             <a href="/MASAGENA-ITH/index.php" class="logo-link">
-                <img src="/masagena-ith/assets/img/logo.png" alt="Logo MASAGENA-ITH" class="logo-img">
+                <img src="/MASAGENA-ITH/assets/img/logo.png" alt="Logo MASAGENA-ITH" class="logo-img">
             </a>
             <div class="brand-text">
                 <span class="brand-title">MASAGENA-ITH</span>
@@ -96,7 +100,12 @@ if ($peran === 'mahasiswa') {
                     <li><a href="/MASAGENA-ITH/dashboard/pengurus/kelola_konten.php" class="<?= $current_page == 'kelola_konten.php' ? 'active' : '' ?>">Kelola Konten</a></li>
                     <li><a href="/MASAGENA-ITH/dashboard/pengurus/pendaftaran.php" class="<?= $current_page == 'pendaftaran.php' ? 'active' : '' ?>">Pendaftaran</a></li>
                     <li><a href="/MASAGENA-ITH/dashboard/pengurus/aspirasi_masuk.php" class="<?= $current_page == 'aspirasi_masuk.php' ? 'active' : '' ?>">Aspirasi Masuk</a></li>
+<<<<<<< HEAD
                     <?php if ($level === 'inti'): ?>
+=======
+                    
+                    <?php if ($level === 'Pengurus Inti'): ?>
+>>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c
                         <li><a href="/MASAGENA-ITH/dashboard/pengurus/profil_organisasi.php" class="<?= $current_page == 'profil_organisasi.php' ? 'active' : '' ?>">Profil Organisasi</a></li>
                         <li><a href="/MASAGENA-ITH/dashboard/pengurus/manajemen_pengurus.php" class="<?= $current_page == 'manajemen_pengurus.php' ? 'active' : '' ?>">Manajemen Pengurus</a></li>
                     <?php endif; ?>

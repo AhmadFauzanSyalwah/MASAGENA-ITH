@@ -6,7 +6,11 @@
 <footer class="main-footer">
     <div class="footer-container">
         <div class="footer-brand-horizontal">
+<<<<<<< HEAD
             <img src="/masagena-ith/assets/img/logo.png" alt="MASAGENA-ITH" class="footer-logo">
+=======
+            <img src="/MASAGENA-ITH/assets/img/logo.png" alt="Logo MASAGENA-ITH" class="footer-logo">
+>>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c
             <div class="footer-brand-text">
                 <h3>MASAGENA-ITH</h3>
                 <p>Media Akses Seputar Agenda dan Kegiatan Mahasiswa<br>Institut Teknologi Bacharuddin Jusuf Habibie</p>

@@ -18,6 +18,7 @@ $tipe_pesan = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah_organisasi'])) {
     $nama_organisasi = $_POST['nama_organisasi'];
     $jenis           = $_POST['jenis'];
+    $pembina         = $_POST['pembina'];
     $deskripsi       = $_POST['deskripsi'];
     $logo_final      = null;
 
@@ -32,7 +33,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah_organisasi'])) 
             if ($logo_size < 2000000) { // Maks 2MB
                 $logo_final = uniqid() . '.' . $ekstensi_file;
                 // Pastikan folder uploads ada di root atau sesuai struktur
-                $target_dir = '../../uploads/'; 
+                $target_dir = 'uploads/'; 
                 if (!is_dir($target_dir)) { mkdir($target_dir, 0777, true); }
                 move_uploaded_file($logo_tmp, $target_dir . $logo_final);
             } else {
@@ -45,11 +46,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah_organisasi'])) 
 
     if (empty($pesan)) {
         try {
-            $sql = "INSERT INTO organisasi (nama_organisasi, jenis, deskripsi, logo) VALUES (:nama, :jenis, :deskripsi, :logo)";
+            $sql = "INSERT INTO organisasi (nama_organisasi, jenis, pembina, deskripsi, logo) VALUES (:nama, :jenis, :pembina, :deskripsi, :logo)";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
                 ':nama'      => $nama_organisasi,
                 ':jenis'     => $jenis, 
+                ':pembina'   => $pembina,
                 ':deskripsi' => $deskripsi, 
                 ':logo'      => $logo_final
             ]);
@@ -94,7 +96,6 @@ try {
 include '../../include/header.php';
 ?>
 
-<!-- ================= CSS TAMBAHAN UNTUK HALAMAN INI ================= -->
 <style>
     .page-title { margin-bottom: 20px; font-size: 24px; color: #1F3D68; font-family: 'Montserrat', sans-serif; }
     .alert { padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
@@ -120,21 +121,18 @@ include '../../include/header.php';
     .data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
     .data-table th { background: #f9fafb; color: #6b7280; text-transform: uppercase; font-size: 12px; }
     .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #e0e7ff; color: #4338ca; }
-    .logo-preview { width: 45px; height: 45px; object-fit: cover; border-radius: 50%; border: 1px solid #ccc; }
+    .logo-preview { width: 45px; height: 45px; object-fit: cover; border-radius: 50%; border: 1px solid #ccc; display: block; margin: 0 auto; }
 </style>
 
-<!-- ================= KONTEN HALAMAN ================= -->
 <div style="padding: 20px;">
     <h1 class="page-title"><i class="fa-solid fa-sitemap" style="color: #F59E0B;"></i> Manajemen Organisasi</h1>
 
-    <!-- Notifikasi -->
     <?php if ($pesan): ?>
         <div class="alert <?= $tipe_pesan == 'success' ? 'alert-success' : 'alert-error' ?>">
             <i class="fa-solid <?= $tipe_pesan == 'success' ? 'fa-circle-check' : 'fa-circle-exclamation' ?>"></i> <?= $pesan ?>
         </div>
     <?php endif; ?>
 
-    <!-- Form Tambah Organisasi -->
     <div class="card">
         <div class="card-header">
             <h3><i class="fa-solid fa-plus-circle"></i> Tambah Organisasi Baru</h3>
@@ -158,20 +156,24 @@ include '../../include/header.php';
             </div>
             
             <div class="form-group">
-                <label>Logo Organisasi (Maks 2MB, JPG/PNG)</label>
-                <input type="file" name="logo" class="form-control" accept="image/png, image/jpeg, image/jpg" required>
+                <label>Nama Pembina</label>
+                <input type="text" name="pembina" class="form-control" required placeholder="Masukkan nama pembina organisasi...">
             </div>
             
             <div class="form-group">
                 <label>Deskripsi Singkat</label>
                 <textarea name="deskripsi" class="form-control" rows="3" required placeholder="Jelaskan secara singkat tentang organisasi ini..."></textarea>
             </div>
+
+            <div class="form-group">
+                <label>Logo Organisasi (Maks. 2MB, Format: JPG/JPEG/PNG)</label>
+                <input type="file" name="logo" class="form-control" accept="image/png, image/jpeg, image/jpg">
+            </div>
             
             <button type="submit" name="tambah_organisasi" class="btn btn-primary w-100" style="width: 100%;"><i class="fa-solid fa-save"></i> Simpan Organisasi</button>
         </form>
     </div>
 
-    <!-- Tabel Daftar Organisasi -->
     <div class="card">
         <div class="card-header">
             <h3><i class="fa-solid fa-list"></i> Daftar Organisasi Terdaftar</h3>
@@ -180,9 +182,10 @@ include '../../include/header.php';
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th style="text-align: center;">Logo</th>
+                        <th style="text-align: center; width: 80px;">Logo</th>
                         <th>Nama Organisasi</th>
                         <th>Jenis</th>
+                        <th>Pembina</th> 
                         <th>Deskripsi</th>
                         <th style="text-align: center;">Aksi</th>
                     </tr>
@@ -190,27 +193,32 @@ include '../../include/header.php';
                 <tbody>
                     <?php if (empty($data_organisasi)): ?>
                         <tr>
-                            <td colspan="5" style="text-align: center; color: #9ca3af; padding: 20px;">Belum ada data organisasi yang terdaftar.</td>
+                            <td colspan="6" style="text-align: center; color: #9ca3af; padding: 20px;">Belum ada data organisasi terdaftar.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach($data_organisasi as $org): ?>
                         <tr>
                             <td style="text-align: center;">
-                                <?php if(!empty($org['logo']) && file_exists('../../uploads/' . $org['logo'])): ?>
-                                    <img src="../../uploads/<?= htmlspecialchars($org['logo']) ?>" alt="Logo" class="logo-preview">
+                                <?php if (!empty($org['logo']) && file_exists('uploads/' . $org['logo'])): ?>
+                                    <img src="uploads/<?= htmlspecialchars($org['logo']) ?>" class="logo-preview" alt="Logo">
                                 <?php else: ?>
-                                    <div class="logo-preview" style="display: flex; align-items: center; justify-content: center; background: #eee; margin: auto;">
-                                        <i class="fa-solid fa-image" style="color: #aaa;"></i>
-                                    </div>
+                                    <div style="width: 45px; height: 45px; border-radius: 50%; background: #e5e7eb; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; color: #6b7280; font-weight: bold; border: 1px solid #ccc; margin: 0 auto;">No Img</div>
                                 <?php endif; ?>
                             </td>
+                            
                             <td style="font-weight: bold; color: #1F3D68;">
-                                <?= htmlspecialchars($org['nama_organisasi']) ?>
+                                <?= htmlspecialchars($org['nama_organisasi'] ?? '-') ?>
                             </td>
+
                             <td>
                                 <span class="badge"><?= htmlspecialchars($org['jenis'] ?? 'Umum') ?></span>
                             </td>
-                            <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            
+                            <td>
+                                <?= htmlspecialchars($org['pembina'] ?? '-') ?>
+                            </td>
+
+                            <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?= htmlspecialchars($org['deskripsi'] ?? '') ?>">
                                 <?= htmlspecialchars($org['deskripsi'] ?? '-') ?>
                             </td>
                             <td style="text-align: center;">
