@@ -1,0 +1,277 @@
+/* ============================================
+   PROFIL MAHASISWA - STYLE FINAL
+   Foto di atas, tombol kuning & biru
+   ============================================ */
+
+.profil-title {
+    color: #0a2a4a;
+    font-weight: 700;
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+    padding-left: 0.3rem;
+}
+
+/* Outer card - border #0a2a4a */
+.profil-outer-card {
+    border: 4px solid #0a2a4a;
+    border-radius: 24px;
+    padding: 24px;
+    background: #f8fafc;
+    box-shadow: 0 8px 30px rgba(10, 42, 74, 0.12);
+}
+
+/* Inner card - putih */
+.profil-inner-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 32px 35px;
+    border: 1px solid #e9ecef;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);
+}
+
+/* ===== FOTO PROFIL DI ATAS ===== */
+.profil-foto-top {
+    text-align: center;
+    margin-bottom: 1.8rem;
+}
+
+.profil-foto-top i {
+    font-size: 130px;
+    color: #0a2a4a;
+    opacity: 0.85;
+}
+
+.profil-foto-top * {
+    cursor: default;
+    user-select: none;
+    pointer-events: none;
+}
+
+.foto-profil-img {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #0a2a4a;
+    box-shadow: 0 4px 15px rgba(10, 42, 74, 0.15);
+}
+
+/* ===== DATA DIRI ===== */
+.data-diri .data-item {
+    margin-bottom: 1.2rem;
+}
+
+.data-diri .data-item label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 0.1rem;
+}
+
+.data-diri .data-item p {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #071C34;
+    margin: 0;
+    padding: 0.2rem 0;
+    border-bottom: 1px dashed #f1f5f9;
+}
+
+.data-diri .data-item:last-child p {
+    border-bottom: none;
+}
+
+/* ===== ORGANISASI ===== */
+.profil-organisasi h6,
+.profil-kegiatan h6 {
+    font-weight: 700;
+    color: #0a2a4a;
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.8rem;
+    font-size: 0.95rem;
+}
+
+.org-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.org-badge {
+    background: #f1f5f9;
+    color: #071C34;
+    padding: 0.3rem 0.9rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid #e9ecef;
+}
+
+.org-empty {
+    color: #071C34;
+    font-size: 0.95rem;
+    font-weight: 400;
+    opacity: 0.7;
+}
+
+/* ===== KEGIATAN ===== */
+.kegiatan-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.kegiatan-list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.6rem;
+    padding: 0.4rem 0.6rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin-bottom: 0.4rem;
+    border-left: 3px solid #FFA007;
+    font-size: 0.85rem;
+}
+
+.keg-nama {
+    font-weight: 600;
+    color: #071C34;
+    flex: 1 1 100%;
+}
+
+.keg-org {
+    color: #64748b;
+    font-size: 0.75rem;
+}
+
+.keg-status .badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.5rem;
+}
+
+.keg-tgl {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-left: auto;
+}
+
+/* ===== TOMBOL ===== */
+.profil-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #f1f5f9;
+}
+
+.profil-actions .btn {
+    border-radius: 50px;
+    padding: 0.5rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.95rem;
+}
+
+/* Tombol Kembali : KUNING -> hover BIRU */
+.profil-actions .btn-kembali {
+    background: #FFA007;
+    color: #071C34;
+    border: none;
+    box-shadow: 0 4px 12px rgba(255, 160, 7, 0.25);
+}
+
+.profil-actions .btn-kembali:hover {
+    background: #0a2a4a;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(10, 42, 74, 0.3);
+}
+
+/* Tombol Edit : BIRU -> hover KUNING */
+.profil-actions .btn-edit {
+    background: #0a2a4a;
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 4px 12px rgba(10, 42, 74, 0.2);
+}
+
+.profil-actions .btn-edit:hover {
+    background: #FFA007;
+    color: #071C34;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 160, 7, 0.35);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .profil-outer-card {
+        padding: 12px;
+    }
+    .profil-inner-card {
+        padding: 18px 16px;
+    }
+    .profil-foto-top i {
+        font-size: 90px;
+    }
+    .foto-profil-img {
+        width: 100px;
+        height: 100px;
+    }
+    .profil-actions {
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+    .profil-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .profil-title {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .data-diri .data-item p {
+        font-size: 0.95rem;
+    }
+    .org-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.6rem;
+    }
+}
+
+/* ============================================
+   HILANGKAN KURSUS TEKS DI SELURUH HALAMAN PROFIL
+   ============================================ */
+
+/* Semua elemen di dalam profil-inner-card (kecuali tombol/link) */
+.profil-inner-card * {
+    cursor: default !important;
+    user-select: none !important;
+}
+
+/* TAPI tombol, link, dan elemen interaktif TETAP bisa diklik */
+.profil-inner-card a,
+.profil-inner-card .btn,
+.profil-inner-card button,
+.profil-inner-card [role="button"] {
+    cursor: pointer !important;
+    user-select: auto !important;
+}
+
+/* Khusus untuk badge dan label (tetap default) */
+.profil-inner-card .badge,
+.profil-inner-card label {
+    cursor: default !important;
+    user-select: none !important;
+}

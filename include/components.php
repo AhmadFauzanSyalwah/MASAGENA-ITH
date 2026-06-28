@@ -118,19 +118,24 @@ function short_text($text, $limit = 95) {
    DATABASE HELPER
 ========================= */
 
-function table_column_exists($conn, $table, $column) {
-    $table = mysqli_real_escape_string($conn, $table);
-    $column = mysqli_real_escape_string($conn, $column);
+function table_column_exists($pdo, $table, $column) {
+    // Sanitasi sederhana untuk nama tabel karena PDO tidak bisa bind nama tabel/identifier
+    $table = preg_replace('/[^a-zA-Z0-9_]/', '', $table);
 
-    $result = mysqli_query($conn, "SHOW COLUMNS FROM `$table` LIKE '$column'");
+    try {
+        $stmt = $pdo->prepare("SHOW COLUMNS FROM `$table` LIKE ?");
+        $stmt->execute([$column]);
 
-    return $result && mysqli_num_rows($result) > 0;
+        return $stmt->rowCount() > 0;
+    } catch (PDOException $e) {
+        return false;
+    }
 }
 
-function aspirasi_schema_ready($conn) {
-    return table_column_exists($conn, 'aspirasi', 'kode_aspirasi')
-        && table_column_exists($conn, 'aspirasi', 'id_organisasi')
-        && table_column_exists($conn, 'aspirasi', 'is_anonim');
+function aspirasi_schema_ready($pdo) {
+    return table_column_exists($pdo, 'aspirasi', 'kode_aspirasi')
+        && table_column_exists($pdo, 'aspirasi', 'id_organisasi')
+        && table_column_exists($pdo, 'aspirasi', 'is_anonim');
 }
 
 function schema_warning() {
@@ -148,60 +153,52 @@ function schema_warning() {
    MAHASISWA HELPER
 ========================= */
 
-function current_mahasiswa($conn) {
-    if (empty($_SESSION['id_mahasiswa'])) {
+function current_mahasiswa($pdo) {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    // Menggunakan user_id dari session_check.php
+    if (empty($_SESSION['user_id']) || $_SESSION['peran'] !== 'mahasiswa') {
         return null;
     }
 
-    $id = (int) $_SESSION['id_mahasiswa'];
+    $id = (int) $_SESSION['user_id'];
 
-    $stmt = mysqli_prepare(
-        $conn,
-        "SELECT id_mahasiswa, nim, nama, email 
-         FROM tbmahasiswa 
-         WHERE id_mahasiswa = ? 
-         LIMIT 1"
-    );
+    try {
+        $stmt = $pdo->prepare("
+            SELECT id_mahasiswa, nim, nama, email 
+            FROM tbmahasiswa 
+            WHERE id_mahasiswa = ? 
+            LIMIT 1
+        ");
+        
+        $stmt->execute([$id]);
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$stmt) {
+        return $data ?: null;
+    } catch (PDOException $e) {
         return null;
     }
-
-    mysqli_stmt_bind_param($stmt, 'i', $id);
-    mysqli_stmt_execute($stmt);
-
-    $result = mysqli_stmt_get_result($stmt);
-    $data = mysqli_fetch_assoc($result);
-
-    mysqli_stmt_close($stmt);
-
-    return $data ?: null;
 }
 
-function demo_mahasiswa($conn) {
-    $result = mysqli_query(
-        $conn,
-        "SELECT id_mahasiswa, nim, nama, email 
-         FROM tbmahasiswa 
-         ORDER BY id_mahasiswa ASC 
-         LIMIT 1"
-    );
+// ... demo_mahasiswa biarkan saja seperti aslinya ...
 
-    if ($result && mysqli_num_rows($result) > 0) {
-        return mysqli_fetch_assoc($result);
+function active_mahasiswa($pdo) {
+    // Pastikan session sudah berjalan
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
     }
 
-    return null;
-}
-
-function active_mahasiswa($conn) {
-    $mahasiswa = current_mahasiswa($conn);
-
-    if ($mahasiswa) {
-        return $mahasiswa;
+    // Menggunakan user_id dari session_check.php
+    if (isset($_SESSION['user_id']) && isset($_SESSION['peran']) && $_SESSION['peran'] === 'mahasiswa') {
+        $stmt = $pdo->prepare("SELECT * FROM tbmahasiswa WHERE id_mahasiswa = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
-    return demo_mahasiswa($conn);
+    
+    // Jika tidak ada session atau bukan mahasiswa, kembalikan false
+    return false; 
 }
 
 /* =========================

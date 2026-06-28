@@ -54,40 +54,41 @@ if (!function_exists('pendaftaran_status_badge')) {
 }
 
 if (!function_exists('pendaftaran_current_mahasiswa')) {
-    function pendaftaran_current_mahasiswa($conn) {
-
-        if (empty($_SESSION['id_mahasiswa'])) {
+    /**
+     * Mengambil data mahasiswa yang sedang login menggunakan PDO
+     * Parameter diganti menjadi objek PDO (misal: $pdo)
+     */
+    function pendaftaran_current_mahasiswa($pdo) {
+        // Cek $_SESSION['user_id'] sesuai dengan data session login Anda
+        if (empty($_SESSION['user_id'])) {
             return null;
         }
 
-        $id = (int) $_SESSION['id_mahasiswa'];
+        $id = (int) $_SESSION['user_id'];
 
-        $stmt = mysqli_prepare($conn, "
-            SELECT 
-                id_mahasiswa,
-                nim,
-                nama,
-                prodi,
-                kontak,
-                email
-            FROM tbmahasiswa
-            WHERE id_mahasiswa = ?
-            LIMIT 1
-        ");
+        try {
+            // Konversi query dari mysqli ke PDO Prepared Statement
+            $stmt = $pdo->prepare("
+                SELECT 
+                    id_mahasiswa,
+                    nim,
+                    nama,
+                    prodi,
+                    kontak,
+                    email
+                FROM tbmahasiswa
+                WHERE id_mahasiswa = ?
+                LIMIT 1
+            ");
 
-        if (!$stmt) {
+            $stmt->execute([$id]);
+            $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            return $data ?: null;
+        } catch (PDOException $e) {
+            // Jika terjadi kegagalan query database
             return null;
         }
-
-        mysqli_stmt_bind_param($stmt, 'i', $id);
-        mysqli_stmt_execute($stmt);
-
-        $result = mysqli_stmt_get_result($stmt);
-        $data = mysqli_fetch_assoc($result);
-
-        mysqli_stmt_close($stmt);
-
-        return $data ?: null;
     }
 }
 
@@ -116,6 +117,14 @@ if (!function_exists('pendaftaran_lampiran_src')) {
         }
 
         return $baseUrl . '/uploads/kegiatan/' . $lampiran;
+    }
+}
+
+// Tambahkan fungsi highlightText
+if (!function_exists('highlightText')) {
+    function highlightText($text, $keyword) {
+        if (empty($keyword)) return $text;
+        return preg_replace('/(' . preg_quote($keyword, '/') . ')/i', '<span class="highlight">$1</span>', $text);
     }
 }
 ?>

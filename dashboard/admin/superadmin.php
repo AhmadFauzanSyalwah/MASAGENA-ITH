@@ -155,12 +155,19 @@ if (isset($_SESSION['is_superadmin']) && $_SERVER["REQUEST_METHOD"] == "POST") {
             }
             
             if ($role === 'pengurus') {
-                $sql = "INSERT INTO pengurus_organisasi (id_organisasi, nama_pengurus, jabatan, password, no_hp, status_verifikasi) VALUES (:id_org, :nama, :jabatan, :password, :no_telp, 'Belum')";
+                // Menangkap data jabatan dan level
+                $jabatan = ($_POST['jabatan_select'] === 'Lainnya') ? $_POST['jabatan_custom'] : $_POST['jabatan_select'];
+                $level = $_POST['level_pengurus'] ?? 'Pengurus Departemen';
+
+                $sql = "INSERT INTO pengurus_organisasi (id_organisasi, nama_pengurus, jabatan, level, password, no_hp, status_verifikasi) 
+                        VALUES (:id_org, :nama, :jabatan, :level, :password, :no_telp, 'Belum')";
+
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute([
                     ':id_org'   => $_POST['id_organisasi'] ?? '', 
                     ':nama'     => $_POST['nama_pengurus'] ?? '', 
-                    ':jabatan'  => $_POST['jabatan'] ?? '', 
+                    ':jabatan'  => $jabatan, // <-- Perbaikan: gunakan variabel $jabatan
+                    ':level'    => $level,   // <-- Perbaikan: tambahkan binding variabel $level
                     ':password' => $password_hash, 
                     ':no_telp'  => $_POST['no_telp_pengurus'] ?? ''
                 ]);
@@ -174,68 +181,82 @@ if (isset($_SESSION['is_superadmin']) && $_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 
-    // --- EDIT USER VIA MODAL ---
-    if (isset($_POST['edit_user_baru'])) {
-        $role = $_POST['role_edit'];
-        $id = $_POST['id_edit'];
-        try {
-            if ($role === 'mahasiswa') {
-                $sql = "UPDATE tbmahasiswa SET nim = :nim, nama = :nama, email = :email, kontak = :kontak, prodi = :prodi WHERE id_mahasiswa = :id";
-                $stmt = $pdo->prepare($sql);
-                // Ditambahkan ?? '' agar tidak error saat input form kosong/tidak ada
-                $stmt->execute([
-                    ':nim'    => $_POST['nim_edit'] ?? '', 
-                    ':nama'   => $_POST['nama_edit'] ?? '', 
-                    ':email'  => $_POST['email_edit'] ?? '',
-                    ':kontak' => $_POST['kontak_edit'] ?? '', 
-                    ':prodi'  => $_POST['prodi_edit'] ?? '',   
-                    ':id'     => $id
-                ]);
-            }
-            
-            if ($role === 'admin') {
-                $sql = "UPDATE administrator SET username = :username, nama_lengkap = :nama, no_hp = :no_telp WHERE id_admin = :id";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([
-                    ':username' => $_POST['username_edit'] ?? '', 
-                    ':nama'     => $_POST['nama_edit'] ?? '', 
-                    ':no_telp'  => $_POST['no_telp_edit'] ?? '', 
-                    ':id'       => $id
-                ]);
-            }
-            
-            if ($role === 'pengurus') {
-                $sql = "UPDATE pengurus_organisasi SET id_organisasi = :id_org, nama_pengurus = :nama, jabatan = :jabatan, no_hp = :no_telp WHERE id_pengurus = :id";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([
-                    ':id_org'   => $_POST['id_organisasi_edit'] ?? '', 
-                    ':nama'     => $_POST['nama_edit'] ?? '', 
-                    ':jabatan'  => $_POST['jabatan_edit'] ?? '', 
-                    ':no_telp'  => $_POST['no_telp_edit'] ?? '', 
-                    ':id'       => $id
-                ]);
-            }
-            
-            if (!empty($_POST['password_edit'])) {
-                $password_hash = password_hash($_POST['password_edit'], PASSWORD_DEFAULT);
-                if ($role === 'mahasiswa') {
-                    $pdo->prepare("UPDATE tbmahasiswa SET password = :pw WHERE id_mahasiswa = :id")->execute([':pw' => $password_hash, ':id' => $id]);
-                }
+    // --- EDIT USER ---
+        if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'edit_user') {
+            $id_user = $_POST['edit_id_user'];
+            $role = $_POST['edit_role'];
+            $edit_password = $_POST['edit_password'] ?? '';
+
+            try {
                 if ($role === 'admin') {
-                    $pdo->prepare("UPDATE administrator SET password = :pw WHERE id_admin = :id")->execute([':pw' => $password_hash, ':id' => $id]);
+                    $username = $_POST['edit_username_admin'] ?? '';
+                    $nama = $_POST['edit_nama_admin'] ?? '';
+                    $no_hp = $_POST['edit_no_hp_admin'] ?? ''; // Ambil input No WA Admin
+                    
+                    // Sertakan kolom no_hp pada table administrator (sesuaikan nama kolom di DB Anda, misal: no_hp / no_telp)
+                    $sql = "UPDATE administrator SET username = :username, nama = :nama, no_hp = :no_hp ";
+                    $params = [':username' => $username, ':nama' => $nama, ':no_hp' => $no_hp, ':id' => $id_user];
+                    
+                    if (!empty($edit_password)) {
+                        $sql .= ", password = :password ";
+                        $params[':password'] = password_hash($edit_password, PASSWORD_BCRYPT);
+                    }
+                    $sql .= " WHERE id_admin = :id";
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute($params);
+                    $pesan = "Data Admin Berhasil Diperbarui!";
                 }
-                if ($role === 'pengurus') {
-                    $pdo->prepare("UPDATE pengurus_organisasi SET password = :pw WHERE id_pengurus = :id")->execute([':pw' => $password_hash, ':id' => $id]);
+                elseif ($role === 'pengurus') {
+                    // ... Logic Simpan Pengurus Tetap Sama ...
+                    $jabatan = ($_POST['edit_jabatan_select'] === 'Lainnya') ? $_POST['edit_jabatan_custom'] : $_POST['edit_jabatan_select'];
+                    $level = $_POST['edit_level_pengurus'] ?? 'Pengurus Departemen';
+                    $id_org = $_POST['edit_id_organisasi'] ?? '';
+                    $nama = $_POST['edit_nama_pengurus'] ?? '';
+                    $no_hp = $_POST['edit_no_telp_pengurus'] ?? '';
+
+                    $sql = "UPDATE pengurus_organisasi SET id_organisasi = :id_org, nama_pengurus = :nama, jabatan = :jabatan, level = :level, no_hp = :no_telp ";
+                    $params = [':id_org' => $id_org, ':nama' => $nama, ':jabatan' => $jabatan, ':level' => $level, ':no_telp' => $no_hp, ':id' => $id_user];
+
+                    if (!empty($edit_password)) {
+                        $sql .= ", password = :password ";
+                        $params[':password'] = password_hash($edit_password, PASSWORD_BCRYPT);
+                    }
+                    $sql .= " WHERE id_pengurus = :id";
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute($params);
+                    $pesan = "Data Pengurus Organisasi Berhasil Diperbarui!";
                 }
+                elseif ($role === 'mahasiswa') {
+                    $nim = $_POST['edit_nim_mahasiswa'] ?? '';
+                    $nama = $_POST['edit_nama_mahasiswa'] ?? '';
+                    $prodi = $_POST['edit_prodi_mahasiswa'] ?? '';
+                    $no_hp = $_POST['edit_no_telp_mahasiswa'] ?? '';
+                    $email = $_POST['edit_email_mahasiswa'] ?? ''; // Ambil input Email Mahasiswa
+
+                    // Tambahkan kolom email pada query UPDATE tbmahasiswa
+                    $sql = "UPDATE tbmahasiswa SET nim = :nim, nama_mahasiswa = :nama, prodi = :prodi, no_hp = :no_telp, email = :email ";
+                    $params = [
+                        ':nim'     => $nim,
+                        ':nama'    => $nama,
+                        ':prodi'   => $prodi,
+                        ':no_telp' => $no_hp,
+                        ':email'   => $email,
+                        ':id'      => $id_user
+                    ];
+
+                    if (!empty($edit_password)) {
+                        $sql .= ", password = :password ";
+                        $params[':password'] = password_hash($edit_password, PASSWORD_BCRYPT);
+                    }
+                    $sql .= " WHERE id_mahasiswa = :id";
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute($params);
+                    $pesan = "Data Mahasiswa Berhasil Diperbarui!";
+                }
+            } catch (PDOException $e) {
+                $error = "Gagal memperbarui data: " . $e->getMessage();
             }
-            
-            $pesan = "Data Pengguna Berhasil Diperbarui!"; 
-            $tipe_pesan = "success";
-        } catch (PDOException $e) {
-            $pesan = "Gagal memperbarui data: " . $e->getMessage(); 
-            $tipe_pesan = "error";
         }
-    }
 
     // --- TAMBAH ORGANISASI BARU ---
     if (isset($_POST['tambah_organisasi'])) {
@@ -643,16 +664,16 @@ try {
                     <div id="formPengurus" class="hidden space-y-3">
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Pilih Organisasi</label>
-                            <select name="id_organisasi" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 bg-white">
+                            <select name="id_organisasi" required onchange="this.classList.remove('text-gray-500'); this.classList.add('text-black');" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold text-gray-500 focus:outline-none focus:border-blue-600 bg-white">
                                 <option value="" hidden>-- Pilih Organisasi --</option>
-                                <?php 
+                                <?php
                                 try {
                                     $stmtOrg = $pdo->query("SELECT id_organisasi, nama_organisasi FROM organisasi ORDER BY nama_organisasi ASC");
                                     while ($org = $stmtOrg->fetch(PDO::FETCH_ASSOC)) {
-                                        echo '<option value="' . $org['id_organisasi'] . '">' . htmlspecialchars($org['nama_organisasi']) . '</option>';
+                                        echo '<option value="' . $org['id_organisasi'] . '" class="text-black">' . htmlspecialchars($org['nama_organisasi']) . '</option>';
                                     }
                                 } catch (PDOException $e) {
-                                    echo '<option value="">Gagal memuat organisasi</option>';
+                                    echo '<option value="" class="text-black">Gagal memuat organisasi</option>';
                                 }
                                 ?>
                             </select>
@@ -663,7 +684,23 @@ try {
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Jabatan</label>
-                            <input type="text" name="jabatan" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                            <select name="jabatan_select" id="jabatan_select" onchange="toggleJabatan(this); this.classList.remove('text-gray-500'); this.classList.add('text-black');" required class="w-full px-3 py-2 border rounded-lg text-xs font-semibold text-gray-500 focus:outline-none focus:border-blue-600 bg-white">
+                                <option value="" hidden>-- Pilih Jabatan --</option>
+                                <option value="Ketua" class="text-black">Ketua</option>
+                                <option value="Wakil Ketua" class="text-black">Wakil Ketua</option>
+                                <option value="Sekretaris" class="text-black">Sekretaris</option>
+                                <option value="Bendahara" class="text-black">Bendahara</option>
+                                <option value="Lainnya" class="text-black">Lainnya...</option>
+                            </select>
+                            <input type="text" name="jabatan_custom" id="jabatan_custom" placeholder="Ketik jabatan baru..." class="hidden w-full mt-2 px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Level Pengurus</label>
+                            <select name="level_pengurus" required onchange="this.classList.remove('text-gray-500'); this.classList.add('text-black');" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold text-gray-500 focus:outline-none focus:border-blue-600 bg-white">
+                                <option value="" hidden>-- Pilih Tingkatan --</option>
+                                <option value="Pengurus Inti" class="text-black">Pengurus Inti</option>
+                                <option value="Pengurus Departemen" class="text-black">Pengurus Departemen</option>
+                            </select>
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">No. HP / WhatsApp</label>
@@ -1242,64 +1279,148 @@ try {
         </div>
     </div>
 
-    <div id="modalEdit" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md border-t-8 border-amber-500">
-            <h3 class="text-xl font-bold mb-4 text-gray-800 flex justify-between items-center">
-                <span><i class="fa-solid fa-pen-to-square text-amber-500 mr-2"></i> Edit Data Pengguna</span>
-                <button onclick="document.getElementById('modalEdit').classList.add('hidden'); document.getElementById('modalEdit').classList.remove('flex');" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-times"></i></button>
-            </h3>
-            <form action="" method="POST" class="space-y-4">
-                <input type="hidden" name="id_edit" id="id_edit">
-                <input type="hidden" name="role_edit" id="role_edit">
+        <div id="modalEdit" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4 animate-fade-in">
+            <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all scale-95 duration-300 relative">
+                <button type="button" onclick="tutupModalEdit()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
                 
-                <div id="formEditMahasiswa" class="hidden space-y-3">
-                    <input type="text" name="nim_edit" id="nim_edit" placeholder="NIM" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
-                    <input type="text" name="nama_edit" id="nama_mahasiswa_edit" placeholder="Nama Lengkap" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
-                    <input type="email" name="email_edit" id="email_edit" placeholder="Email" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
-                    <input type="text" name="prodi_edit" id="prodi_edit" placeholder="Program Studi (Prodi)" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
-                    <input type="text" name="kontak_edit" id="kontak_edit" placeholder="No. HP / WhatsApp (Kontak)" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-blue-100 p-2.5 rounded-xl text-blue-600">
+                        <i class="fa-solid fa-user-pen text-base"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-800">Edit Data Pengguna</h3>
+                        <p class="text-[10px] text-gray-500 font-medium font-mono">Perbarui informasi akun pengguna</p>
+                    </div>
                 </div>
 
-                <div id="formEditAdmin" class="hidden space-y-3">
-                    <input type="text" name="username_edit" id="username_edit" placeholder="Username" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
-                    <input type="text" name="nama_edit" id="nama_admin_edit" placeholder="Nama Lengkap" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
-                    <input type="text" name="no_telp_edit" id="no_telp_admin_edit" placeholder="No. HP" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
-                </div>
+                <form action="" method="POST" class="space-y-4">
+                    <input type="hidden" name="action" value="edit_user">
+                    <input type="hidden" name="edit_id_user" id="edit_id_user">
+                    <input type="hidden" name="edit_role" id="edit_role">
 
-                <div id="formEditPengurus" class="hidden space-y-3">
-                    <select name="id_organisasi_edit" id="id_organisasi_edit" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
-                        <?php foreach($data_organisasi as $org): ?>
-                        <option value="<?= $org['id_organisasi'] ?>"><?= $org['nama_organisasi'] ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <input type="text" name="nama_edit" id="nama_pengurus_edit" placeholder="Nama Lengkap" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
-                    <input type="text" name="jabatan_edit" id="jabatan_edit" placeholder="Jabatan" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
-                    <input type="text" name="no_telp_edit" id="no_telp_pengurus_edit" placeholder="No. HP" class="w-full p-3 border rounded-lg focus:border-amber-500 focus:outline-none">
-                </div>
+                    <div id="editFormAdmin" class="hidden space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Username Admin</label>
+                            <input type="text" name="edit_username_admin" id="edit_username_admin" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 text-black">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nama Admin</label>
+                            <input type="text" name="edit_nama_admin" id="edit_nama_admin" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 text-black">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">No. HP / WhatsApp Admin</label>
+                            <input type="text" name="edit_no_hp_admin" id="edit_no_hp_admin" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 text-black">
+                        </div>
+                    </div>
 
-                <div class="mt-4 pt-4 border-t border-gray-100">
-                    <label class="text-xs font-bold text-gray-500">Ubah Password (Opsional)</label>
-                    <input type="password" name="password_edit" placeholder="Kosongkan jika tidak diubah" class="w-full p-3 mt-1 border rounded-lg focus:border-amber-500 focus:outline-none">
-                </div>
+                    <div id="editFormPengurus" class="hidden space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Organisasi</label>
+                            <select name="edit_id_organisasi" id="edit_id_organisasi" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 bg-white text-black">
+                                <option value="" hidden>-- Pilih Organisasi --</option>
+                                <?php
+                                try {
+                                    $stmtOrg = $pdo->query("SELECT id_organisasi, nama_organisasi FROM organisasi ORDER BY nama_organisasi ASC");
+                                    while ($org = $stmtOrg->fetch(PDO::FETCH_ASSOC)) {
+                                        echo '<option value="' . $org['id_organisasi'] . '">' . htmlspecialchars($org['nama_organisasi']) . '</option>';
+                                    }
+                                } catch (PDOException $e) {}
+                                ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nama Pengurus</label>
+                            <input type="text" name="edit_nama_pengurus" id="edit_nama_pengurus" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 text-black">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Jabatan</label>
+                            <select name="jabatan" id="jabatan" onchange="toggleJabatan(this)" class="w-full border p-2 rounded ...">
+                                <option value="Ketua">Ketua</option>
+                                <option value="Wakil Ketua">Wakil Ketua</option>
+                                <option value="Sekretaris">Sekretaris</option>
+                                <option value="Bendahara">Bendahara</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
 
-                <button type="submit" name="edit_user_baru" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg mt-4 transition">Simpan Perubahan</button>
-            </form>
+                            <input type="text" name="jabatan_custom" id="jabatan_custom" class="hidden w-full border p-2 rounded mt-2" placeholder="Ketik nama jabatan...">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Level Pengurus</label>
+                            <select name="edit_level_pengurus" id="edit_level_pengurus" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 bg-white text-black">
+                                <option value="" hidden>-- Pilih Tingkatan --</option>
+                                <option value="Pengurus Inti">Pengurus Inti</option>
+                                <option value="Pengurus Departemen">Pengurus Departemen</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">No. HP (WhatsApp)</label>
+                            <input type="text" name="edit_no_telp_pengurus" id="edit_no_telp_pengurus" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 text-black">
+                        </div>
+                    </div>
+
+                    <div id="editFormMahasiswa" class="hidden space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">NIM Mahasiswa</label>
+                            <input type="text" name="edit_nim_mahasiswa" id="edit_nim_mahasiswa" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 text-black">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nama Mahasiswa</label>
+                            <input type="text" name="edit_nama_mahasiswa" id="edit_nama_mahasiswa" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 text-black">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Email Mahasiswa</label>
+                            <input type="email" name="edit_email_mahasiswa" id="edit_email_mahasiswa" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 text-black">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Program Studi</label>
+                            <input type="text" name="edit_prodi_mahasiswa" id="edit_prodi_mahasiswa" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 text-black">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">No. HP (WhatsApp)</label>
+                            <input type="text" name="edit_no_telp_mahasiswa" id="edit_no_telp_mahasiswa" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 text-black">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Password Baru (Kosongkan jika tidak diubah)</label>
+                        <input type="password" name="edit_password" placeholder="••••••••" class="w-full px-3 py-2 border rounded-lg text-xs font-semibold focus:outline-none focus:border-blue-600 text-black">
+                    </div>
+
+                    <div class="flex gap-2 pt-2 justify-end text-xs font-bold">
+                        <button type="button" onclick="tutupModalEdit()" class="px-4 py-2 border rounded-xl text-gray-600 hover:bg-gray-50 transition-colors">Batal</button>
+                        <button type="submit" name="edit_user_submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors">Simpan Perubahan</button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
 
     <script>
-        // Fungsi untuk Tambah Data
         // Fungsi untuk Tambah Data
         function ubahFormTambah(role) {
             ['formMahasiswa', 'formAdmin', 'formPengurus'].forEach(id => document.getElementById(id).classList.add('hidden'));
             
             // Menonaktifkan semua input yang tidak terlihat agar tidak error saat disubmit
-            document.querySelectorAll('#formMahasiswa input, #formAdmin input, #formPengurus input, #formPengurus select').forEach(el => {
-                el.removeAttribute('required');
+            document.getElementById('formMahasiswa').classList.add('hidden');
+            document.querySelectorAll('#formMahasiswa input').forEach(el => {
                 el.setAttribute('disabled', 'true');
+                el.removeAttribute('required');
+            });
+            
+            document.getElementById('formAdmin').classList.add('hidden');
+            document.querySelectorAll('#formAdmin input').forEach(el => {
+                el.setAttribute('disabled', 'true');
+                el.removeAttribute('required');
+            });
+            
+            document.getElementById('formPengurus').classList.add('hidden');
+            document.querySelectorAll('#formPengurus input, #formPengurus select').forEach(el => {
+                el.setAttribute('disabled', 'true');
+                el.removeAttribute('required');
             });
 
-            // Memunculkan form sesuai yang dipilih
+            // 2. Tampilkan form sesuai dengan role yang dipilih
             if (role === 'mahasiswa') {
                 document.getElementById('formMahasiswa').classList.remove('hidden');
                 document.querySelectorAll('#formMahasiswa input').forEach(el => {
@@ -1316,42 +1437,139 @@ try {
                 document.getElementById('formPengurus').classList.remove('hidden');
                 document.querySelectorAll('#formPengurus input, #formPengurus select').forEach(el => {
                     el.removeAttribute('disabled');
-                    el.setAttribute('required', 'true');
+                    
+                    // Pengecualian required agar tombol "Daftarkan Pengguna" tidak macet
+                    if (el.id === 'jabatan_custom' || el.name === 'no_telp_pengurus') {
+                        el.removeAttribute('required');
+                    } else {
+                        el.setAttribute('required', 'true');
+                    }
                 });
+
+                // Otomatis jalankan fungsi cek jabatan saat form pengurus terbuka
+                var selectJabatan = document.getElementById('jabatan');
+                if (selectJabatan) {
+                    toggleJabatan(selectJabatan);
+                }
+            }
+        }
+
+        function toggleJabatan(selectElement) {
+            var inputCustom = document.getElementById('jabatan_custom');
+            if (inputCustom) {
+                if (selectElement.value === 'Lainnya') {
+                    // Munculkan kolom jika memilih 'Lainnya'
+                    inputCustom.classList.remove('hidden');
+                    inputCustom.setAttribute('required', 'true');
+                } else {
+                    // Sembunyikan jika memilih selain 'Lainnya'
+                    inputCustom.classList.add('hidden');
+                    inputCustom.removeAttribute('required');
+                    inputCustom.value = '';
+                }
             }
         }
         if(document.getElementById('roleSelector')) window.onload = toggleForm;
 
-        // Fungsi untuk Edit Data (SUDAH DIPERBAIKI!)
-        function bukaModalEdit(role, id, data) {
-            document.getElementById('role_edit').value = role;
-            document.getElementById('id_edit').value = id;
-            
-            ['formEditMahasiswa', 'formEditAdmin', 'formEditPengurus'].forEach(id => document.getElementById(id).classList.add('hidden'));
+        // Fungsi Helper untuk mengisi form dengan aman
+        function safeSetVal(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.value = value;
+        }
 
-            if (role === 'mahasiswa') {
-                document.getElementById('formEditMahasiswa').classList.remove('hidden');
-                document.getElementById('nim_edit').value = data.nim;
-                document.getElementById('nama_mahasiswa_edit').value = data.nama;
-                document.getElementById('email_edit').value = data.email;
-                document.getElementById('prodi_edit').value = data.prodi || '';
-                document.getElementById('kontak_edit').value = data.kontak || '';
-            } else if (role === 'admin') {
-                document.getElementById('formEditAdmin').classList.remove('hidden');
-                document.getElementById('username_edit').value = data.username;
-                document.getElementById('nama_admin_edit').value = data.nama;
-                document.getElementById('no_telp_admin_edit').value = data.no_hp;
-            } else if (role === 'pengurus') {
-                document.getElementById('formEditPengurus').classList.remove('hidden');
-                document.getElementById('id_organisasi_edit').value = data.id_organisasi;
-                document.getElementById('nama_pengurus_edit').value = data.nama;
-                document.getElementById('jabatan_edit').value = data.jabatan;
-                document.getElementById('no_telp_pengurus_edit').value = data.no_hp;
+        function toggleEditJabatan(selectElement) {
+            const customInput = document.getElementById('edit_jabatan_custom');
+            if (selectElement.value === 'Lainnya') {
+                customInput.classList.remove('hidden');
+                customInput.setAttribute('required', 'true');
+            } else {
+                customInput.classList.add('hidden');
+                customInput.removeAttribute('required');
+                customInput.value = '';
             }
+        }
 
+        function bukaModalEdit(role, id, dataRaw) {
+            try {
+                let data = dataRaw;
+                if (typeof dataRaw === 'string') {
+                    try { data = JSON.parse(dataRaw); } catch(e) { console.error("Format data error", e); }
+                }
+
+                safeSetVal('edit_id_user', id);
+                safeSetVal('edit_role', role);
+
+                // Sembunyikan semua sub-form dahulu
+                ['editFormAdmin', 'editFormPengurus', 'editFormMahasiswa'].forEach(formId => {
+                    const formEl = document.getElementById(formId);
+                    if(formEl) formEl.classList.add('hidden');
+                });
+
+                if (role === 'admin') {
+                    document.getElementById('editFormAdmin').classList.remove('hidden');
+                    safeSetVal('edit_username_admin', data.username || '');
+                    safeSetVal('edit_nama_admin', data.nama || '');
+                    safeSetVal('edit_no_hp_admin', data.no_hp || data.no_telp || '');
+                } 
+                else if (role === 'pengurus') {
+                    document.getElementById('editFormPengurus').classList.remove('hidden');
+                    safeSetVal('edit_id_organisasi', data.id_organisasi || '');
+                    safeSetVal('edit_nama_pengurus', data.nama || '');
+                    safeSetVal('edit_no_telp_pengurus', data.no_hp || '');
+
+                    const jabatSelect = document.getElementById('edit_jabatan_select');
+                    const jabatCustom = document.getElementById('edit_jabatan_custom');
+                    const opsiUtama = ['Ketua', 'Wakil Ketua', 'Sekretaris', 'Bendahara'];
+
+                    if (jabatSelect) {
+                        if (data.jabatan && opsiUtama.includes(data.jabatan)) {
+                            jabatSelect.value = data.jabatan;
+                            if(jabatCustom) {
+                                jabatCustom.classList.add('hidden');
+                                jabatCustom.removeAttribute('required');
+                            }
+                        } else if (data.jabatan) {
+                            jabatSelect.value = 'Lainnya';
+                            if(jabatCustom) {
+                                jabatCustom.value = data.jabatan;
+                                jabatCustom.classList.remove('hidden');
+                                jabatCustom.setAttribute('required', 'true');
+                            }
+                        } else {
+                            jabatSelect.value = '';
+                            if(jabatCustom) {
+                                jabatCustom.classList.add('hidden');
+                                jabatCustom.removeAttribute('required');
+                            }
+                        }
+                    }
+                    safeSetVal('edit_level_pengurus', data.level || '');
+                } 
+                else if (role === 'mahasiswa') {
+                    document.getElementById('editFormMahasiswa').classList.remove('hidden');
+                    safeSetVal('edit_nim_mahasiswa', data.nim || '');
+                    safeSetVal('edit_nama_mahasiswa', data.nama_mahasiswa || data.nama || '');
+                    safeSetVal('edit_email_mahasiswa', data.email || '');
+                    safeSetVal('edit_prodi_mahasiswa', data.prodi || '');
+                    safeSetVal('edit_no_telp_mahasiswa', data.no_hp || '');
+                }
+
+                let modal = document.getElementById('modalEdit');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
+            } catch (err) {
+                console.error("Terjadi error di bukaModalEdit:", err);
+            }
+        }
+
+        function tutupModalEdit() {
             let modal = document.getElementById('modalEdit');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
         }
     </script>
     <?php endif; ?> <div id="modalDetailKegiatan" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50 transition-all duration-300">

@@ -1,0 +1,150 @@
+/* ============================================================
+   DROPDOWN PROFIL
+   ============================================================ */
+.public-header .profile-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.public-header .profile-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 40px;
+    padding: 0.25rem 0.8rem 0.25rem 0.3rem;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.public-header .profile-toggle:hover {
+    border-color: rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.05);
+}
+
+.public-header .profile-toggle .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.public-header .profile-toggle .avatar-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: var(--header-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.public-header .profile-toggle .profile-name {
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.public-header .profile-toggle i {
+    font-size: 0.7rem;
+    transition: transform 0.2s;
+    margin-left: 0.2rem;
+}
+
+.public-header .profile-toggle[aria-expanded="true"] i {
+    transform: rotate(180deg);
+}
+
+.public-header .dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background: #0a2844;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 0.5rem 0;
+    min-width: 200px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    z-index: 1001;
+    list-style: none;
+}
+
+.public-header .dropdown-menu.open {
+    display: block;
+}
+
+.public-header .dropdown-menu li {
+    margin: 0;
+    padding: 0;
+}
+
+.public-header .dropdown-menu li a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1.2rem;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.public-header .dropdown-menu li a:hover {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+}
+
+.public-header .dropdown-menu li a i {
+    width: 20px;
+    text-align: center;
+    color: var(--gold);
+}
+
+.public-header .dropdown-divider {
+    margin: 0.3rem 1rem;
+    border: 0;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Responsive untuk dropdown di mobile */
+@media (max-width: 992px) {
+    .public-header .profile-dropdown {
+        width: 100%;
+    }
+    .public-header .profile-toggle {
+        width: 100%;
+        justify-content: center;
+        padding: 0.5rem;
+        border-radius: 8px;
+        border-color: transparent;
+    }
+    .public-header .profile-toggle:hover {
+        background: rgba(255,255,255,0.05);
+        border-color: transparent;
+    }
+    .public-header .dropdown-menu {
+        position: static;
+        box-shadow: none;
+        background: transparent;
+        border: none;
+        padding: 0;
+        margin-top: 0.3rem;
+        width: 100%;
+    }
+    .public-header .dropdown-menu li a {
+        padding: 0.6rem 1.5rem;
+        justify-content: center;
+    }
+    .public-header .dropdown-menu.open {
+        display: block;
+    }
+}

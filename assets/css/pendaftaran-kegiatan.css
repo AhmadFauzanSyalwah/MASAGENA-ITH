@@ -22,7 +22,7 @@
         margin: 0;
         font-family: 'Inter', Arial, sans-serif;
         color: var(--text-dark);
-        background: var(--white)
+        background: --var(--bg-light);
     }
 
     a {

@@ -1,182 +1,182 @@
 <?php
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../include/components.php';
+require_once '../../config/session_check.php';
 
-$schemaReady = aspirasi_schema_ready($conn);
+// Pastikan menggunakan $pdo sebagai koneksi
+$schemaReady = aspirasi_schema_ready($pdo);
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $data = null;
-$komentar = null;
+$komentar = [];
 
 if ($schemaReady && $id > 0) {
-    $stmt = mysqli_prepare($conn, "
-        SELECT
-            aspirasi.*,
-            organisasi.nama_organisasi,
-            tbmahasiswa.nama AS nama_mahasiswa,
-            tbmahasiswa.nim,
-            tbmahasiswa.email
-        FROM aspirasi
-        LEFT JOIN organisasi 
-            ON aspirasi.id_organisasi = organisasi.id_organisasi
-        LEFT JOIN tbmahasiswa 
-            ON aspirasi.id_mahasiswa = tbmahasiswa.id_mahasiswa
-        WHERE aspirasi.id_aspirasi = ?
-        LIMIT 1
-    ");
+    try {
+        // Query detail aspirasi dengan PDO
+        $stmt = $pdo->prepare("
+            SELECT
+                a.*,
+                o.nama_organisasi,
+                m.nama AS nama_mahasiswa,
+                m.nim,
+                m.email
+            FROM aspirasi a
+            LEFT JOIN organisasi o ON a.id_organisasi = o.id_organisasi
+            LEFT JOIN tbmahasiswa m ON a.id_mahasiswa = m.id_mahasiswa
+            WHERE a.id_aspirasi = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$id]);
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$stmt) {
-        die('Prepare detail aspirasi gagal: ' . mysqli_error($conn));
-    }
-
-    mysqli_stmt_bind_param($stmt, 'i', $id);
-    mysqli_stmt_execute($stmt);
-
-    $result = mysqli_stmt_get_result($stmt);
-    $data = mysqli_fetch_assoc($result);
-
-    mysqli_stmt_close($stmt);
-
-    if ($data) {
-        $stmtKomentar = mysqli_prepare($conn, "
-    SELECT *
-    FROM komentar_aspirasi
-    WHERE id_aspirasi = ?
-    ORDER BY tanggal ASC
-");
-
-        if (!$stmtKomentar) {
-            die('Prepare komentar aspirasi gagal: ' . mysqli_error($conn));
+        if ($data) {
+            // Query komentar dengan PDO
+            $stmtKomentar = $pdo->prepare("
+                SELECT *
+                FROM komentar_aspirasi
+                WHERE id_aspirasi = ?
+                ORDER BY created_at ASC
+            ");
+            $stmtKomentar->execute([$id]);
+            $komentar = $stmtKomentar->fetchAll(PDO::FETCH_ASSOC);
         }
-
-        mysqli_stmt_bind_param($stmtKomentar, 'i', $id);
-        mysqli_stmt_execute($stmtKomentar);
-
-        $komentar = mysqli_stmt_get_result($stmtKomentar);
-
-        mysqli_stmt_close($stmtKomentar);
+    } catch (PDOException $e) {
+        die('Query detail aspirasi gagal: ' . $e->getMessage());
     }
 }
 
 require_once __DIR__ . '/../../include/header.php';
 ?>
 
-<div class="page-light">
-    <section class="section-heading-row">
-        <div>
-            <h2>Detail Aspirasi</h2>
-            <div class="heading-line"></div>
-        </div>
+<style>
+    /* Tambahan style khusus menyesuaikan variabel root style.css */
+    .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        background-color: var(--bg-body);
+        padding: 1.5rem;
+        border-radius: var(--radius-sm);
+        margin-bottom: 1.5rem;
+    }
+    .meta-grid span {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-bottom: 0.3rem;
+    }
+    .meta-grid strong {
+        color: var(--primary);
+        font-size: 1rem;
+    }
+    .kode-aspirasi {
+        font-size: 0.8rem;
+        background-color: rgba(255, 160, 7, 0.15);
+        color: var(--accent-dark);
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 700;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+    }
+    .komentar-item.admin-comment {
+        border-left: 4px solid var(--success);
+    }
+    .komentar-item {
+        border-left: 4px solid var(--primary);
+    }
+</style>
 
-        <div class="heading-actions">
-            <a href="aspirasi_saya.php" class="btn-heading">Aspirasi Saya</a>
-            <a href="cek_status_aspirasi.php" class="btn-heading btn-status">Cek Status</a>
-        </div>
-    </section>
+<!-- HEADER / WELCOME AREA (Sejajar dengan main-content seperti di organisasi.php) -->
+<div class="dashboard-welcome" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1>Detail Aspirasi</h1>
+        <p>Pantau rincian aspirasi, status, dan tanggapan terbaru.</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="aspirasi_saya.php" class="btn" style="background-color: rgba(255, 255, 255, 0.2); color: var(--white); box-shadow: none;">Aspirasi Saya</a>
+        <a href="cek_status_aspirasi.php" class="btn">Cek Status</a>
+    </div>
+</div>
 
-    <?php if (!$schemaReady) { ?>
-        <?php schema_warning(); ?>
-    <?php } ?>
+<!-- MAIN CONTENT -->
+<div class="main-content">
+
+    <?php if (!$schemaReady) { schema_warning(); } ?>
 
     <?php if ($schemaReady && !$data) { ?>
-        <div class="alert danger">
-            Detail aspirasi tidak ditemukan.
-        </div>
+        <div class="error">Detail aspirasi tidak ditemukan.</div>
     <?php } ?>
 
     <?php if ($data) { ?>
-        <section class="detail-card wide">
-            <div class="detail-top">
+        
+        <!-- DETAIL KONTEN -->
+        <div class="detail-kegiatan" style="box-shadow: var(--shadow-sm); margin-bottom: 2rem; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                 <div>
-                    <span class="code-chip">
-                        <?= h($data['kode_aspirasi'] ?? '-'); ?>
-                    </span>
-
-                    <h3><?= h($data['judul'] ?? '-'); ?></h3>
+                    <span class="kode-aspirasi"><?= h($data['kode_aspirasi'] ?? '-'); ?></span>
+                    <h2 style="color: var(--primary); font-size: 1.6rem; margin-top: 0.5rem; margin-bottom: 0;"><?= h($data['judul'] ?? '-'); ?></h2>
                 </div>
-
-                <?= status_aspirasi_badge($data['status'] ?? 'proses'); ?>
+                <div>
+                    <?= status_aspirasi_badge($data['status'] ?? 'proses'); ?>
+                </div>
             </div>
 
             <div class="meta-grid">
-                <div>
-                    <span>Kategori</span>
-                    <strong><?= h($data['kategori'] ?? '-'); ?></strong>
-                </div>
-
-                <div>
-                    <span>Tujuan</span>
-                    <strong><?= h($data['nama_organisasi'] ?: 'Umum / Semua Organisasi'); ?></strong>
-                </div>
-
-                <div>
-                    <span>Pengirim</span>
-                    <strong>
-                        <?= ((int) ($data['is_anonim'] ?? 0) === 1)
-                            ? 'Anonim'
-                            : h($data['nama_mahasiswa'] ?: 'Mahasiswa'); ?>
-                    </strong>
-                </div>
-
-                <div>
-                    <span>Tanggal</span>
-                    <strong><?= h(tanggal_indo($data['tanggal'] ?? '')); ?></strong>
-                </div>
+                <div><span>Kategori</span><strong><?= h($data['kategori'] ?? '-'); ?></strong></div>
+                <div><span>Tujuan</span><strong><?= h($data['nama_organisasi'] ?: 'Umum'); ?></strong></div>
+                <div><span>Pengirim</span><strong><?= ((int) ($data['is_anonim'] ?? 0) === 1) ? 'Anonim' : h($data['nama_mahasiswa'] ?: 'Mahasiswa'); ?></strong></div>
+                <div><span>Tanggal</span><strong><?= h(tanggal_indo($data['created_at'] ?? '')); ?></strong></div>
             </div>
 
-            <div class="content-box big">
+            <div class="deskripsi" style="font-size: 1.05rem; color: var(--text-dark);">
                 <?= nl2br(h($data['isi_aspirasi'] ?? '')); ?>
             </div>
-        </section>
+        </div>
 
-        <section class="comment-section">
-            <div class="comment-panel">
-                <h3>Tanggapan / Diskusi</h3>
-
-                <?php if ($komentar && mysqli_num_rows($komentar) > 0) { ?>
-                    <div class="comment-list">
-                        <?php while ($row = mysqli_fetch_assoc($komentar)) { ?>
-                            <div class="comment-item <?= ($row['level_user'] ?? '') === 'admin' ? 'admin-comment' : ''; ?>">
-                                <div class="comment-head">
-                                    <strong>
-                                        <?= ($row['level_user'] ?? '') === 'admin'
-                                            ? 'Pengurus/Admin'
-                                            : 'Mahasiswa'; ?>
-                                    </strong>
-
-                                    <span><?= h(tanggal_indo($row['tanggal'] ?? '')); ?></span>
-                                </div>
-
-                                <p><?= nl2br(h($row['isi_komentar'] ?? '')); ?></p>
+        <!-- TANGGAPAN / DISKUSI -->
+        <div class="card" style="border: 1px solid var(--border);">
+            <h3 style="border-left: 4px solid var(--accent); padding-left: 0.75rem; margin-bottom: 1.5rem; color: var(--primary);">Tanggapan & Diskusi</h3>
+            
+            <div class="komentar-section" style="margin-top: 0;">
+                <?php if (!empty($komentar)) { ?>
+                    <?php foreach ($komentar as $row) { ?>
+                        <div class="komentar-item <?= ($row['level_user'] ?? '') === 'admin' ? 'admin-comment' : ''; ?>" style="background-color: var(--bg-body); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <strong><?= ($row['level_user'] ?? '') === 'admin' ? 'Pengurus/Admin' : 'Mahasiswa'; ?></strong>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);"><?= h(tanggal_indo($row['created_at'] ?? '')); ?></span>
                             </div>
-                        <?php } ?>
-                    </div>
+                            <p style="margin: 0; font-size: 0.95rem; line-height: 1.6;"><?= nl2br(h($row['isi_komentar'] ?? '')); ?></p>
+                        </div>
+                    <?php } ?>
                 <?php } else { ?>
-                    <p class="empty-text">Belum ada tanggapan.</p>
+                    <div style="background-color: var(--bg-body); padding: 1rem; border-radius: var(--radius-sm); border-left: 4px solid var(--border); color: var(--text-muted); margin-bottom: 1.5rem;">
+                        Belum ada tanggapan untuk aspirasi ini.
+                    </div>
                 <?php } ?>
             </div>
 
-            <form class="comment-form" action="proses_komentar_aspirasi.php" method="POST">
+            <hr style="border: none; border-top: 1px solid var(--border); margin: 2rem 0;">
+
+            <!-- FORM TANGGAPAN -->
+            <form class="aspirasi-form" action="proses_komentar_aspirasi.php" method="POST" style="max-width: 100%; padding: 0; margin: 0; background: transparent;">
                 <input type="hidden" name="id_aspirasi" value="<?= (int) $data['id_aspirasi']; ?>">
-
-                <label>Balas Sebagai</label>
-                <select name="level_user" required>
-                    <option value="mahasiswa">Mahasiswa</option>
-                </select>
-
-                <label>Isi Tanggapan</label>
-                <textarea 
-                    name="isi_komentar" 
-                    rows="6" 
-                    placeholder="Tulis tanggapan..." 
-                    required
-                ></textarea>
-
-                <button type="submit" class="btn-submit">Kirim Tanggapan</button>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label>Balas Sebagai</label>
+                    <select name="level_user" required>
+                        <option value="mahasiswa">Mahasiswa</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label>Isi Tanggapan</label>
+                    <textarea name="isi_komentar" rows="5" placeholder="Tulis tanggapan Anda di sini..." required></textarea>
+                </div>
+                
+                <button type="submit" class="btn" style="margin-top: 0;">Kirim Tanggapan</button>
             </form>
-        </section>
+        </div>
     <?php } ?>
 </div>
 
-<?php
-require_once __DIR__ . '/../../include/footer.php';
-?>
+<?php require_once __DIR__ . '/../../include/footer.php'; ?>

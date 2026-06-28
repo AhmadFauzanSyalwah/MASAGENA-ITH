@@ -8,6 +8,16 @@ $peran = $_SESSION['peran'] ?? 'guest';
 $nama  = $_SESSION['nama'] ?? '';
 $level = $_SESSION['level'] ?? '';
 $current_page = basename($_SERVER['PHP_SELF']);
+
+// Tentukan action search berdasarkan peran
+$search_action = '/MASAGENA-ITH/index.php';
+if ($peran === 'mahasiswa') {
+    $search_action = '/MASAGENA-ITH/dashboard/mahasiswa/index.php';
+} elseif ($peran === 'pengurus') {
+    $search_action = '/MASAGENA-ITH/dashboard/pengurus/index.php';
+} elseif ($peran === 'admin') {
+    $search_action = '/MASAGENA-ITH/dashboard/admin/index.php';
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -17,7 +27,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <title>MASAGENA-ITH | <?= ucfirst($peran) ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<<<<<<< HEAD
     <link rel="stylesheet" href="/masagena-ith/assets/css/style.css">
+=======
+    <link rel="stylesheet" href="/MASAGENA-ITH/assets/css/style.css">
+>>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c
 </head>
 <body>
 
@@ -25,7 +39,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <div class="header-top">
         <div class="brand-area">
             <a href="/MASAGENA-ITH/index.php" class="logo-link">
-                <img src="/masagena-ith/assets/img/logo.png" alt="Logo MASAGENA-ITH" class="logo-img">
+                <img src="/MASAGENA-ITH/assets/img/logo.png" alt="Logo MASAGENA-ITH" class="logo-img">
             </a>
             <div class="brand-text">
                 <span class="brand-title">MASAGENA-ITH</span>
@@ -34,8 +48,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </div>
 
         <div class="search-area">
-            <form action="/MASAGENA-ITH/pencarian.php" method="GET" class="search-form">
-                <input type="text" name="q" placeholder="Cari agenda hari ini..." aria-label="Cari">
+            <form action="<?= $search_action ?>" method="GET" class="search-form">
+                <input type="text" name="q" placeholder="Cari agenda hari ini..." aria-label="Cari" value="<?= isset($_GET['q']) ? htmlspecialchars($_GET['q']) : '' ?>">
                 <button type="submit"><i class="fas fa-search"></i></button>
             </form>
         </div>
@@ -54,9 +68,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <?php else: ?>
                             <a href="/MASAGENA-ITH/dashboard/admin/kelola_user.php"><i class="fas fa-history"></i> Log Aktivitas</a>
                         <?php endif; ?>
-                        <hr>               
+                        <hr>
                         <?php
-                            // Menentukan link logout berdasarkan peran
                             $logout_link = ($peran === 'admin') ? "../../auth/logout_admin.php" : "../../auth/logout.php";
                         ?>
                         <a href="<?= $logout_link; ?>" onclick="return confirm('Apakah Anda yakin ingin keluar?');">
@@ -70,6 +83,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </div>
     </div>
 
+<<<<<<< HEAD
+=======
+    <!-- BARIS BAWAH: menu navigasi -->
+>>>>>>> 771ce4e12b6b20da8e9fc9d6605baa11d44ed99d
     <div class="header-bottom">
         <nav class="nav-area">
             <ul class="nav-menu">
@@ -85,7 +102,16 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <li><a href="/MASAGENA-ITH/dashboard/pengurus/kelola_konten.php" class="<?= $current_page == 'kelola_konten.php' ? 'active' : '' ?>">Kelola Konten</a></li>
                     <li><a href="/MASAGENA-ITH/dashboard/pengurus/pendaftaran.php" class="<?= $current_page == 'pendaftaran.php' ? 'active' : '' ?>">Pendaftaran</a></li>
                     <li><a href="/MASAGENA-ITH/dashboard/pengurus/aspirasi_masuk.php" class="<?= $current_page == 'aspirasi_masuk.php' ? 'active' : '' ?>">Aspirasi Masuk</a></li>
+<<<<<<< HEAD
                     <?php if ($level === 'inti'): ?>
+=======
+<<<<<<< HEAD
+                    <?php if ($level === 'inti'): ?>
+=======
+                    
+                    <?php if ($level === 'Pengurus Inti'): ?>
+>>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c
+>>>>>>> 771ce4e12b6b20da8e9fc9d6605baa11d44ed99d
                         <li><a href="/MASAGENA-ITH/dashboard/pengurus/profil_organisasi.php" class="<?= $current_page == 'profil_organisasi.php' ? 'active' : '' ?>">Profil Organisasi</a></li>
                         <li><a href="/MASAGENA-ITH/dashboard/pengurus/manajemen_pengurus.php" class="<?= $current_page == 'manajemen_pengurus.php' ? 'active' : '' ?>">Manajemen Pengurus</a></li>
                     <?php endif; ?>

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../include/components.php';
 require_once __DIR__ . '/../../include/pendaftaran-helper.php';
+require_once '../../config/session_check.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: kegiatan.php');
@@ -40,28 +41,20 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     back_with_error('Format email tidak valid.', $id_konten);
 }
 
-mysqli_begin_transaction($conn);
+// Memulai transaksi menggunakan PDO
+$pdo->beginTransaction();
 
 try {
-    $stmtMhs = mysqli_prepare($conn, "
+    // 1. Ambil data mahasiswa berdasarkan NIM dan Email
+    $stmtMhs = $pdo->prepare("
         SELECT id_mahasiswa, nim, nama, email
         FROM tbmahasiswa
         WHERE nim = ?
         AND email = ?
         LIMIT 1
     ");
-
-    if (!$stmtMhs) {
-        throw new Exception('Prepare data mahasiswa gagal: ' . mysqli_error($conn));
-    }
-
-    mysqli_stmt_bind_param($stmtMhs, 'ss', $nim, $email);
-    mysqli_stmt_execute($stmtMhs);
-
-    $resMhs = mysqli_stmt_get_result($stmtMhs);
-    $mahasiswa = mysqli_fetch_assoc($resMhs);
-
-    mysqli_stmt_close($stmtMhs);
+    $stmtMhs->execute([$nim, $email]);
+    $mahasiswa = $stmtMhs->fetch(PDO::FETCH_ASSOC);
 
     if (!$mahasiswa) {
         throw new Exception('NIM dan email tidak ditemukan di data mahasiswa.');
@@ -69,7 +62,8 @@ try {
 
     $id_mahasiswa = (int) $mahasiswa['id_mahasiswa'];
 
-    $stmtKegiatan = mysqli_prepare($conn, "
+    // 2. Kunci baris kegiatan agar kuota tidak crash saat diakses banyak orang (Race Condition)
+    $stmtKegiatan = $pdo->prepare("
         SELECT id_konten, judul
         FROM konten_kegiatan
         WHERE id_konten = ?
@@ -77,48 +71,30 @@ try {
         LIMIT 1
         FOR UPDATE
     ");
-
-    if (!$stmtKegiatan) {
-        throw new Exception('Prepare kegiatan gagal: ' . mysqli_error($conn));
-    }
-
-    mysqli_stmt_bind_param($stmtKegiatan, 'i', $id_konten);
-    mysqli_stmt_execute($stmtKegiatan);
-
-    $resKegiatan = mysqli_stmt_get_result($stmtKegiatan);
-    $kegiatan = mysqli_fetch_assoc($resKegiatan);
-
-    mysqli_stmt_close($stmtKegiatan);
+    $stmtKegiatan->execute([$id_konten]);
+    $kegiatan = $stmtKegiatan->fetch(PDO::FETCH_ASSOC);
 
     if (!$kegiatan) {
         throw new Exception('Kegiatan tidak ditemukan atau belum publish.');
     }
 
-    $stmtCek = mysqli_prepare($conn, "
+    // 3. Cek apakah mahasiswa bersangkutan sudah terdaftar di kegiatan ini
+    $stmtCek = $pdo->prepare("
         SELECT id_pendaftaran
         FROM pendaftaran
         WHERE id_mahasiswa = ?
         AND id_konten = ?
         LIMIT 1
     ");
-
-    if (!$stmtCek) {
-        throw new Exception('Prepare cek pendaftaran gagal: ' . mysqli_error($conn));
-    }
-
-    mysqli_stmt_bind_param($stmtCek, 'ii', $id_mahasiswa, $id_konten);
-    mysqli_stmt_execute($stmtCek);
-
-    $resCek = mysqli_stmt_get_result($stmtCek);
-    $sudahDaftar = mysqli_fetch_assoc($resCek);
-
-    mysqli_stmt_close($stmtCek);
+    $stmtCek->execute([$id_mahasiswa, $id_konten]);
+    $sudahDaftar = $stmtCek->fetch(PDO::FETCH_ASSOC);
 
     if ($sudahDaftar) {
         throw new Exception('Kamu sudah mendaftar kegiatan ini.');
     }
 
-    $stmtJumlah = mysqli_prepare($conn, "
+    // 4. Hitung jumlah pendaftar aktif dan dapatkan kuota maksimal kegiatan
+    $stmtJumlah = $pdo->prepare("
         SELECT
             COUNT(*) AS total,
             COALESCE(MAX(NULLIF(kuota_maks, 0)), ?) AS kuota
@@ -126,18 +102,8 @@ try {
         WHERE id_konten = ?
         AND status_pendaftaran != 'ditolak'
     ");
-
-    if (!$stmtJumlah) {
-        throw new Exception('Prepare cek kuota gagal: ' . mysqli_error($conn));
-    }
-
-    mysqli_stmt_bind_param($stmtJumlah, 'ii', $defaultKuota, $id_konten);
-    mysqli_stmt_execute($stmtJumlah);
-
-    $resJumlah = mysqli_stmt_get_result($stmtJumlah);
-    $jumlahData = mysqli_fetch_assoc($resJumlah);
-
-    mysqli_stmt_close($stmtJumlah);
+    $stmtJumlah->execute([$defaultKuota, $id_konten]);
+    $jumlahData = $stmtJumlah->fetch(PDO::FETCH_ASSOC);
 
     $kuota = (int) ($jumlahData['kuota'] ?? $defaultKuota);
     $totalPeserta = (int) ($jumlahData['total'] ?? 0);
@@ -146,7 +112,8 @@ try {
         throw new Exception('Kuota kegiatan sudah penuh.');
     }
 
-    $stmtInsert = mysqli_prepare($conn, "
+    // 5. Masukkan data pendaftaran baru ke database
+    $stmtInsert = $pdo->prepare("
         INSERT INTO pendaftaran
         (
             id_mahasiswa,
@@ -162,20 +129,11 @@ try {
             ?
         )
     ");
+    
+    $stmtInsert->execute([$id_mahasiswa, $id_konten, $kuota]);
 
-    if (!$stmtInsert) {
-        throw new Exception('Prepare simpan pendaftaran gagal: ' . mysqli_error($conn));
-    }
-
-    mysqli_stmt_bind_param($stmtInsert, 'iii', $id_mahasiswa, $id_konten, $kuota);
-
-    if (!mysqli_stmt_execute($stmtInsert)) {
-        throw new Exception('Pendaftaran gagal disimpan: ' . mysqli_stmt_error($stmtInsert));
-    }
-
-    mysqli_stmt_close($stmtInsert);
-
-    mysqli_commit($conn);
+    // Jika semua proses aman, simpan transaksi secara permanen
+    $pdo->commit();
 
     header(
         'Location: cek_status_pendaftaran.php?nim=' .
@@ -187,6 +145,7 @@ try {
     exit;
 
 } catch (Exception $e) {
-    mysqli_rollback($conn);
+    // Batalkan seluruh perubahan jika terjadi error di tengah jalan
+    $pdo->rollBack();
     back_with_error($e->getMessage(), $id_konten);
 }
