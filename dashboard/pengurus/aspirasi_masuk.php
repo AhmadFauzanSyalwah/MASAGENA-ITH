@@ -29,15 +29,15 @@ $stmt_org->execute([$id_organisasi]);
 $data_org = $stmt_org->fetch(PDO::FETCH_ASSOC);
 $nama_organisasi = $data_org ? $data_org['nama_organisasi'] : 'Organisasi Anda';
 
-// 2. Tarik daftar aspirasi. 
+// 2. Tarik daftar aspirasi
 $stmt_asp = $pdo->prepare("
     SELECT a.*, m.nama as nama_mahasiswa 
     FROM aspirasi a 
-    LEFT JOIN tbmahasiswa m ON a.nim = m.nim 
+    LEFT JOIN tbmahasiswa m ON a.id_mahasiswa = m.id_mahasiswa 
     WHERE a.id_organisasi_tujuan = ? 
     ORDER BY a.created_at DESC
 ");
-
+$stmt_asp->execute([$id_organisasi]);
 $aspirasi_list = $stmt_asp->fetchAll(PDO::FETCH_ASSOC);
 
 // Memanggil header template dari folder include
@@ -64,13 +64,12 @@ include '../../include/header.php';
                             <th>Kategori</th>
                             <th>Judul Aspirasi</th>
                             <th>Status</th>
-                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (count($aspirasi_list) > 0) {
                             $no = 1;
-                            foreach ($aspirasiprasi_list as $asp) { ?>
+                            foreach ($aspirasi_list as $asp) { ?>
                                 <tr>
                                     <td><?= $no++; ?></td>
                                     <td><?= date('d M Y H:i', strtotime($asp['created_at'])); ?></td>
@@ -91,41 +90,17 @@ include '../../include/header.php';
                                             }
                                         ?>
                                     </td>
-                                    <td>
-                                        <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;">
-                                            <a href="update_status_aspirasi.php?id=<?= (int)$asp['id_aspirasi']; ?>&status=proses" class="btn-sm" style="background-color: var(--accent); color: var(--white); padding: 4px 8px; font-size: 0.75rem;">
-                                                <i class="fa fa-spinner"></i> Proses
-                                            </a>
-                                            <a href="update_status_aspirasi.php?id=<?= (int)$asp['id_aspirasi']; ?>&status=selesai" class="btn-sm" style="background-color: var(--success); color: var(--white); padding: 4px 8px; font-size: 0.75rem;">
-                                                <i class="fa fa-check"></i> Selesai
-                                            </a>
-                                            <a href="update_status_aspirasi.php?id=<?= (int)$asp['id_aspirasi']; ?>&status=ditolak" class="btn-sm" style="background-color: var(--danger); color: var(--white); padding: 4px 8px; font-size: 0.75rem;">
-                                                <i class="fa fa-times"></i> Ditolak
-                                            </a>
-                                        </div>
-                                        
-                                        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                                            <a href="edit_aspirasi.php?id=<?= (int)$asp['id_aspirasi']; ?>" class="btn-sm" style="background-color: var(--primary); color: var(--white); padding: 4px 8px; font-size: 0.75rem;">
-                                                <i class="fa fa-edit"></i> Edit
-                                            </a>
-                                            <a href="hapus_aspirasi.php?id=<?= (int)$asp['id_aspirasi']; ?>" class="btn-sm" style="background-color: var(--danger); color: var(--white); padding: 4px 8px; font-size: 0.75rem;" onclick="return confirm('Apakah Anda yakin ingin menghapus aspirasi ini?')">
-                                                <i class="fa fa-trash"></i> Hapus
-                                            </a>
-                                        </div>
-                                    </td>
                                 </tr>
                             <?php }
                         } else { ?>
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 2rem;">Belum ada aspirasi yang masuk untuk organisasi Anda.</td>
+                                <td colspan="6" style="text-align: center; padding: 2rem;">Belum ada aspirasi yang masuk untuk organisasi Anda.</td>
                             </tr>
                         <?php } ?>
                     </tbody>
                 </table>
             </div>
-
         </div>
-
     </main>
 
 <?php 

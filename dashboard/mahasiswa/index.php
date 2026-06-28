@@ -102,7 +102,6 @@ $isFilterActive = (!empty($q) || !empty($filter_jenis) || !empty($filter_kategor
 include '../../include/header.php';
 ?>
 
-<<<<<<< HEAD
 <style>
 /* ===== BERANDA GRID 3 KOLOM ===== */
 .container-beranda {
@@ -549,147 +548,6 @@ include '../../include/header.php';
                             <button class="btn-interaksi btn-share" data-url="<?= 'http://' . $_SERVER['HTTP_HOST'] . '/MASAGENA-ITH/dashboard/mahasiswa/detail_kegiatan.php?id=' . $k['id_konten'] ?>">
                                 <i class="fas fa-share-alt"></i>
                             </button>
-=======
-    <style>
-        /* Animasi heart */
-        .heart-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-            padding: 0;
-        }
-        .heart-icon {
-            font-size: 1.2rem;
-            transition: transform 0.2s ease;
-        }
-        .heart-btn:active .heart-icon {
-            transform: scale(1.3);
-        }
-        @keyframes heartBeat {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); }
-        }
-        .heart-animate {
-            animation: heartBeat 0.3s ease;
-        }
-        .like-count, .komentar-count {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-        .card-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 1rem;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        .interaction-group {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-        .interaction {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-        .komentar-link, .share-link {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            text-decoration: none;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0;
-        }
-        .komentar-link:hover, .share-link:hover {
-            color: var(--accent);
-        }
-        .btn-sm {
-            padding: 0.2rem 0.8rem;
-            font-size: 0.75rem;
-        }
-        /* Efek Bulatan Indikator di Foto (Khas Instagram Carousel) */
-        .photo-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-        .indicator-dot {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-        }
-
-        /* Efek Modal/Pop-up Foto Full Screen saat Di-tab */
-        .modal-foto {
-            display: none;
-            position: fixed;
-            z-index: 9999;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-foto img {
-            max-width: 90%;
-            max-height: 90%;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(255,255,255,0.1);
-        }
-    </style>
-
-    <div class="dashboard-welcome">
-        <h1>Selamat datang, <?= htmlspecialchars($_SESSION['nama'] ?? 'Mahasiswa') ?></h1>
-        <p>Ini adalah portal informasi kegiatan kemahasiswaan ITH.</p>
-    </div>
-
-    <div class="dashboard-grid">
-        <div class="main-content">
-            <h2>Kegiatan Terbaru</h2>
-            <?php if (count($kegiatan_terbaru) > 0): ?>
-                <div class="kegiatan-list">
-                    <?php foreach ($kegiatan_terbaru as $k): ?>
-                        <div class="card" data-id="<?= $k['id_konten'] ?>">
-                            <h3><a href="detail_kegiatan.php?id_konten=<?= $k['id_konten'] ?>"><?= htmlspecialchars($k['judul']) ?></a></h3>
-                            <p class="meta">Organisasi: <?= htmlspecialchars($k['nama_organisasi']) ?> | 🗓️ <?= $k['tanggal_kegiatan'] ?></p>
-                            <p><?= nl2br(htmlspecialchars(substr($k['deskripsi'], 0, 150))) ?>...</p>
-                            
-                            <div class="card-actions">
-                                <div class="interaction-group">
-                                    <div class="interaction">
-                                        <button class="heart-btn" data-id="<?= $k['id_konten'] ?>">
-                                            <i class="far fa-heart heart-icon"></i>
-                                            <span class="like-count"><?= $k['total_likes'] ?></span>
-                                        </button>
-                                    </div>
-                                    <div class="interaction">
-                                        <a href="detail_kegiatan.php?id_konten=<?= $k['id_konten'] ?>#komentar" class="komentar-link">
-                                            <i class="far fa-comment"></i>
-                                            <span class="komentar-count"><?= $k['total_komentar'] ?></span>
-                                        </a>
-                                    </div>
-                                    <div class="interaction">
-                                        <button class="share-link" data-url="<?= 'http://' . $_SERVER['HTTP_HOST'] . '/MASAGENA-ITH/dashboard/mahasiswa/detail_kegiatan.php?id_konten=' . $k['id_konten'] ?>">
-                                            <i class="fas fa-share-alt"></i> Share
-                                        </button>
-                                    </div>
-                                </div>
-                                <a href="detail_kegiatan.php?id_konten=<?= $k['id_konten'] ?>" class="btn-sm">Lihat Detail</a>
-                            </div>
->>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c
                         </div>
                         <a href="detail_kegiatan.php?id=<?= $k['id_konten'] ?>" class="btn-detail">Lihat Detail</a>
                     </div>
@@ -697,7 +555,6 @@ include '../../include/header.php';
             <?php endforeach; ?>
         </div>
 
-<<<<<<< HEAD
         <!-- PAGINATION -->
         <?php if ($totalPages > 1): ?>
         <div class="pagination-wrapper">
@@ -707,24 +564,6 @@ include '../../include/header.php';
                 <?php else: ?>
                     <span class="disabled">‹</span>
                 <?php endif; ?>
-=======
-        <aside class="sidebar">
-            <h2>Pengumuman</h2>
-            <?php if (count($pengumuman) > 0): ?>
-                <ul class="pengumuman-list">
-                    <?php foreach ($pengumuman as $p): ?>
-                        <li>
-                            <a href="detail_kegiatan.php?id_konten=<?= $p['id_konten'] ?>"><?= htmlspecialchars($p['judul']) ?></a>
-                            <span class="date"><?= date('d/m/Y', strtotime($p['created_at'])) ?></span>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php else: ?>
-                <p>Tidak ada pengumuman.</p>
-            <?php endif; ?>
-        </aside>
-    </div>
->>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c
 
                 <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                     <?php if ($i == $page): ?>
@@ -792,7 +631,6 @@ document.querySelectorAll('.btn-like').forEach(btn => {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'id=' + kegiatanId
             });
-<<<<<<< HEAD
             const data = await response.json();
             if (data.status === 'liked') {
                 icon.classList.remove('far');
@@ -811,39 +649,6 @@ document.querySelectorAll('.btn-like').forEach(btn => {
         }
     });
 });
-=======
-        });
-
-        // Share button (copy link atau Web Share)
-        document.querySelectorAll('.share-link').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const url = this.dataset.url;
-                if (navigator.share) {
-                    navigator.share({
-                        title: '<?= addslashes($k['judul'] ?? 'Kegiatan') ?>',
-                        url: url
-                    }).catch(() => {});
-                } else {
-                    navigator.clipboard.writeText(url);
-                    alert('Link kegiatan disalin ke clipboard!');
-                }
-            });
-        });
-
-        // Fitur Tab Foto agar Menampilkan Ukuran Penuh (Full Screen)
-        document.querySelectorAll('.card img').forEach(foto => {
-            foto.style.cursor = 'pointer'; // Ubah kursor jadi bentuk jari tangan
-            foto.addEventListener('click', function() {
-                const srcFoto = this.getAttribute('src');
-                if(srcFoto) {
-                    document.getElementById('imgFull').setAttribute('src', srcFoto);
-                    document.getElementById('popupFoto').style.display = 'flex';
-                }
-            });
-        });
-    </script> 
->>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c
 
 // ===== SHARE =====
 document.querySelectorAll('.btn-share').forEach(btn => {
