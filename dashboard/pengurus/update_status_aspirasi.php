@@ -1,13 +1,26 @@
 <?php
-require_once __DIR__ . '/../../config/database.php';
+// Memulai sesi sistem 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Panggil konfigurasi database dan komponen
+require_once __DIR__ . '/../../config/session_check.php';
+require_once __DIR__ . '/../../config/database.php'; // Mengambil koneksi $pdo
 require_once __DIR__ . '/../../include/components.php';
+
+// Proteksi akses halaman, pastikan hanya peran pengurus yang dapat membuka
+if ($_SESSION['peran'] != 'pengurus') {
+    header("Location: ../" . $_SESSION['peran'] . "/index.php");
+    exit();
+}
 
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $status = $_GET['status'] ?? '';
 
 $validStatus = ['proses', 'selesai', 'ditolak'];
 
-function redirect_back($fallback = 'kelola_aspirasi.php') {
+function redirect_back($fallback = 'aspirasi_masuk.php') {
     $referer = $_SERVER['HTTP_REFERER'] ?? '';
     $host = $_SERVER['HTTP_HOST'] ?? '';
 
@@ -25,35 +38,30 @@ function redirect_back($fallback = 'kelola_aspirasi.php') {
 }
 
 if ($id <= 0 || !in_array($status, $validStatus, true)) {
-    header('Location: kelola_aspirasi.php?error=1');
+    header('Location: aspirasi_masuk.php?error=1');
     exit;
 }
 
-if (!aspirasi_schema_ready($conn)) {
-    die('Database aspirasi belum siap. Jalankan aspirasi-update.sql terlebih dahulu.');
+// Validasi skema tabel aspirasi
+if (!aspirasi_schema_ready($pdo)) {
+    die('Database aspirasi belum siap. Jalankan skrip update database terlebih dahulu.');
 }
 
-$stmt = mysqli_prepare($conn, "
-    UPDATE aspirasi
-    SET status = ?
-    WHERE id_aspirasi = ?
-    LIMIT 1
-");
+// Menjalankan query update menggunakan PDO
+try {
+    $stmt = $pdo->prepare("
+        UPDATE aspirasi
+        SET status = ?
+        WHERE id_aspirasi = ?
+        LIMIT 1
+    ");
 
-if (!$stmt) {
-    die('Prepare update status aspirasi gagal: ' . mysqli_error($conn));
+    $ok = $stmt->execute([$status, $id]);
+
+    if ($ok) {
+        redirect_back('aspirasi_masuk.php?updated=1');
+    }
+} catch (PDOException $e) {
+    die('Gagal update status aspirasi: ' . htmlspecialchars($e->getMessage()));
 }
-
-mysqli_stmt_bind_param($stmt, 'si', $status, $id);
-
-$ok = mysqli_stmt_execute($stmt);
-$error = mysqli_stmt_error($stmt);
-
-mysqli_stmt_close($stmt);
-
-if ($ok) {
-    redirect_back('kelola_aspirasi.php?updated=1');
-}
-
-die('Gagal update status aspirasi: ' . h($error));
 ?>
