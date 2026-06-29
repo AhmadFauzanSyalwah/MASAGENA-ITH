@@ -21,7 +21,7 @@ if ($schemaReady && $kode !== '') {
                 m.nim,
                 m.email
             FROM aspirasi a
-            LEFT JOIN organisasi o ON a.id_organisasi = o.id_organisasi
+            LEFT JOIN organisasi o ON a.id_organisasi_tujuan = o.id_organisasi
             LEFT JOIN tbmahasiswa m ON a.id_mahasiswa = m.id_mahasiswa
             WHERE a.kode_aspirasi = ?
             LIMIT 1
@@ -184,13 +184,11 @@ require_once __DIR__ . '/../../include/header.php';
     }
 </style>
 
-<!-- Banner Welcome langsung di luar seperti organisasi.php -->
 <div class="dashboard-welcome">
     <h1>Cek Status Aspirasi</h1>
     <p>Masukkan kode aspirasi untuk melihat status tindak lanjut dari laporan atau aspirasi yang telah Anda kirimkan.</p>
 </div>
 
-<!-- Sisa konten dibungkus main-content -->
 <div class="main-content">
     <div style="display: flex; justify-content: flex-end; margin-bottom: 1.5rem;">
         <a href="aspirasi.php" class="btn">Kirim Aspirasi Baru</a>
@@ -202,13 +200,13 @@ require_once __DIR__ . '/../../include/header.php';
 
     <?php if ($success && $kode !== '') { ?>
         <div class="alert">
-            Aspirasi berhasil dikirim. Simpan kode ini untuk mengecek status:
+            Aspirasi berhasil dikirim.
+            Simpan kode ini untuk mengecek status:
             <strong><?= h($kode); ?></strong>
         </div>
     <?php } ?>
 
     <section class="status-layout">
-        <!-- Sidebar Form (Kiri) -->
         <div class="status-form-wrapper">
             <div class="card">
                 <h3 style="color: var(--primary); margin-bottom: 1.2rem; border-left: 4px solid var(--accent); padding-left: 0.5rem;">Cek Status</h3>
@@ -222,7 +220,6 @@ require_once __DIR__ . '/../../include/header.php';
             </div>
         </div>
 
-        <!-- Area Hasil Pencarian (Kanan) -->
         <div>
             <?php if ($schemaReady && $kode !== '' && !$data) { ?>
                 <div class="error">Data aspirasi dengan kode tersebut tidak ditemukan.</div>

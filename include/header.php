@@ -42,6 +42,7 @@ $profil_organisasi_pages = ['profil_organisasi.php', 'edit_profil_organisasi.php
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="/masagena-ith/assets/css/style.css">
+<<<<<<< HEAD
 
     <style>
         /* =============================================
@@ -252,11 +253,16 @@ $profil_organisasi_pages = ['profil_organisasi.php', 'edit_profil_organisasi.php
             background-color: var(--accent-dark);
         }
     </style>
+=======
+>>>>>>> 7dfd4c256b7f1dbc3a39c97bb280ff65a5386618
 </head>
 <body>
 
 <header class="main-header">
+<<<<<<< HEAD
     <!-- BARIS ATAS -->
+=======
+>>>>>>> 7dfd4c256b7f1dbc3a39c97bb280ff65a5386618
     <div class="header-top">
         <!-- Brand -->
         <div class="brand-area">
@@ -323,7 +329,10 @@ $profil_organisasi_pages = ['profil_organisasi.php', 'edit_profil_organisasi.php
         </div>
     </div>
 
+<<<<<<< HEAD
     <!-- BARIS BAWAH: navigasi -->
+=======
+>>>>>>> 7dfd4c256b7f1dbc3a39c97bb280ff65a5386618
     <div class="header-bottom">
         <div class="nav-area">
             <ul class="nav-menu">
@@ -335,6 +344,7 @@ $profil_organisasi_pages = ['profil_organisasi.php', 'edit_profil_organisasi.php
                     <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/aspirasi.php" class="<?= ($current_page == 'aspirasi.php') ? 'active' : '' ?>">Aspirasi</a></li>
 
                 <?php elseif ($peran === 'pengurus'): ?>
+<<<<<<< HEAD
                     <!-- ===== MENU UNTUK SEMUA PENGURUS ===== -->
                     <li><a href="/MASAGENA-ITH/dashboard/pengurus/index.php" class="<?= ($current_page == 'index.php') ? 'active' : '' ?>">Dashboard</a></li>
                     <li><a href="/MASAGENA-ITH/dashboard/pengurus/kelola_konten.php" class="<?= ($current_page == 'kelola_konten.php') ? 'active' : '' ?>">Kelola Konten</a></li>
@@ -345,6 +355,16 @@ $profil_organisasi_pages = ['profil_organisasi.php', 'edit_profil_organisasi.php
                     <!-- ===== MENU KHUSUS PENGURUS INTI ===== -->
                     <?php if ($is_inti): ?>
                         <li><a href="/MASAGENA-ITH/dashboard/pengurus/manajemen_pengurus.php" class="<?= ($current_page == 'manajemen_pengurus.php') ? 'active' : '' ?>">Manajemen Pengurus</a></li>
+=======
+                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/index.php" class="<?= $current_page == 'index.php' ? 'active' : '' ?>">Dashboard</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/kelola_konten.php" class="<?= $current_page == 'kelola_konten.php' ? 'active' : '' ?>">Kelola Konten</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/pendaftaran.php" class="<?= $current_page == 'pendaftaran.php' ? 'active' : '' ?>">Pendaftaran</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/aspirasi_masuk.php" class="<?= $current_page == 'aspirasi_masuk.php' ? 'active' : '' ?>">Aspirasi Masuk</a></li>
+                    <?php if ($level === 'inti'): ?>
+
+                        <li><a href="/MASAGENA-ITH/dashboard/pengurus/profil_organisasi.php" class="<?= $current_page == 'profil_organisasi.php' ? 'active' : '' ?>">Profil Organisasi</a></li>
+                        <li><a href="/MASAGENA-ITH/dashboard/pengurus/manajemen_pengurus.php" class="<?= $current_page == 'manajemen_pengurus.php' ? 'active' : '' ?>">Manajemen Pengurus</a></li>
+>>>>>>> 7dfd4c256b7f1dbc3a39c97bb280ff65a5386618
                     <?php endif; ?>
 
                 <?php elseif ($peran === 'admin'): ?>

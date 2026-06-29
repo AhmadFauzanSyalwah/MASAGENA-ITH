@@ -133,9 +133,26 @@ function table_column_exists($pdo, $table, $column) {
 }
 
 function aspirasi_schema_ready($pdo) {
-    return table_column_exists($pdo, 'aspirasi', 'kode_aspirasi')
-        && table_column_exists($pdo, 'aspirasi', 'id_organisasi')
-        && table_column_exists($pdo, 'aspirasi', 'is_anonim');
+    try {
+        // Memeriksa daftar kolom yang ada pada tabel aspirasi
+        $stmt = $pdo->query("DESCRIBE aspirasi");
+        $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        // Kolom wajib yang harus ada berdasarkan pembaruan sistem database Anda
+        $required_columns = ['id_organisasi_tujuan', 'kode_aspirasi', 'is_anonim'];
+        $found = 0;
+
+        foreach ($required_columns as $col) {
+            if (in_array($col, $columns, true)) {
+                $found++;
+            }
+        }
+
+        // Mengembalikan nilai true jika seluruh kolom ditemukan
+        return ($found === count($required_columns));
+    } catch (Exception $e) {
+        return false;
+    }
 }
 
 function schema_warning() {
