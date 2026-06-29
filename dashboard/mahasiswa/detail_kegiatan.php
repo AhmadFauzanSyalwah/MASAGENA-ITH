@@ -117,35 +117,6 @@ include '../../include/header.php';
     padding: 0 1rem;
 }
 
-/* BREADCRUMB */
-.breadcrumb-nav {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-    color: #94a3b8;
-    margin-bottom: 1.5rem;
-    padding: 0.4rem 1.2rem;
-    background: #f8fafc;
-    border-radius: 50px;
-    border: 1px solid #e9ecef;
-}
-.breadcrumb-nav a {
-    color: #071C34;
-    text-decoration: none;
-    font-weight: 600;
-}
-.breadcrumb-nav a:hover {
-    color: #FFA007;
-}
-.breadcrumb-nav .separator {
-    color: #cbd5e0;
-}
-.breadcrumb-nav .current {
-    color: #FFA007;
-    font-weight: 600;
-}
-
 /* GAMBAR FULL WIDTH */
 .detail-gambar {
     width: 100%;
@@ -558,24 +529,12 @@ include '../../include/header.php';
     .status-card {
         padding: 0.8rem 1rem;
     }
-    .breadcrumb-nav {
-        font-size: 0.75rem;
-        flex-wrap: wrap;
-        padding: 0.3rem 1rem;
-    }
 }
 </style>
 
 <div class="detail-container">
 
-    <!-- BREADCRUMB -->
-    <div class="breadcrumb-nav">
-        <a href="<?= BASE_URL ?>/dashboard/mahasiswa/index.php">Beranda</a>
-        <span class="separator">›</span>
-        <a href="<?= BASE_URL ?>/dashboard/mahasiswa/kegiatan.php">Kegiatan</a>
-        <span class="separator">›</span>
-        <span class="current"><?= htmlspecialchars($kegiatan['judul']) ?></span>
-    </div>
+    <!-- BREADCRUMB DIHAPUS SESUAI PERMINTAAN -->
 
     <!-- GAMBAR -->
     <?php 
