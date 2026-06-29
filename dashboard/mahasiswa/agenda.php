@@ -1,12 +1,33 @@
 <?php
-<<<<<<< HEAD
 // dashboard/mahasiswa/agenda.php
 session_start();
 require_once '../../config/session_check.php';
 require_once '../../config/database.php';
 require_once '../../include/pendaftaran-helper.php';
 
-// ===== AMBIL PARAMETER =====
+// ============================================================
+// FUNGSI HIGHLIGHT (sama seperti di kegiatan.php)
+// ============================================================
+if (!function_exists('highlightText')) {
+    function highlightText($text, $keyword) {
+        if (empty($keyword) || empty($text)) {
+            return $text;
+        }
+        $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        return preg_replace('/(' . preg_quote($keyword, '/') . ')/i', '<span class="highlight">$1</span>', $text);
+    }
+}
+
+// ============================================================
+// KONTEKS UNTUK HEADER
+// ============================================================
+$page_context = 'agenda';
+
+// Ambil parameter pencarian dari header
+$q = isset($_GET['q']) ? trim($_GET['q']) : '';
+$context = isset($_GET['context']) ? $_GET['context'] : '';
+
+// ===== AMBIL PARAMETER FILTER =====
 $filter_organisasi = isset($_GET['filter_organisasi']) ? (int)$_GET['filter_organisasi'] : 0;
 $filter_jenis = isset($_GET['filter_jenis']) ? trim($_GET['filter_jenis']) : '';
 $filter_kategori = isset($_GET['filter_kategori']) ? trim($_GET['filter_kategori']) : '';
@@ -31,11 +52,19 @@ $allKategori = $pdo->query("SELECT DISTINCT kategori FROM konten_kegiatan WHERE 
 $allJenis = $pdo->query("SELECT DISTINCT jenis FROM organisasi WHERE jenis IS NOT NULL AND jenis != '' ORDER BY jenis")->fetchAll(PDO::FETCH_COLUMN);
 
 // ============================================================
-// QUERY KEGIATAN BULAN INI
+// QUERY KEGIATAN BULAN INI (dengan pencarian)
 // ============================================================
 $where = "k.status_publikasi = 'publik' AND k.tanggal_kegiatan BETWEEN :start AND :end";
 $params = [':start' => $currentMonthStart, ':end' => $currentMonthEnd];
 
+// Pencarian (q)
+if (!empty($q)) {
+    $search = '%' . $q . '%';
+    $where .= " AND (k.judul LIKE :q OR k.deskripsi LIKE :q OR k.kategori LIKE :q OR o.nama_organisasi LIKE :q)";
+    $params[':q'] = $search;
+}
+
+// Filter lainnya
 if ($filter_organisasi > 0) {
     $where .= " AND k.id_organisasi = :org";
     $params[':org'] = $filter_organisasi;
@@ -77,10 +106,16 @@ foreach ($kegiatanBulan as $k) {
 }
 
 // ============================================================
-// KEGIATAN TERDEKAT (5)
+// KEGIATAN TERDEKAT (5) dengan pencarian
 // ============================================================
 $whereNext = "k.status_publikasi = 'publik' AND k.tanggal_kegiatan >= CURDATE()";
 $paramsNext = [];
+
+if (!empty($q)) {
+    $search = '%' . $q . '%';
+    $whereNext .= " AND (k.judul LIKE :q OR k.deskripsi LIKE :q OR k.kategori LIKE :q OR o.nama_organisasi LIKE :q)";
+    $paramsNext[':q'] = $search;
+}
 if ($filter_organisasi > 0) {
     $whereNext .= " AND k.id_organisasi = :org";
     $paramsNext[':org'] = $filter_organisasi;
@@ -107,7 +142,7 @@ $stmtNext->execute();
 $kegiatanTerdekat = $stmtNext->fetchAll();
 
 // ============================================================
-// SEMUA KEGIATAN BULAN INI
+// SEMUA KEGIATAN BULAN INI (untuk tab) dengan pencarian
 // ============================================================
 $sqlAllBulan = "SELECT k.*, o.nama_organisasi, o.jenis 
                 FROM konten_kegiatan k
@@ -136,7 +171,7 @@ function getIndonesianDay($day) {
 }
 
 // ============================================================
-// GENERATE HTML UNTUK PRINT (BULAN / TAHUN)
+// GENERATE PRINT (tidak diubah)
 // ============================================================
 function generatePrintHTML($type, $year, $month = null) {
     global $pdo;
@@ -162,7 +197,6 @@ function generatePrintHTML($type, $year, $month = null) {
     </style></head><body>';
 
     if ($type == 'month' && $month) {
-        // ===== CETAK BULAN INI =====
         $start = "$year-$month-01";
         $end = date('Y-m-t', strtotime($start));
         $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
@@ -214,7 +248,6 @@ function generatePrintHTML($type, $year, $month = null) {
         }
         $html .= '</tr></table>';
 
-        // Daftar kegiatan bulan ini
         $html .= '<div class="event-list"><h3>Daftar Kegiatan Bulan ' . getIndonesianMonth($month) . '</h3>';
         if (count($events) > 0) {
             foreach ($events as $e) {
@@ -226,9 +259,7 @@ function generatePrintHTML($type, $year, $month = null) {
         $html .= '</div>';
 
     } elseif ($type == 'year') {
-        // ===== CETAK TAHUN INI (12 BULAN) =====
         $html .= '<h1>Kalender Kegiatan Tahun ' . $year . '</h1>';
-        
         for ($m = 1; $m <= 12; $m++) {
             $start = "$year-" . str_pad($m, 2, '0', STR_PAD_LEFT) . "-01";
             $end = date('Y-m-t', strtotime($start));
@@ -282,7 +313,6 @@ function generatePrintHTML($type, $year, $month = null) {
             }
             $html .= '</tr></table>';
 
-            // Daftar kegiatan bulan ini
             $html .= '<div class="event-list"><strong>Kegiatan:</strong> ';
             if (count($events) > 0) {
                 $eventList = [];
@@ -295,7 +325,7 @@ function generatePrintHTML($type, $year, $month = null) {
                 $html .= 'Tidak ada kegiatan.';
             }
             $html .= '</div>';
-            $html .= '</div>'; // end print-page
+            $html .= '</div>';
         }
     }
 
@@ -304,25 +334,23 @@ function generatePrintHTML($type, $year, $month = null) {
     return $html;
 }
 
+// ============================================================
+// INCLUDE HEADER
+// ============================================================
 include '../../include/header.php';
 ?>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
 <style>
-/* ============================================================
-   AGENDA STYLES (sama seperti sebelumnya)
-   ============================================================ */
 .agenda-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 0 1rem;
-    /* tambahkan */
-    margin-top: 0; /* atau 0.5rem jika perlu */
     padding-top: 0.5rem;
 }
 
-/* Filter bar */
+/* ===== FILTER BAR (konsisten dengan kegiatan.php) ===== */
 .agenda-filter-bar {
     background: #f8fafc;
     border-radius: 16px;
@@ -381,7 +409,37 @@ include '../../include/header.php';
     color: #ffffff;
 }
 
-/* Calendar header */
+/* ===== SEARCH STATS (sama seperti kegiatan.php) ===== */
+.search-stats {
+    background: linear-gradient(135deg, #071C34 0%, #0a2a4a 100%);
+    border-radius: 16px;
+    padding: 0.8rem 2rem;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-bottom: 2rem;
+}
+.search-stats .stats-left i { color: #FFA007; font-size: 1.2rem; margin-right: 0.5rem; }
+.search-stats .stats-left strong { color: #FFA007; }
+.search-stats .btn-clear {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    padding: 0.25rem 1.2rem;
+    font-size: 0.8rem;
+    transition: 0.3s;
+    text-decoration: none;
+}
+.search-stats .btn-clear:hover {
+    background: #FFA007;
+    color: #071C34;
+}
+
+/* ===== CALENDAR HEADER ===== */
 .calendar-header {
     display: flex;
     justify-content: space-between;
@@ -431,7 +489,7 @@ include '../../include/header.php';
     border-color: #FFA007;
 }
 
-/* Calendar grid */
+/* ===== CALENDAR GRID ===== */
 .calendar-grid {
     background: #ffffff;
     border-radius: 20px;
@@ -512,7 +570,7 @@ include '../../include/header.php';
 }
 .calendar-grid .day-cell.empty { background: #fafbfc; }
 
-/* Tab */
+/* ===== TAB ===== */
 .upcoming-tabs {
     margin-top: 2rem;
 }
@@ -592,7 +650,16 @@ include '../../include/header.php';
     color: #94a3b8;
 }
 
-/* ===== TOMBOL UNDUH PDF DI BAWAH ===== */
+/* ===== HIGHLIGHT KUNING ===== */
+.highlight {
+    background: #FFA007;
+    color: #071C34;
+    font-weight: 700;
+    padding: 0 4px;
+    border-radius: 4px;
+}
+
+/* ===== TOMBOL UNDUH PDF ===== */
 .download-section {
     margin-top: 2.5rem;
     padding: 1.5rem;
@@ -629,7 +696,7 @@ include '../../include/header.php';
     font-size: 1rem;
 }
 
-/* Responsive */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     .agenda-filter-bar { flex-direction: column; align-items: stretch; }
     .agenda-filter-bar .filter-group { flex: 1; }
@@ -642,17 +709,22 @@ include '../../include/header.php';
     .calendar-header .nav-buttons { justify-content: center; }
     .download-section { flex-direction: column; }
     .download-section .btn-print { width: 100%; justify-content: center; }
+    .search-stats { flex-direction: column; text-align: center; }
 }
 </style>
 
 <div class="agenda-container">
 
-    <!-- FILTER -->
+    <!-- ===== FILTER (konsisten dengan kegiatan.php) ===== -->
     <div class="agenda-filter-bar">
         <form id="filterForm" method="get" action="<?= $_SERVER['REQUEST_URI'] ?>" style="display:contents;">
             <input type="hidden" name="month" value="<?= $month ?>">
             <input type="hidden" name="year" value="<?= $year ?>">
             <input type="hidden" name="tab" value="<?= $tab ?>">
+            <input type="hidden" name="q" value="<?= htmlspecialchars($q) ?>">
+            <?php if (!empty($context)): ?>
+                <input type="hidden" name="context" value="<?= htmlspecialchars($context) ?>">
+            <?php endif; ?>
 
             <div class="filter-group">
                 <label>Status</label>
@@ -701,21 +773,35 @@ include '../../include/header.php';
         </form>
     </div>
 
-    <!-- KALENDER HEADER -->
+    <!-- ===== SEARCH STATS (muncul jika ada q atau filter aktif) ===== -->
+    <?php if (!empty($q) || $filter_jenis || $filter_kategori || $filter_organisasi > 0 || $filter_status != 'semua'): ?>
+        <div class="search-stats">
+            <span class="stats-left"><i class="fas fa-search"></i> Menampilkan hasil
+                <?php if (!empty($q)): ?> untuk "<strong><?= htmlspecialchars($q) ?></strong>"<?php endif; ?>
+                <?php if (!empty($filter_jenis)): ?> | Jenis: <strong><?= htmlspecialchars($filter_jenis) ?></strong><?php endif; ?>
+                <?php if (!empty($filter_kategori)): ?> | Kategori: <strong><?= htmlspecialchars($filter_kategori) ?></strong><?php endif; ?>
+                <?php if ($filter_organisasi > 0): ?> | Organisasi: <strong><?= htmlspecialchars($allOrganisasi[array_search($filter_organisasi, array_column($allOrganisasi, 'id_organisasi'))]['nama_organisasi'] ?? '') ?></strong><?php endif; ?>
+                <?php if ($filter_status != 'semua'): ?> | Status: <strong><?= ucfirst(str_replace('_', ' ', $filter_status)) ?></strong><?php endif; ?>
+            </span>
+            <a href="<?= $_SERVER['PHP_SELF'] ?>" class="btn-clear"><i class="fas fa-times"></i> Hapus filter</a>
+        </div>
+    <?php endif; ?>
+
+    <!-- ===== KALENDER HEADER ===== -->
     <div class="calendar-header">
         <div class="month-title"><?= getIndonesianMonth($month) ?> <span><?= $year ?></span></div>
         <div class="nav-buttons">
-            <a href="?month=<?= $month-1 ?>&year=<?= $year ?>&<?= http_build_query(array_filter(['filter_organisasi' => $filter_organisasi, 'filter_jenis' => $filter_jenis, 'filter_kategori' => $filter_kategori, 'filter_status' => $filter_status, 'tab' => $tab])) ?>">
+            <a href="?month=<?= $month-1 ?>&year=<?= $year ?>&<?= http_build_query(array_filter(['filter_organisasi' => $filter_organisasi, 'filter_jenis' => $filter_jenis, 'filter_kategori' => $filter_kategori, 'filter_status' => $filter_status, 'tab' => $tab, 'q' => $q])) ?>">
                 <i class="fas fa-chevron-left"></i> Prev
             </a>
-            <a href="?month=<?= date('n') ?>&year=<?= date('Y') ?>&<?= http_build_query(array_filter(['filter_organisasi' => $filter_organisasi, 'filter_jenis' => $filter_jenis, 'filter_kategori' => $filter_kategori, 'filter_status' => $filter_status, 'tab' => $tab])) ?>" class="btn-today">Hari Ini</a>
-            <a href="?month=<?= $month+1 ?>&year=<?= $year ?>&<?= http_build_query(array_filter(['filter_organisasi' => $filter_organisasi, 'filter_jenis' => $filter_jenis, 'filter_kategori' => $filter_kategori, 'filter_status' => $filter_status, 'tab' => $tab])) ?>">
+            <a href="?month=<?= date('n') ?>&year=<?= date('Y') ?>&<?= http_build_query(array_filter(['filter_organisasi' => $filter_organisasi, 'filter_jenis' => $filter_jenis, 'filter_kategori' => $filter_kategori, 'filter_status' => $filter_status, 'tab' => $tab, 'q' => $q])) ?>" class="btn-today">Hari Ini</a>
+            <a href="?month=<?= $month+1 ?>&year=<?= $year ?>&<?= http_build_query(array_filter(['filter_organisasi' => $filter_organisasi, 'filter_jenis' => $filter_jenis, 'filter_kategori' => $filter_kategori, 'filter_status' => $filter_status, 'tab' => $tab, 'q' => $q])) ?>">
                 Next <i class="fas fa-chevron-right"></i>
             </a>
         </div>
     </div>
 
-    <!-- KALENDER GRID -->
+    <!-- ===== KALENDER GRID ===== -->
     <div class="calendar-grid">
         <div class="days-header">
             <div>Minggu</div><div>Senin</div><div>Selasa</div><div>Rabu</div>
@@ -744,7 +830,7 @@ include '../../include/header.php';
                         <?php if (count($eventsToday) > 0): ?>
                             <?php $display = array_slice($eventsToday, 0, 3); foreach ($display as $ev): ?>
                                 <a href="<?= BASE_URL ?>/dashboard/mahasiswa/detail_kegiatan.php?id=<?= $ev['id_konten'] ?>&back=<?= urlencode(BASE_URL . '/dashboard/mahasiswa/agenda.php') ?>" class="event-badge" title="<?= htmlspecialchars($ev['judul']) ?>">
-                                    <?= htmlspecialchars(substr($ev['judul'], 0, 20)) ?>
+                                    <?= highlightText(substr($ev['judul'], 0, 20), $q) ?>
                                 </a>
                             <?php endforeach; ?>
                             <?php if (count($eventsToday) > 3): ?>
@@ -757,7 +843,7 @@ include '../../include/header.php';
         </div>
     </div>
 
-    <!-- TAB KEGIATAN -->
+    <!-- ===== TAB KEGIATAN ===== -->
     <div class="upcoming-tabs" id="tabContainer">
         <div class="tab-nav">
             <button class="tab-btn <?= $tab=='terdekat'?'active':'' ?>" data-tab="terdekat" onclick="switchTab('terdekat')">
@@ -775,12 +861,12 @@ include '../../include/header.php';
                         <span class="date-badge"><?= date('d M', strtotime($k['tanggal_kegiatan'])) ?></span>
                         <span class="event-title">
                             <a href="<?= BASE_URL ?>/dashboard/mahasiswa/detail_kegiatan.php?id=<?= $k['id_konten'] ?>&back=<?= urlencode(BASE_URL . '/dashboard/mahasiswa/agenda.php') ?>">
-                                <?= htmlspecialchars($k['judul']) ?>
+                                <?= highlightText($k['judul'], $q) ?>
                             </a>
                         </span>
-                        <span class="event-org"><i class="fa-regular fa-building"></i> <?= htmlspecialchars($k['nama_organisasi']) ?></span>
+                        <span class="event-org"><i class="fa-regular fa-building"></i> <?= highlightText($k['nama_organisasi'], $q) ?></span>
                         <?php if (!empty($k['kategori'])): ?>
-                            <span class="event-org" style="color:#FFA007; font-weight:600;"><?= htmlspecialchars($k['kategori']) ?></span>
+                            <span class="event-org" style="color:#FFA007; font-weight:600;"><?= highlightText($k['kategori'], $q) ?></span>
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
@@ -796,12 +882,12 @@ include '../../include/header.php';
                         <span class="date-badge"><?= date('d M', strtotime($k['tanggal_kegiatan'])) ?></span>
                         <span class="event-title">
                             <a href="<?= BASE_URL ?>/dashboard/mahasiswa/detail_kegiatan.php?id=<?= $k['id_konten'] ?>&back=<?= urlencode(BASE_URL . '/dashboard/mahasiswa/agenda.php') ?>">
-                                <?= htmlspecialchars($k['judul']) ?>
+                                <?= highlightText($k['judul'], $q) ?>
                             </a>
                         </span>
-                        <span class="event-org"><i class="fa-regular fa-building"></i> <?= htmlspecialchars($k['nama_organisasi']) ?></span>
+                        <span class="event-org"><i class="fa-regular fa-building"></i> <?= highlightText($k['nama_organisasi'], $q) ?></span>
                         <?php if (!empty($k['kategori'])): ?>
-                            <span class="event-org" style="color:#FFA007; font-weight:600;"><?= htmlspecialchars($k['kategori']) ?></span>
+                            <span class="event-org" style="color:#FFA007; font-weight:600;"><?= highlightText($k['kategori'], $q) ?></span>
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
@@ -811,9 +897,7 @@ include '../../include/header.php';
         </div>
     </div>
 
-    <!-- ========================================================== -->
-    <!-- TOMBOL UNDUH PDF (DI BAWAH SEMUA KONTEN)                   -->
-    <!-- ========================================================== -->
+    <!-- ===== TOMBOL UNDUH PDF ===== -->
     <div class="download-section">
         <button class="btn-print" onclick="printPDF('month', <?= $month ?>, <?= $year ?>)">
             <i class="fas fa-file-pdf"></i> Unduh Kalender Bulan Ini (PDF)
@@ -827,10 +911,9 @@ include '../../include/header.php';
 
 <script>
 // ============================================================
-// FUNGSI UNDUH PDF (tanpa reload & tanpa buka tab baru)
+// FUNGSI UNDUH PDF
 // ============================================================
 function printPDF(type, month, year) {
-    // Buat iframe tersembunyi
     var iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.top = '-9999px';
@@ -854,7 +937,6 @@ function printPDF(type, month, year) {
         } catch (e) {
             alert('Gagal membuka print. Silakan coba lagi.');
         }
-        // Hapus iframe setelah selesai print (tapi kita hapus setelah beberapa detik)
         setTimeout(function() {
             if (document.body.contains(iframe)) {
                 document.body.removeChild(iframe);
@@ -864,16 +946,15 @@ function printPDF(type, month, year) {
 }
 
 // ============================================================
-// RESET FILTER & SWITCH TAB (sama seperti sebelumnya)
+// RESET FILTER (redirect ke halaman tanpa q)
 // ============================================================
 function resetFilter() {
-    var form = document.getElementById('filterForm');
-    form.querySelectorAll('select').forEach(function(sel) {
-        sel.selectedIndex = 0;
-    });
-    form.submit();
+    window.location.href = '<?= $_SERVER['PHP_SELF'] ?>';
 }
 
+// ============================================================
+// SWITCH TAB
+// ============================================================
 function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(function(btn) {
         btn.classList.remove('active');
@@ -892,65 +973,3 @@ function switchTab(tab) {
 </script>
 
 <?php include '../../include/footer.php'; ?>
-=======
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// 1. Menggunakan file konfigurasi bawaan kelompok Anda
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../include/components.php';
-require_once __DIR__ . '/../../include/pendaftaran-helper.php';
-require_once '../../config/session_check.php';
-
-// Catatan: Pastikan file database.php di kelompok Anda menggunakan variabel $pdo.
-// Jika kelompok Anda menggunakan $conn, ganti $pdo di bawah ini menjadi $conn.
-$queryAgenda = $pdo->query("SELECT id_konten, judul_kegiatan as title, tanggal_upload as start FROM konten_kegiatan");
-$eventsJson  = json_encode($queryAgenda->fetchAll(PDO::FETCH_ASSOC));
-?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Portal Kampus - Agenda Kegiatan</title>
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-    <style>
-        body { 
-            font-family: 'Segoe UI', Arial, sans-serif; 
-            background-color: #fafafa; 
-            margin: 0; 
-            padding: 20px; 
-        }
-        #calendar-box { 
-            background: white; 
-            padding: 20px; 
-            border-radius: 8px; 
-            border: 1px solid #dbdbdb; 
-            max-width: 900px; 
-            margin: 40px auto; 
-        }
-    </style>
-</head>
-<body>
-
-<div id="calendar-box">
-    <div id="calendar"></div>
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var calendarEl = document.getElementById('calendar');
-        if (calendarEl) {
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                locale: 'id',
-                events: <?php echo $eventsJson; ?>
-            });
-            calendar.render();
-        }
-    });
-</script>
-</body>
-</html>
->>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c

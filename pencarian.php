@@ -1,6 +1,8 @@
 <?php
 /**
  * pencarian.php - Halaman pencarian dengan filter di header
+ * Sekarang menggunakan header.php standar (bukan header_pencarian.php)
+ * sehingga form pencarian tetap muncul di semua halaman.
  */
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -36,7 +38,7 @@ if (!function_exists('highlightText')) {
 }
 
 // ============================================================
-// PROSES PENCARIAN (sama seperti sebelumnya)
+// PROSES PENCARIAN
 // ============================================================
 $keyword = isset($_GET['q']) ? trim($_GET['q']) : '';
 $filter_jenis = isset($_GET['filter_jenis']) ? trim($_GET['filter_jenis']) : '';
@@ -111,9 +113,9 @@ if ($type == 'all' || $type == 'pengurus')   $filtered_results['pengurus'] = $re
 $totalResults = count($filtered_results['kegiatan'] ?? []) + count($filtered_results['organisasi'] ?? []) + count($filtered_results['pengurus'] ?? []);
 
 // ============================================================
-// GANTI HEADER DENGAN HEADER KHUSUS PENCARIAN
+// INCLUDE HEADER STANDAR (bukan header_pencarian.php)
 // ============================================================
-include 'include/header_pencarian.php';
+include 'include/header.php';
 ?>
 
 <style>
@@ -307,7 +309,7 @@ include 'include/header_pencarian.php';
     <?php else: ?>
         <div class="search-stats">
             <span class="stats-left"><i class="fas fa-search"></i> Menampilkan <strong><?= $totalResults ?></strong> hasil untuk "<strong><?= h($keyword) ?></strong>"</span>
-            <a href="<?= BASE_URL ?>/pencarian.php" class="btn-clear"><i class="fas fa-times"></i> Hapus filter</a>
+            <a href="<?= BASE_URL ?? '/MASAGENA-ITH' ?>/pencarian.php" class="btn-clear"><i class="fas fa-times"></i> Hapus filter</a>
         </div>
 
         <!-- KEGIATAN -->
@@ -328,7 +330,7 @@ include 'include/header_pencarian.php';
                             </div>
                             <p class="card-text"><?= highlightText(short_text($row['deskripsi'], 120), $keyword) ?></p>
                             <div class="card-meta"><i class="fa-regular fa-clock"></i> <?= rupiah_date($row['tanggal_kegiatan']) ?></div>
-                            <a href="<?= BASE_URL ?>/detail_kegiatan.php?id=<?= $row['id_konten'] ?>" class="btn-detail">Lihat Detail <i class="fa-solid fa-arrow-right"></i></a>
+                            <a href="<?= BASE_URL ?? '/MASAGENA-ITH' ?>/detail_kegiatan.php?id=<?= $row['id_konten'] ?>" class="btn-detail">Lihat Detail <i class="fa-solid fa-arrow-right"></i></a>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -352,7 +354,7 @@ include 'include/header_pencarian.php';
                             <h5 class="card-title"><?= highlightText(h($row['nama_organisasi']), $keyword) ?></h5>
                             <p><span class="badge bg-secondary"><?= h($row['jenis']) ?></span></p>
                             <p class="card-text"><?= highlightText(short_text($row['deskripsi'], 100), $keyword) ?></p>
-                            <a href="<?= BASE_URL ?>/organisasi_detail.php?id=<?= $row['id_organisasi'] ?>" class="btn-detail">Lihat Profil <i class="fa-solid fa-arrow-right"></i></a>
+                            <a href="<?= BASE_URL ?? '/MASAGENA-ITH' ?>/organisasi_detail.php?id=<?= $row['id_organisasi'] ?>" class="btn-detail">Lihat Profil <i class="fa-solid fa-arrow-right"></i></a>
                         </div>
                     </div>
                 <?php endforeach; ?>

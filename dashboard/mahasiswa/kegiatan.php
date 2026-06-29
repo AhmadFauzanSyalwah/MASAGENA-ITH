@@ -1,5 +1,4 @@
 <?php
-<<<<<<< HEAD
 // dashboard/mahasiswa/kegiatan.php
 session_start();
 
@@ -11,49 +10,32 @@ if (!isset($_SESSION['user_id'])) {
 if ($_SESSION['peran'] != 'mahasiswa') {
     header('Location: ../../dashboard/' . $_SESSION['peran'] . '/index.php');
     exit;
-=======
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../include/components.php';
-require_once __DIR__ . '/../../include/pendaftaran-helper.php';
-require_once '../../config/session_check.php';
-
-$defaultKuota = (int) pendaftaran_default_kuota();
-
-try {
-    $stmt = $pdo->query("
-        SELECT
-            k.id_konten,
-            k.judul,
-            k.deskripsi,
-            k.lampiran,
-            k.created_at,
-            k.tanggal_kegiatan,
-            k.kategori,
-            COALESCE(
-                (
-                    SELECT MAX(NULLIF(p2.kuota_maks, 0))
-                    FROM pendaftaran p2
-                    WHERE p2.id_konten = k.id_konten
-                ),
-                $defaultKuota
-            ) AS kuota,
-            (
-                SELECT COUNT(*)
-                FROM pendaftaran p
-                WHERE p.id_konten = k.id_konten
-                AND p.status_pendaftaran != 'ditolak'
-            ) AS jumlah_peserta
-        FROM konten_kegiatan k
-        WHERE k.status_publikasi = 'publish'
-        ORDER BY k.created_at DESC
-    ");
-} catch (PDOException $e) {
-    die('Query kegiatan gagal: ' . $e->getMessage());
->>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c
 }
 
 require_once '../../config/database.php';
 require_once '../../include/pendaftaran-helper.php';
+
+// ============================================================
+// FUNGSI HIGHLIGHT
+// ============================================================
+if (!function_exists('highlightText')) {
+    function highlightText($text, $keyword) {
+        if (empty($keyword) || empty($text)) {
+            return $text;
+        }
+        $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        return preg_replace('/(' . preg_quote($keyword, '/') . ')/i', '<span class="highlight">$1</span>', $text);
+    }
+}
+
+// ============================================================
+// KONTEKS UNTUK HEADER
+// ============================================================
+$page_context = 'kegiatan';
+
+// Ambil parameter pencarian dari header
+$q = isset($_GET['q']) ? trim($_GET['q']) : '';
+$context = isset($_GET['context']) ? $_GET['context'] : '';
 
 // ===== AMBIL PARAMETER FILTER & PAGINATION =====
 $filter_organisasi = isset($_GET['filter_organisasi']) ? (int)$_GET['filter_organisasi'] : 0;
@@ -71,11 +53,19 @@ $allKategori = $pdo->query("SELECT DISTINCT kategori FROM konten_kegiatan WHERE 
 $allJenis = $pdo->query("SELECT DISTINCT jenis FROM organisasi WHERE jenis IS NOT NULL AND jenis != '' ORDER BY jenis")->fetchAll(PDO::FETCH_COLUMN);
 
 // ============================================================
-// BANGUN QUERY DENGAN FILTER
+// BANGUN QUERY DENGAN FILTER DAN PENCARIAN
 // ============================================================
 $where = "k.status_publikasi = 'publik'";
 $params = [];
 
+// Pencarian (q)
+if (!empty($q)) {
+    $search = '%' . $q . '%';
+    $where .= " AND (k.judul LIKE :q OR k.deskripsi LIKE :q OR k.kategori LIKE :q OR o.nama_organisasi LIKE :q)";
+    $params[':q'] = $search;
+}
+
+// Filter lainnya
 if (!empty($filter_jenis)) {
     $where .= " AND o.jenis = :jenis";
     $params[':jenis'] = $filter_jenis;
@@ -132,10 +122,12 @@ foreach ($params as $key => $val) {
 $stmt->execute();
 $kegiatan = $stmt->fetchAll();
 
+// ============================================================
+// INCLUDE HEADER
+// ============================================================
 include '../../include/header.php';
 ?>
 
-<<<<<<< HEAD
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
 <style>
@@ -384,6 +376,15 @@ include '../../include/header.php';
     cursor: not-allowed;
 }
 
+/* ===== HIGHLIGHT KUNING ===== */
+.highlight {
+    background: #FFA007;
+    color: #071C34;
+    font-weight: 700;
+    padding: 0 4px;
+    border-radius: 4px;
+}
+
 /* Pagination */
 .pagination-wrapper {
     margin: 2.5rem 0 1rem 0;
@@ -447,6 +448,10 @@ include '../../include/header.php';
     <div class="kegiatan-filter-bar">
         <form id="filterForm" method="get" action="<?= $_SERVER['REQUEST_URI'] ?>" style="display:contents;">
             <input type="hidden" name="page" value="1">
+            <input type="hidden" name="q" value="<?= htmlspecialchars($q) ?>">
+            <?php if (!empty($context)): ?>
+                <input type="hidden" name="context" value="<?= htmlspecialchars($context) ?>">
+            <?php endif; ?>
 
             <div class="filter-group">
                 <label>Status</label>
@@ -504,9 +509,11 @@ include '../../include/header.php';
     </div>
 
     <!-- STATISTIK -->
-    <?php if ($filter_jenis || $filter_kategori || $filter_organisasi > 0 || $filter_status != 'semua'): ?>
+    <?php if (!empty($q) || $filter_jenis || $filter_kategori || $filter_organisasi > 0 || $filter_status != 'semua'): ?>
         <div class="search-stats">
-            <span class="stats-left"><i class="fas fa-search"></i> Menampilkan <strong><?= $totalKegiatan ?></strong> kegiatan</span>
+            <span class="stats-left"><i class="fas fa-search"></i> Menampilkan <strong><?= $totalKegiatan ?></strong> hasil
+                <?php if (!empty($q)): ?> untuk "<strong><?= htmlspecialchars($q) ?></strong>"<?php endif; ?>
+            </span>
             <a href="<?= $_SERVER['PHP_SELF'] ?>" class="btn-clear"><i class="fas fa-times"></i> Hapus filter</a>
         </div>
     <?php endif; ?>
@@ -531,6 +538,12 @@ include '../../include/header.php';
                         }
                     }
                 }
+
+                // Terapkan highlight
+                $highlightedJudul = highlightText($row['judul'], $q);
+                $highlightedDeskripsi = highlightText(substr($row['deskripsi'], 0, 150), $q);
+                $highlightedOrg = highlightText($row['nama_organisasi'], $q);
+                $highlightedKategori = highlightText($row['kategori'], $q);
             ?>
                 <div class="kegiatan-card" data-id="<?= $row['id_konten'] ?>">
                     <div class="card-image">
@@ -540,13 +553,13 @@ include '../../include/header.php';
                             <div class="no-image"><i class="fa-regular fa-image"></i></div>
                         <?php endif; ?>
                         <?php if (!empty($row['kategori'])): ?>
-                            <span class="card-badge"><?= htmlspecialchars($row['kategori']) ?></span>
+                            <span class="card-badge"><?= $highlightedKategori ?></span>
                         <?php endif; ?>
                     </div>
                     <div class="card-body">
-                        <div class="org-name"><i class="fa-regular fa-building"></i> <?= htmlspecialchars($row['nama_organisasi']) ?></div>
-                        <div class="judul"><?= htmlspecialchars($row['judul']) ?></div>
-                        <div class="deskripsi"><?= htmlspecialchars(substr($row['deskripsi'], 0, 150)) ?>...</div>
+                        <div class="org-name"><i class="fa-regular fa-building"></i> <?= $highlightedOrg ?></div>
+                        <div class="judul"><?= $highlightedJudul ?></div>
+                        <div class="deskripsi"><?= $highlightedDeskripsi ?>...</div>
                         <div class="meta">
                             <span class="quota <?= $penuh ? 'penuh' : '' ?>">
                                 <?php if ($penuh): ?>
@@ -605,82 +618,6 @@ include '../../include/header.php';
         </div>
     <?php endif; ?>
 
-=======
-<div class="dashboard-welcome">
-    <h1>Daftar Kegiatan</h1>
-    <p>Jelajahi dan daftarkan diri Anda pada berbagai acara, seminar, kompetisi, serta kegiatan kemahasiswaan terbaru di lingkungan kampus.</p>
-</div>
-
-<div class="main-content">
-    
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
-        <h2 style="margin-bottom: 0; font-size: 1.3rem; border-left: 4px solid var(--accent); padding-left: 0.75rem;">Kegiatan Terbaru</h2>
-        
-        <div style="display: flex; gap: 8px;">
-            <a href="kegiatan.php" class="btn-sm" style="background-color: var(--primary); color: var(--white);">Lihat Semua &rarr;</a>
-            <a href="cek_status_pendaftaran.php" class="btn-sm" style="background-color: var(--success); color: var(--white);">Cek Status &rarr;</a>
-        </div>
-    </div>
-
-    <?php if ($stmt->rowCount() === 0) { ?>
-        <div class="alert">
-            <h3>Belum ada kegiatan</h3>
-            <p style="margin:0;">Tambahkan data kegiatan di tabel <strong>konten_kegiatan</strong> terlebih dahulu.</p>
-        </div>
-    <?php } else { ?>
-        
-        <div class="organisasi-grid kegiatan-list">
-            <?php while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) { ?>
-                <?php
-                    $kuota = (int) $row['kuota'];
-                    $jumlah = (int) $row['jumlah_peserta'];
-                    $penuh = $kuota > 0 && $jumlah >= $kuota;
-                    $foto = pendaftaran_lampiran_src($row['lampiran']);
-                ?>
-
-                <article class="card" style="display: flex; flex-direction: column; height: 100%; min-height: 100%; <?= $penuh ? 'opacity: 0.65;' : ''; ?>">
-                    
-                    <div style="margin: -1.5rem -1.5rem 1rem -1.5rem; height: 180px; overflow: hidden; border-radius: var(--radius) var(--radius) 0 0; background-color: var(--bg-body); display: flex; align-items: center; justify-content: center;">
-                        <?php if ($foto !== '') { ?>
-                            <img src="<?= h($foto); ?>" alt="<?= h($row['judul']); ?>" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='<?= h(asset_url('img/logo-1.png')); ?>'; this.style.height='60px'; this.style.objectFit='contain';">
-                        <?php } else { ?>
-                            <img src="<?= h(asset_url('img/logo-1.png')); ?>" alt="MASAGENA-ITH" style="height: 60px; object-fit: contain;">
-                        <?php } ?>
-                    </div>
-
-                    <h3 style="font-size: 1.1rem; line-height: 1.3; margin-bottom: 0.5rem;">
-                        <?= h($row['judul']); ?>
-                    </h3>
-                    
-                    <div class="meta" style="display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 1rem;">
-                        <span style="color: var(--primary);"><i class="fa fa-calendar"></i> <?= h(rupiah_date($row['tanggal_kegiatan'])); ?></span>
-                        
-                        <?php if ($penuh) { ?>
-                            <span style="color: var(--danger);">KUOTA PENUH</span>
-                        <?php } else { ?>
-                            <span style="color: var(--accent-dark);">Kuota: <?= $jumlah; ?>/<?= $kuota; ?></span>
-                        <?php } ?>
-                    </div>
-
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5; flex-grow: 1;">
-                        <?= h(short_text($row['deskripsi'], 90)); ?>
-                    </p>
-
-                    <div class="card-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
-                        <a href="detail_kegiatan.php?id_konten=<?= (int) $row['id_konten']; ?>" class="btn-cancel" style="margin:0; text-align:center; padding: 0.5rem;">Detail</a>
-
-                        <?php if ($penuh) { ?>
-                            <button class="btn" style="background-color: var(--border); color: var(--text-muted); cursor: not-allowed; padding: 0.5rem;" disabled>Daftar</button>
-                        <?php } else { ?>
-                            <a href="form_pendaftaran_kegiatan.php?id_konten=<?= (int) $row['id_konten']; ?>" class="btn" style="text-align:center; padding: 0.5rem;">Daftar</a>
-                        <?php } ?>
-                    </div>
-
-                </article>
-            <?php } ?>
-        </div>
-    <?php } ?>
->>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c
 </div>
 
 <script>
@@ -689,7 +626,8 @@ function resetFilter() {
     form.querySelectorAll('select').forEach(function(sel) {
         sel.selectedIndex = 0;
     });
-    form.submit();
+    // Hapus q juga dengan redirect ke halaman tanpa q
+    window.location.href = '<?= $_SERVER['PHP_SELF'] ?>';
 }
 </script>
 

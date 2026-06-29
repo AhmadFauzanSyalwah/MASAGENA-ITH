@@ -5,14 +5,35 @@ require_once '../../config/session_check.php';
 require_once '../../config/database.php';
 require_once '../../include/pendaftaran-helper.php';
 
-// Ambil parameter filter
+// ============================================================
+// FUNGSI HIGHLIGHT
+// ============================================================
+if (!function_exists('highlightText')) {
+    function highlightText($text, $keyword) {
+        if (empty($keyword) || empty($text)) {
+            return $text;
+        }
+        $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        return preg_replace('/(' . preg_quote($keyword, '/') . ')/i', '<span class="highlight">$1</span>', $text);
+    }
+}
+
+// ============================================================
+// SET KONTEKS UNTUK HEADER
+// ============================================================
+$page_context = 'beranda';
+
+// Ambil parameter dari GET
 $q = isset($_GET['q']) ? trim($_GET['q']) : '';
+$context = isset($_GET['context']) ? $_GET['context'] : '';
+
+// Filter lain
 $filter_jenis = isset($_GET['filter_jenis']) ? $_GET['filter_jenis'] : '';
 $filter_kategori = isset($_GET['filter_kategori']) ? $_GET['filter_kategori'] : '';
 $filter_organisasi = isset($_GET['filter_organisasi']) ? (int)$_GET['filter_organisasi'] : 0;
 $sort_by = isset($_GET['sort_by']) ? $_GET['sort_by'] : 'relevansi';
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-$limit = 9; // 9 kegiatan per halaman (3x3)
+$limit = 9;
 $offset = ($page - 1) * $limit;
 
 // Ambil daftar organisasi dan kategori untuk dropdown filter
@@ -50,7 +71,7 @@ switch ($sort_by) {
     default:         $order = "k.tanggal_kegiatan DESC";
 }
 
-// Hitung total kegiatan (untuk pagination)
+// Hitung total kegiatan
 $countSql = "SELECT COUNT(*) FROM konten_kegiatan k JOIN organisasi o ON k.id_organisasi = o.id_organisasi WHERE $where";
 $countStmt = $pdo->prepare($countSql);
 foreach ($params as $key => $val) {
@@ -77,8 +98,8 @@ foreach ($params as $key => $val) {
 $stmt->execute();
 $kegiatan = $stmt->fetchAll();
 
-// Cek kolom user di tabel likes (untuk pengecekan like)
-$likeUserColumn = 'id_user'; // default
+// Cek kolom user di tabel likes
+$likeUserColumn = 'id_user';
 try {
     $columns = $pdo->query("SHOW COLUMNS FROM likes")->fetchAll(PDO::FETCH_COLUMN);
     if (in_array('id_mahasiswa', $columns)) {
@@ -89,32 +110,52 @@ try {
         $likeUserColumn = 'id_pengguna';
     }
 } catch (PDOException $e) {
-    // Jika tabel likes tidak ada, abaikan
     $likeUserColumn = null;
 }
 
-// Ambil pengumuman (untuk di bawah)
+// Ambil pengumuman
 $stmtPengumuman = $pdo->query("SELECT * FROM konten_kegiatan WHERE kategori = 'pengumuman' AND status_publikasi = 'publik' ORDER BY created_at DESC LIMIT 3");
 $pengumuman = $stmtPengumuman->fetchAll();
 
 $isFilterActive = (!empty($q) || !empty($filter_jenis) || !empty($filter_kategori) || $filter_organisasi > 0);
 
+// ============================================================
+// INCLUDE HEADER
+// ============================================================
 include '../../include/header.php';
 ?>
 
-<<<<<<< HEAD
 <style>
-/* ===== BERANDA GRID 3 KOLOM ===== */
+/* ============================================
+   BERANDA - KONSISTEN DENGAN ORGANISASI & KEGIATAN
+   ============================================ */
 .container-beranda {
     max-width: 1400px;
     margin: 0 auto;
     padding: 0 1rem;
 }
+
+/* ===== WELCOME - TETAP POLOS (tidak berubah) ===== */
+.dashboard-welcome {
+    padding: 1.5rem 0 1.5rem 1;
+}
+.dashboard-welcome h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+}
+.dashboard-welcome p {
+    color: #ffffff;
+    font-size: 1rem;
+}
+
+/* ===== FILTER BAR - SAMA DENGAN ORGANISASI.PHP ===== */
 .filter-area {
     background: #f8fafc;
     border-radius: 16px;
     padding: 1rem 1.5rem;
-    margin: 1.5rem 0 2rem 0;
+    margin-bottom: 2rem;
     border: 1px solid #e9ecef;
     display: flex;
     flex-wrap: wrap;
@@ -167,6 +208,8 @@ include '../../include/header.php';
     background: #0a2a4a;
     color: #ffffff;
 }
+
+/* ===== SEARCH STATS - SAMA DENGAN ORGANISASI.PHP ===== */
 .search-stats {
     background: linear-gradient(135deg, #071C34 0%, #0a2a4a 100%);
     border-radius: 16px;
@@ -177,10 +220,16 @@ include '../../include/header.php';
     align-items: center;
     flex-wrap: wrap;
     gap: 0.8rem;
-    margin: 0 0 1.5rem 0;
+    margin-bottom: 2rem;
 }
-.search-stats .stats-left i { color: #FFA007; font-size: 1.2rem; margin-right: 0.5rem; }
-.search-stats .stats-left strong { color: #FFA007; }
+.search-stats .stats-left i {
+    color: #FFA007;
+    font-size: 1.2rem;
+    margin-right: 0.5rem;
+}
+.search-stats .stats-left strong {
+    color: #FFA007;
+}
 .search-stats .btn-clear {
     background: rgba(255,255,255,0.15);
     color: #fff;
@@ -195,6 +244,8 @@ include '../../include/header.php';
     background: #FFA007;
     color: #071C34;
 }
+
+/* ===== GRID KEGIATAN ===== */
 .kegiatan-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -354,7 +405,7 @@ include '../../include/header.php';
     color: #fff;
 }
 
-/* Pagination */
+/* ===== PAGINATION ===== */
 .pagination-wrapper {
     margin: 2.5rem 0 1rem 0;
     display: flex;
@@ -394,9 +445,21 @@ include '../../include/header.php';
     pointer-events: none;
 }
 
-/* Responsive */
+/* ===== HIGHLIGHT ===== */
+.highlight {
+    background: #FFA007;
+    color: #071C34;
+    font-weight: 700;
+    padding: 0 4px;
+    border-radius: 4px;
+}
+
+/* ===== RESPONSIVE ===== */
 @media (max-width: 992px) {
     .kegiatan-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+    .dashboard-welcome h1 { font-size: 1.5rem; }
 }
 @media (max-width: 576px) {
     .kegiatan-grid { grid-template-columns: 1fr; }
@@ -416,6 +479,7 @@ include '../../include/header.php';
 
 <div class="container-beranda">
 
+    <!-- ===== SEARCH STATS (jika filter aktif) ===== -->
     <?php if ($isFilterActive): ?>
         <div class="search-stats">
             <span class="stats-left"><i class="fas fa-search"></i> Menampilkan <strong><?= $totalKegiatan ?></strong> hasil 
@@ -425,10 +489,13 @@ include '../../include/header.php';
         </div>
     <?php endif; ?>
 
-    <!-- FILTER -->
+    <!-- ===== FILTER (konsisten dengan organisasi & kegiatan) ===== -->
     <div class="filter-area">
         <form id="filterForm" method="get" action="<?= $_SERVER['REQUEST_URI'] ?>" style="display:contents;">
             <input type="hidden" name="q" value="<?= htmlspecialchars($q) ?>">
+            <?php if (!empty($context)): ?>
+                <input type="hidden" name="context" value="<?= htmlspecialchars($context) ?>">
+            <?php endif; ?>
 
             <div class="filter-group">
                 <label>Jenis Org</label>
@@ -480,6 +547,7 @@ include '../../include/header.php';
         </form>
     </div>
 
+
     <?php if (!$isFilterActive): ?>
         <div class="dashboard-welcome">
             <h1>Selamat datang, <?= htmlspecialchars($_SESSION['nama']) ?></h1>
@@ -487,7 +555,7 @@ include '../../include/header.php';
         </div>
     <?php endif; ?>
 
-    <!-- GRID KEGIATAN -->
+    <!-- ===== GRID KEGIATAN ===== -->
     <?php if ($totalKegiatan > 0): ?>
         <div class="kegiatan-grid">
             <?php foreach ($kegiatan as $k): 
@@ -496,7 +564,6 @@ include '../../include/header.php';
                 if (!empty($k['lampiran']) && file_exists('../../uploads/kegiatan/' . $k['lampiran'])) {
                     $imagePath = '/MASAGENA-ITH/uploads/kegiatan/' . $k['lampiran'];
                 } else {
-                    // Coba cari file lain
                     $exts = ['jpg', 'jpeg', 'png', 'gif'];
                     foreach ($exts as $ext) {
                         $base = basename($k['lampiran'], '.' . pathinfo($k['lampiran'], PATHINFO_EXTENSION));
@@ -519,6 +586,12 @@ include '../../include/header.php';
                         $isLiked = false;
                     }
                 }
+
+                // Highlight
+                $highlightedJudul = highlightText($k['judul'], $q);
+                $highlightedDeskripsi = highlightText(substr($k['deskripsi'], 0, 150), $q);
+                $highlightedOrg = highlightText($k['nama_organisasi'], $q);
+                $highlightedKategori = highlightText($k['kategori'], $q);
             ?>
                 <div class="kegiatan-card" data-id="<?= $k['id_konten'] ?>">
                     <div class="card-image">
@@ -528,13 +601,13 @@ include '../../include/header.php';
                             <div class="no-image"><i class="fa-regular fa-image"></i></div>
                         <?php endif; ?>
                         <?php if (!empty($k['kategori'])): ?>
-                            <span class="card-badge"><?= htmlspecialchars($k['kategori']) ?></span>
+                            <span class="card-badge"><?= $highlightedKategori ?></span>
                         <?php endif; ?>
                     </div>
                     <div class="card-body">
-                        <div class="org-name"><i class="fa-regular fa-building"></i> <?= htmlspecialchars($k['nama_organisasi']) ?></div>
-                        <div class="judul"><?= htmlspecialchars($k['judul']) ?></div>
-                        <div class="deskripsi"><?= htmlspecialchars(substr($k['deskripsi'], 0, 150)) ?>...</div>
+                        <div class="org-name"><i class="fa-regular fa-building"></i> <?= $highlightedOrg ?></div>
+                        <div class="judul"><?= $highlightedJudul ?></div>
+                        <div class="deskripsi"><?= $highlightedDeskripsi ?>...</div>
                         <div class="tanggal"><i class="fa-regular fa-calendar"></i> <?= date('d M Y', strtotime($k['tanggal_kegiatan'])) ?></div>
                     </div>
                     <div class="card-footer">
@@ -549,147 +622,6 @@ include '../../include/header.php';
                             <button class="btn-interaksi btn-share" data-url="<?= 'http://' . $_SERVER['HTTP_HOST'] . '/MASAGENA-ITH/dashboard/mahasiswa/detail_kegiatan.php?id=' . $k['id_konten'] ?>">
                                 <i class="fas fa-share-alt"></i>
                             </button>
-=======
-    <style>
-        /* Animasi heart */
-        .heart-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-            padding: 0;
-        }
-        .heart-icon {
-            font-size: 1.2rem;
-            transition: transform 0.2s ease;
-        }
-        .heart-btn:active .heart-icon {
-            transform: scale(1.3);
-        }
-        @keyframes heartBeat {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); }
-        }
-        .heart-animate {
-            animation: heartBeat 0.3s ease;
-        }
-        .like-count, .komentar-count {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-        .card-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 1rem;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        .interaction-group {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-        .interaction {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-        .komentar-link, .share-link {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            text-decoration: none;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0;
-        }
-        .komentar-link:hover, .share-link:hover {
-            color: var(--accent);
-        }
-        .btn-sm {
-            padding: 0.2rem 0.8rem;
-            font-size: 0.75rem;
-        }
-        /* Efek Bulatan Indikator di Foto (Khas Instagram Carousel) */
-        .photo-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-        .indicator-dot {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-        }
-
-        /* Efek Modal/Pop-up Foto Full Screen saat Di-tab */
-        .modal-foto {
-            display: none;
-            position: fixed;
-            z-index: 9999;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-foto img {
-            max-width: 90%;
-            max-height: 90%;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(255,255,255,0.1);
-        }
-    </style>
-
-    <div class="dashboard-welcome">
-        <h1>Selamat datang, <?= htmlspecialchars($_SESSION['nama'] ?? 'Mahasiswa') ?></h1>
-        <p>Ini adalah portal informasi kegiatan kemahasiswaan ITH.</p>
-    </div>
-
-    <div class="dashboard-grid">
-        <div class="main-content">
-            <h2>Kegiatan Terbaru</h2>
-            <?php if (count($kegiatan_terbaru) > 0): ?>
-                <div class="kegiatan-list">
-                    <?php foreach ($kegiatan_terbaru as $k): ?>
-                        <div class="card" data-id="<?= $k['id_konten'] ?>">
-                            <h3><a href="detail_kegiatan.php?id_konten=<?= $k['id_konten'] ?>"><?= htmlspecialchars($k['judul']) ?></a></h3>
-                            <p class="meta">Organisasi: <?= htmlspecialchars($k['nama_organisasi']) ?> | 🗓️ <?= $k['tanggal_kegiatan'] ?></p>
-                            <p><?= nl2br(htmlspecialchars(substr($k['deskripsi'], 0, 150))) ?>...</p>
-                            
-                            <div class="card-actions">
-                                <div class="interaction-group">
-                                    <div class="interaction">
-                                        <button class="heart-btn" data-id="<?= $k['id_konten'] ?>">
-                                            <i class="far fa-heart heart-icon"></i>
-                                            <span class="like-count"><?= $k['total_likes'] ?></span>
-                                        </button>
-                                    </div>
-                                    <div class="interaction">
-                                        <a href="detail_kegiatan.php?id_konten=<?= $k['id_konten'] ?>#komentar" class="komentar-link">
-                                            <i class="far fa-comment"></i>
-                                            <span class="komentar-count"><?= $k['total_komentar'] ?></span>
-                                        </a>
-                                    </div>
-                                    <div class="interaction">
-                                        <button class="share-link" data-url="<?= 'http://' . $_SERVER['HTTP_HOST'] . '/MASAGENA-ITH/dashboard/mahasiswa/detail_kegiatan.php?id_konten=' . $k['id_konten'] ?>">
-                                            <i class="fas fa-share-alt"></i> Share
-                                        </button>
-                                    </div>
-                                </div>
-                                <a href="detail_kegiatan.php?id_konten=<?= $k['id_konten'] ?>" class="btn-sm">Lihat Detail</a>
-                            </div>
->>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c
                         </div>
                         <a href="detail_kegiatan.php?id=<?= $k['id_konten'] ?>" class="btn-detail">Lihat Detail</a>
                     </div>
@@ -697,7 +629,6 @@ include '../../include/header.php';
             <?php endforeach; ?>
         </div>
 
-<<<<<<< HEAD
         <!-- PAGINATION -->
         <?php if ($totalPages > 1): ?>
         <div class="pagination-wrapper">
@@ -707,24 +638,6 @@ include '../../include/header.php';
                 <?php else: ?>
                     <span class="disabled">‹</span>
                 <?php endif; ?>
-=======
-        <aside class="sidebar">
-            <h2>Pengumuman</h2>
-            <?php if (count($pengumuman) > 0): ?>
-                <ul class="pengumuman-list">
-                    <?php foreach ($pengumuman as $p): ?>
-                        <li>
-                            <a href="detail_kegiatan.php?id_konten=<?= $p['id_konten'] ?>"><?= htmlspecialchars($p['judul']) ?></a>
-                            <span class="date"><?= date('d/m/Y', strtotime($p['created_at'])) ?></span>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php else: ?>
-                <p>Tidak ada pengumuman.</p>
-            <?php endif; ?>
-        </aside>
-    </div>
->>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c
 
                 <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                     <?php if ($i == $page): ?>
@@ -751,7 +664,7 @@ include '../../include/header.php';
         </div>
     <?php endif; ?>
 
-    <!-- PENGUMUMAN -->
+    <!-- ===== PENGUMUMAN ===== -->
     <?php if (!$isFilterActive && count($pengumuman) > 0): ?>
         <div class="mt-5">
             <h3 class="border-bottom pb-2" style="border-bottom-color: #FFA007 !important;">
@@ -762,8 +675,8 @@ include '../../include/header.php';
                     <div class="col-md-4 mb-3">
                         <div class="card h-100">
                             <div class="card-body">
-                                <h5 class="card-title"><?= htmlspecialchars($p['judul']) ?></h5>
-                                <p class="card-text"><?= htmlspecialchars(substr($p['deskripsi'], 0, 100)) ?>...</p>
+                                <h5 class="card-title"><?= highlightText($p['judul'], $q) ?></h5>
+                                <p class="card-text"><?= highlightText(substr($p['deskripsi'], 0, 100), $q) ?>...</p>
                                 <a href="detail_kegiatan.php?id=<?= $p['id_konten'] ?>" class="btn btn-sm btn-outline-primary">Baca</a>
                             </div>
                             <div class="card-footer text-muted small"><?= date('d M Y', strtotime($p['created_at'])) ?></div>
@@ -792,7 +705,6 @@ document.querySelectorAll('.btn-like').forEach(btn => {
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'id=' + kegiatanId
             });
-<<<<<<< HEAD
             const data = await response.json();
             if (data.status === 'liked') {
                 icon.classList.remove('far');
@@ -811,39 +723,6 @@ document.querySelectorAll('.btn-like').forEach(btn => {
         }
     });
 });
-=======
-        });
-
-        // Share button (copy link atau Web Share)
-        document.querySelectorAll('.share-link').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const url = this.dataset.url;
-                if (navigator.share) {
-                    navigator.share({
-                        title: '<?= addslashes($k['judul'] ?? 'Kegiatan') ?>',
-                        url: url
-                    }).catch(() => {});
-                } else {
-                    navigator.clipboard.writeText(url);
-                    alert('Link kegiatan disalin ke clipboard!');
-                }
-            });
-        });
-
-        // Fitur Tab Foto agar Menampilkan Ukuran Penuh (Full Screen)
-        document.querySelectorAll('.card img').forEach(foto => {
-            foto.style.cursor = 'pointer'; // Ubah kursor jadi bentuk jari tangan
-            foto.addEventListener('click', function() {
-                const srcFoto = this.getAttribute('src');
-                if(srcFoto) {
-                    document.getElementById('imgFull').setAttribute('src', srcFoto);
-                    document.getElementById('popupFoto').style.display = 'flex';
-                }
-            });
-        });
-    </script> 
->>>>>>> 9e4b9b789696603edaa30fd5aeb277ddc8239c7c
 
 // ===== SHARE =====
 document.querySelectorAll('.btn-share').forEach(btn => {

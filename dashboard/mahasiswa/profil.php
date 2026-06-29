@@ -1,14 +1,12 @@
 <?php
 /**
  * dashboard/mahasiswa/profil.php
- * Halaman profil mahasiswa - tampilan data diri
- * Foto profil di atas, tombol warna kuning & biru
+ * Halaman profil mahasiswa - foto kiri, info kanan
  */
 session_start();
 require_once '../../config/database.php';
 require_once '../../config/session_check.php';
 
-// Cek login sebagai mahasiswa
 if (!isset($_SESSION['peran']) || $_SESSION['peran'] !== 'mahasiswa') {
     header('Location: ../../auth/login.php');
     exit;
@@ -26,8 +24,8 @@ if (!$user) {
     die('Data mahasiswa tidak ditemukan.');
 }
 
-// Ambil organisasi yang diikuti (unique) - status pendaftaran 'diterima'
-$queryOrg = "SELECT DISTINCT o.id_organisasi, o.nama_organisasi, o.jenis 
+// Organisasi yang diikuti
+$queryOrg = "SELECT DISTINCT o.id_organisasi, o.nama_organisasi 
              FROM pendaftaran p
              JOIN konten_kegiatan k ON p.id_konten = k.id_konten
              JOIN organisasi o ON k.id_organisasi = o.id_organisasi
@@ -36,8 +34,8 @@ $stmtOrg = $pdo->prepare($queryOrg);
 $stmtOrg->execute([':id_user' => $user_id]);
 $organisasi = $stmtOrg->fetchAll();
 
-// Ambil 5 kegiatan terakhir yang diikuti (dengan status)
-$queryKeg = "SELECT p.*, k.judul, k.tanggal_kegiatan, k.deskripsi, o.nama_organisasi 
+// 5 kegiatan terakhir
+$queryKeg = "SELECT p.*, k.judul, k.tanggal_kegiatan, o.nama_organisasi 
              FROM pendaftaran p
              JOIN konten_kegiatan k ON p.id_konten = k.id_konten
              JOIN organisasi o ON k.id_organisasi = o.id_organisasi
@@ -57,61 +55,76 @@ include '../../include/header.php';
     <div class="row">
         <div class="col-lg-8 mx-auto">
 
-            <!-- Judul Data Diri -->
             <h4 class="profil-title">Data Diri</h4>
 
-            <!-- Outer Card dengan border #0a2a4a -->
             <div class="profil-outer-card">
-
-                <!-- Inner Card putih -->
                 <div class="profil-inner-card">
 
-                    <!-- ===== FOTO PROFIL DI ATAS ===== -->
-                    <div class="profil-foto-top">
-                        <?php if (file_exists('../../uploads/profil/' . $user['id_mahasiswa'] . '.jpg')): ?>
-                            <img src="<?php echo BASE_URL; ?>/uploads/profil/<?php echo $user['id_mahasiswa']; ?>.jpg" alt="Foto Profil" class="foto-profil-img">
-                        <?php else: ?>
-                            <i class="fas fa-user-circle"></i>
-                        <?php endif; ?>
+                    <!-- HEADER: FOTO + INFO -->
+                    <div class="profil-header">
+
+                        <!-- Foto -->
+                        <div class="profil-avatar">
+                            <?php 
+                            $fotoPath = '';
+                            if (!empty($user['foto_profil']) && file_exists('../../' . $user['foto_profil'])) {
+                                $fotoPath = BASE_URL . '/' . $user['foto_profil'];
+                            } elseif (file_exists('../../uploads/profil/' . $user['id_mahasiswa'] . '.jpg')) {
+                                $fotoPath = BASE_URL . '/uploads/profil/' . $user['id_mahasiswa'] . '.jpg';
+                            } elseif (file_exists('../../uploads/profil/' . $user['id_mahasiswa'] . '.png')) {
+                                $fotoPath = BASE_URL . '/uploads/profil/' . $user['id_mahasiswa'] . '.png';
+                            }
+                            ?>
+                            <?php if ($fotoPath): ?>
+                                <img src="<?php echo $fotoPath; ?>" alt="Foto Profil" class="foto-profil-img">
+                            <?php else: ?>
+                                <i class="fas fa-user-circle"></i>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Info -->
+                        <div class="profil-info">
+                            <div class="nama"><?php echo htmlspecialchars($user['nama']); ?></div>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <label>NIM</label>
+                                    <p><?php echo htmlspecialchars($user['nim']); ?></p>
+                                </div>
+                                <div class="info-item">
+                                    <label>Program Studi</label>
+                                    <p><?php echo htmlspecialchars($user['prodi'] ?? '-'); ?></p>
+                                </div>
+                                <div class="info-item">
+                                    <label>Email</label>
+                                    <p><?php echo htmlspecialchars($user['email']); ?></p>
+                                </div>
+                                <div class="info-item">
+                                    <label>Status</label>
+                                    <p>
+                                        <?php echo $user['verification_token'] 
+                                            ? '<span class="badge bg-success">Terverifikasi</span>' 
+                                            : '<span class="badge bg-warning">Belum Verifikasi</span>'; ?>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- ===== DATA DIRI ===== -->
-                    <div class="data-diri">
-                        <div class="data-item">
-                            <label>Nama Lengkap</label>
-                            <p><?php echo htmlspecialchars($user['nama']); ?></p>
-                        </div>
-                        <div class="data-item">
-                            <label>NIM</label>
-                            <p><?php echo htmlspecialchars($user['nim']); ?></p>
-                        </div>
-                        <div class="data-item">
-                            <label>Email</label>
-                            <p><?php echo htmlspecialchars($user['email']); ?></p>
-                        </div>
-                        <div class="data-item">
-                            <label>Status Verifikasi</label>
-                            <p>
-                                <?php echo $user['verification_token'] 
-                                    ? '<span class="badge bg-success">Terverifikasi</span>' 
-                                    : '<span class="badge bg-warning">Belum Verifikasi</span>'; ?>
-                            </p>
-                        </div>
-                        <div class="data-item">
-                            <label>Tanggal Bergabung</label>
-                            <p><?php echo date('d M Y', strtotime($user['created_at'] ?? date('Y-m-d'))); ?></p>
-                        </div>
+                    <!-- BERGABUNG -->
+                    <div class="profil-bergabung">
+                        <span class="label">Bergabung</span>
+                        <span class="value"><?php echo date('d M Y', strtotime($user['created_at'] ?? date('Y-m-d'))); ?></span>
                     </div>
 
-                    <!-- ===== ORGANISASI ===== -->
+                    <!-- ORGANISASI -->
                     <div class="profil-organisasi">
-                        <h6><i class="fa-regular fa-building me-1"></i> Organisasi</h6>
+                        <div class="profil-section-title">
+                            Organisasi <span class="count"><?php echo count($organisasi); ?></span>
+                        </div>
                         <?php if (count($organisasi) > 0): ?>
                             <div class="org-list">
                                 <?php foreach ($organisasi as $org): ?>
-                                    <span class="org-badge">
-                                        <?php echo htmlspecialchars($org['nama_organisasi']); ?>
-                                    </span>
+                                    <span class="org-badge"><?php echo htmlspecialchars($org['nama_organisasi']); ?></span>
                                 <?php endforeach; ?>
                             </div>
                         <?php else: ?>
@@ -119,18 +132,20 @@ include '../../include/header.php';
                         <?php endif; ?>
                     </div>
 
-                    <!-- ===== 5 KEGIATAN TERAKHIR ===== -->
-                    <div class="profil-kegiatan mt-3">
-                        <h6><i class="fa-regular fa-calendar me-1"></i> Kegiatan Terakhir</h6>
+                    <!-- KEGIATAN TERAKHIR -->
+                    <div class="profil-kegiatan">
+                        <div class="profil-section-title">
+                            Kegiatan Terakhir <span class="count"><?php echo count($kegiatan); ?></span>
+                        </div>
                         <?php if (count($kegiatan) > 0): ?>
                             <ul class="kegiatan-list">
                                 <?php foreach ($kegiatan as $k): ?>
-                                    <li>
+                                    <li class="kegiatan-item">
                                         <span class="keg-nama"><?php echo htmlspecialchars($k['judul']); ?></span>
                                         <span class="keg-org"><?php echo htmlspecialchars($k['nama_organisasi']); ?></span>
                                         <span class="keg-status">
                                             <?php 
-                                                $status = $k['status_pendaftaran'] ?? $k['status'];
+                                                $status = $k['status_pendaftaran'] ?? $k['status'] ?? 'menunggu';
                                                 if ($status == 'menunggu') echo '<span class="badge bg-warning">Menunggu</span>';
                                                 elseif ($status == 'diterima') echo '<span class="badge bg-success">Diterima</span>';
                                                 elseif ($status == 'ditolak') echo '<span class="badge bg-danger">Ditolak</span>';
@@ -149,7 +164,7 @@ include '../../include/header.php';
                         <?php endif; ?>
                     </div>
 
-                    <!-- ===== TOMBOL BAWAH ===== -->
+                    <!-- TOMBOL -->
                     <div class="profil-actions">
                         <a href="<?php echo BASE_URL; ?>/dashboard/mahasiswa/" class="btn btn-kembali">
                             <i class="fas fa-arrow-left me-1"></i> Kembali
@@ -159,8 +174,8 @@ include '../../include/header.php';
                         </a>
                     </div>
 
-                </div><!-- end profil-inner-card -->
-            </div><!-- end profil-outer-card -->
+                </div><!-- end inner -->
+            </div><!-- end outer -->
 
         </div>
     </div>
