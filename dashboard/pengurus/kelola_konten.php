@@ -2,98 +2,417 @@
 // dashboard/pengurus/kelola_konten.php
 session_start();
 
-// 1. SISTEM KEAMANAN & AUTENTIKASI (Menggunakan file bawaan kelompok)
-require_once '../../config/session_check.php';
-require_once '../../config/database.php';
-
-// Pastikan yang mengakses halaman ini benar-benar user dengan peran pengurus
-if ($_SESSION['peran'] != 'pengurus') {
-    header("Location: ../" . $_SESSION['peran'] . "/index.php");
-    exit();
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['peran'], ['pengurus', 'admin'])) {
+    header('Location: ../../auth/login.php');
+    exit;
 }
 
-// Mengambil data organisasi dan tingkatan level pengurus dari session OTP
-$id_organisasi = $_SESSION['id_organisasi'];
-$level         = $_SESSION['level'] ?? 'biasa'; // Jika tidak ada, default ke 'biasa'
+require_once '../../config/database.php';
+require_once '../../include/pendaftaran-helper.php';
 
-// 2. QUERY DATABASE (Mengambil konten kegiatan khusus untuk organisasi ini saja)
-$stmt = $pdo->prepare("
-    SELECT id_konten, judul, tanggal_kegiatan, status_publikasi, kategori 
-    FROM konten_kegiatan 
-    WHERE id_organisasi = ? 
-    ORDER BY created_at DESC
-");
-$stmt->execute([$id_organisasi]);
-$semua_konten = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// ============================================================
+// AMBIL DATA ORGANISASI PENGURUS
+// ============================================================
+$id_user = $_SESSION['user_id'];
+$level = $_SESSION['level'] ?? 'biasa';
+$id_organisasi = null;
 
-// Memanggil komponen header template aplikasi
+// Ambil id_organisasi dari pengurus_organisasi
+if ($_SESSION['peran'] === 'admin') {
+    // Admin bisa melihat semua kegiatan
+    $stmt = $pdo->prepare("SELECT k.*, o.nama_organisasi 
+                           FROM konten_kegiatan k 
+                           JOIN organisasi o ON o.id_organisasi = k.id_organisasi 
+                           ORDER BY k.created_at DESC");
+    $stmt->execute();
+    $semua_konten = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    // Pengurus hanya melihat kegiatan dari organisasinya
+    $stmtOrg = $pdo->prepare("SELECT id_organisasi FROM pengurus_organisasi WHERE id_pengurus = ?");
+    $stmtOrg->execute([$id_user]);
+    $pengurusOrg = $stmtOrg->fetch(PDO::FETCH_ASSOC);
+    
+    if ($pengurusOrg) {
+        $id_organisasi = $pengurusOrg['id_organisasi'];
+        $stmt = $pdo->prepare("SELECT k.*, o.nama_organisasi 
+                               FROM konten_kegiatan k 
+                               JOIN organisasi o ON o.id_organisasi = k.id_organisasi 
+                               WHERE k.id_organisasi = ? 
+                               ORDER BY k.created_at DESC");
+        $stmt->execute([$id_organisasi]);
+        $semua_konten = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $semua_konten = [];
+    }
+}
+
 include '../../include/header.php';
 ?>
 
-<div class="container" style="padding: 2rem; background: white; border-radius: 12px; box-shadow: var(--shadow-sm); margin-top: 1rem;">
-    
-    <div class="header-title" style="margin-bottom: 1.5rem;">
-        <h2 style="border-left: 4px solid var(--accent); padding-left: 0.75rem; margin-bottom: 0.5rem;">Kelola Semua Konten Kegiatan</h2>
-        <p style="color: var(--text-muted); margin: 0; font-size: 0.9rem;">
-            Tingkatan Anda: <strong><?= $level == 'inti' ? 'Pengurus Inti (Akses Penuh)' : 'Pengurus Biasa (Akses Terbatas)' ?></strong>
-        </p>
-    </div>
-    
-    <div style="margin-bottom: 1.5rem;">
-        <a href="form_tambah.php" class="btn" style="background: var(--accent); color: white; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-weight: 500; display: inline-block;">
-            ➕ Tambah Kegiatan Baru
+<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/profil.css?v=<?= time() ?>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<style>
+/* ============================================
+   KELOLA KONTEN - KONSISTEN DENGAN PENDAFTARAN
+   ============================================ */
+.kelola-container {
+    max-width: 100%;
+    margin: 0;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+/* Header */
+.kelola-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.kelola-header .title-group h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #071C34;
+    margin: 0;
+}
+.kelola-header .title-group .subtitle {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* ===== TOMBOL TAMBAH ===== */
+.btn-tambah {
+    background: #FFA007;
+    color: #071C34;
+    padding: 0.4rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 2px solid #FFA007;
+}
+.btn-tambah:hover {
+    background: #071C34;
+    color: #ffffff;
+    border-color: #071C34;
+}
+
+/* ===== TABLE CARD ===== */
+.table-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e9ecef;
+    overflow-x: auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.table-card table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    min-width: 700px;
+    table-layout: fixed;
+}
+.table-card thead {
+    background: #f8fafc;
+    border-bottom: 2px solid #e9ecef;
+}
+.table-card th {
+    padding: 0.7rem 0.8rem;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #64748b;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+.table-card td {
+    padding: 0.7rem 0.8rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+.table-card tbody tr:hover {
+    background: #f8fafc;
+}
+.table-card .text-center {
+    text-align: center;
+    color: #94a3b8;
+    padding: 2.5rem 0;
+}
+.table-card .text-center i {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    display: block;
+    color: #cbd5e0;
+}
+
+/* Kolom spesifik */
+.table-card .col-no {
+    width: 60px;
+    text-align: center;
+}
+.table-card .col-judul {
+    width: auto;
+}
+.table-card .col-kategori {
+    width: 120px;
+}
+.table-card .col-tanggal {
+    width: 130px;
+}
+.table-card .col-status {
+    width: 120px;
+    text-align: center;
+}
+.table-card .col-aksi {
+    width: 260px;
+    text-align: center;
+}
+
+/* ============================================================
+   STATUS BADGE - KONSISTEN
+   ============================================================ */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 1rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+.status-badge i {
+    font-size: 0.7rem;
+}
+.status-badge.publik {
+    background: #22c55e;
+}
+.status-badge.draft {
+    background: #f59e0b;
+}
+.status-badge.arsip {
+    background: #64748b;
+}
+
+/* ============================================================
+   TOMBOL AKSI - KONSISTEN
+   ============================================================ */
+.action-inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    flex-wrap: nowrap;
+}
+.action-inline form {
+    display: inline;
+}
+
+.mini-btn {
+    padding: 0.25rem 1.2rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-family: inherit;
+    white-space: nowrap;
+    min-width: 70px;
+    justify-content: center;
+    border-width: 2px;
+    border-style: solid;
+    text-decoration: none;
+}
+
+/* Edit - border #071C34 */
+.mini-btn.edit {
+    background: transparent;
+    color: #071C34;
+    border-color: #071C34;
+}
+.mini-btn.edit:hover {
+    background: #071C34;
+    color: #ffffff;
+    border-color: #071C34;
+}
+
+/* Detail - border #FFA007 (kuning) */
+.mini-btn.detail {
+    background: transparent;
+    color: #FFA007;
+    border-color: #FFA007;
+}
+.mini-btn.detail:hover {
+    background: #FFA007;
+    color: #ffff;
+    border-color: #FFA007;
+}
+
+/* Hapus - border #dc2626 */
+.mini-btn.hapus {
+    background: transparent;
+    color: #dc2626;
+    border-color: #dc2626;
+}
+.mini-btn.hapus:hover {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+    .kelola-container {
+        padding: 0 0.5rem;
+    }
+    .kelola-header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    .kelola-header .title-group h2 {
+        font-size: 1.4rem;
+    }
+    .btn-tambah {
+        justify-content: center;
+    }
+    .table-card {
+        overflow-x: auto;
+    }
+    .table-card table {
+        font-size: 0.8rem;
+        min-width: 650px;
+    }
+    .table-card th, .table-card td {
+        padding: 0.4rem 0.5rem;
+    }
+    .action-inline {
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+    .action-inline form {
+        display: block;
+    }
+    .mini-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.3rem 0.5rem;
+        min-width: unset;
+    }
+}
+</style>
+
+<div class="kelola-container">
+
+    <!-- HEADER -->
+    <div class="kelola-header">
+        <div class="title-group">
+            <h2>Kelola Konten Kegiatan</h2>
+            <p class="subtitle">
+                <i class="fas fa-building"></i> 
+                <?php if ($_SESSION['peran'] === 'admin'): ?>
+                    Admin - Semua Organisasi
+                <?php else: ?>
+                    <?= $id_organisasi ? 'Organisasi Anda' : 'Belum memiliki organisasi' ?>
+                <?php endif; ?>
+                &nbsp;|&nbsp; Tingkatan: <strong><?= ucfirst($level) ?></strong>
+            </p>
+        </div>
+        <a href="tambah_kegiatan.php" class="btn-tambah">
+            <i class="fas fa-plus"></i> Tambah Kegiatan
         </a>
     </div>
 
-    <?php if (count($semua_konten) > 0): ?>
-        <table style="width: 100%; border-collapse: collapse; text-align: left; margin-top: 1rem;">
+    <!-- TABLE -->
+    <div class="table-card">
+        <table>
             <thead>
-                <tr style="border-bottom: 2px solid var(--border); background: #f8f9fa;">
-                    <th style="padding: 0.75rem;">Judul Kegiatan</th>
-                    <th style="padding: 0.75rem;">Kategori</th>
-                    <th style="padding: 0.75rem;">Tanggal Pelaksanaan</th>
-                    <th style="padding: 0.75rem;">Status Publikasi</th>
-                    <th style="padding: 0.75rem; text-align: center;">Aksi Konten</th>
+                <tr>
+                    <th class="col-no">No</th>
+                    <th class="col-judul">Judul</th>
+                    <th class="col-kategori">Kategori</th>
+                    <th class="col-tanggal">Tanggal</th>
+                    <th class="col-status">Status</th>
+                    <th class="col-aksi">Aksi</th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($semua_konten as $k): ?>
-                    <tr style="border-bottom: 1px solid var(--border);">
-                        <td style="padding: 0.75rem;"><strong><?= htmlspecialchars($k['judul']) ?></strong></td>
-                        <td style="padding: 0.75rem;"><span class="badge" style="background: #eccc68; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;"><?= ucfirst($k['kategori']) ?></span></td>
-                        <td style="padding: 0.75rem;"><?= date('d/m/Y', strtotime($k['tanggal_kegiatan'])) ?></td>
-                        <td style="padding: 0.75rem;">
-                            <span style="color: <?= $k['status_publikasi'] == 'publish' ? '#2ed573' : '#ffa502'; ?>; font-weight: bold;">
-                                <?= ucfirst($k['status_publikasi']) ?>
+                <?php if (empty($semua_konten)): ?>
+                    <tr>
+                        <td colspan="6">
+                            <div class="text-center">
+                                <i class="fa-regular fa-calendar-circle-plus"></i>
+                                <p style="margin:0; color:#94a3b8; font-weight:500;">Belum ada konten kegiatan</p>
+                                <p style="margin:0; font-size:0.8rem; color:#cbd5e0;">
+                                    <?php if ($_SESSION['peran'] === 'admin'): ?>
+                                        Belum ada kegiatan yang dibuat
+                                    <?php else: ?>
+                                        Belum ada kegiatan untuk organisasi Anda
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endif; ?>
+
+                <?php $no = 1; foreach ($semua_konten as $row): ?>
+                    <tr>
+                        <td class="col-no" style="font-weight:600; color:#071C34;"><?= $no++ ?></td>
+                        <td class="col-judul">
+                            <strong style="color:#071C34;"><?= htmlspecialchars($row['judul']) ?></strong>
+                        </td>
+                        <td class="col-kategori">
+                            <span style="background:#f1f5f9; padding:0.15rem 0.6rem; border-radius:50px; font-size:0.7rem; color:#071C34;">
+                                <?= htmlspecialchars($row['kategori'] ?? 'Umum') ?>
                             </span>
                         </td>
-                        <td style="padding: 0.75rem; text-align: center;">
-                            <a href="edit_konten.php?id=<?= $k['id_konten'] ?>" style="text-decoration: none; color: var(--primary); margin-right: 15px; font-weight: 500;">📝 Edit</a>
-                            
-                            <?php if ($level === 'inti'): ?>
-                                <a href="proses_hapus.php?id=<?= $k['id_konten'] ?>" 
-                                   onclick="return confirm('Apakah Anda yakin ingin menghapus konten [<?= htmlspecialchars($k['judul']) ?>] secara permanen?')" 
-                                   style="text-decoration: none; color: #ff4757; font-weight: bold;">
-                                   🗑️ Hapus
+                        <td class="col-tanggal" style="font-size:0.85rem; color:#64748b;">
+                            <i class="fa-regular fa-calendar"></i> <?= date('d M Y', strtotime($row['tanggal_kegiatan'])) ?>
+                        </td>
+                        <td class="col-status">
+                            <span class="status-badge <?= $row['status_publikasi'] ?? 'draft' ?>">
+                                <i class="fas <?= ($row['status_publikasi'] ?? 'draft') == 'publik' ? 'fa-check-circle' : 'fa-pen' ?>"></i>
+                                <?= ucfirst($row['status_publikasi'] ?? 'Draft') ?>
+                            </span>
+                        </td>
+                        <td class="col-aksi">
+                            <div class="action-inline">
+                                <a href="edit_konten.php?id=<?= $row['id_konten'] ?>" class="mini-btn edit" title="Edit kegiatan">
+                                    <i class="fas fa-edit"></i> Edit
                                 </a>
-                            <?php endif; ?>
+                                <a href="detail_kegiatan.php?id=<?= $row['id_konten'] ?>" target="_blank" class="mini-btn detail" title="Lihat detail">
+                                    <i class="fas fa-eye"></i> Detail
+                                </a>
+                                <?php if ($level === 'inti' || $_SESSION['peran'] === 'admin'): ?>
+                                <form action="proses_hapus.php" method="POST" onsubmit="return confirm('Yakin ingin menghapus kegiatan [<?= htmlspecialchars($row['judul']) ?>] secara permanen?')">
+                                    <input type="hidden" name="id" value="<?= (int) $row['id_konten'] ?>">
+                                    <button type="submit" class="mini-btn hapus" title="Hapus kegiatan">
+                                        <i class="fas fa-trash"></i> Hapus
+                                    </button>
+                                </form>
+                                <?php endif; ?>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
-    <?php else: ?>
-        <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
-            <p>Belum ada data konten kegiatan yang dibuat untuk organisasi Anda.</p>
-        </div>
-    <?php endif; ?>
-    
-    <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem;">
-        <a href="index.php" style="text-decoration: none; color: var(--text-muted); font-size: 0.9rem;">&larr; Kembali ke Dashboard Utama</a>
     </div>
+
 </div>
 
-<?php 
-// Memanggil komponen footer template aplikasi
-include '../../include/footer.php'; 
-?>
+<?php include '../../include/footer.php'; ?>

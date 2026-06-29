@@ -1,0 +1,357 @@
+/* ============================================
+   PROFIL ORGANISASI - VIEW MODE
+   ============================================ */
+
+.profil-org-container {
+    max-width: 100%;
+    margin: 0;
+    padding: 0 1.5rem;
+    box-sizing: border-box;
+}
+
+/* HEADER */
+.profil-org-header {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.profil-org-header .title-group h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #071C34;
+    margin: 0;
+}
+.profil-org-header .title-group h2 i {
+    color: #FFA007;
+    margin-right: 0.5rem;
+}
+.profil-org-header .title-group .subtitle {
+    font-size: 1rem;
+    color: #64748b;
+    margin: 0;
+}
+.profil-org-header .badge-mode {
+    display: inline-block;
+    padding: 0.15rem 0.8rem;
+    border-radius: 50px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+.badge-mode.edit {
+    background: #dbeafe;
+    color: #1e40af;
+}
+.badge-mode.edit i {
+    color: #1e40af;
+}
+.badge-mode.view {
+    background: #f1f5f9;
+    color: #64748b;
+}
+.badge-mode.view i {
+    color: #64748b;
+}
+
+/* CARD */
+.profil-org-outer-card {
+    border: none;
+    border-radius: 20px;
+    padding: 20px;
+    background: #f8fafc;
+    box-shadow: 0 4px 20px rgba(10, 42, 74, 0.08);
+}
+.profil-org-inner-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 28px 32px;
+    border: 1px solid #e9ecef;
+}
+
+/* ===== TOP: FOTO + NAMA + DESKRIPSI ===== */
+.profil-org-top {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+/* Avatar */
+.profil-org-avatar {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+.profil-org-avatar .avatar-wrapper {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid #FFA007;
+    box-shadow: 0 4px 15px rgba(10, 42, 74, 0.12);
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.profil-org-avatar .avatar-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.profil-org-avatar .avatar-wrapper .no-logo {
+    font-size: 4rem;
+    color: #94a3b8;
+}
+
+/* Nama & Deskripsi */
+.profil-org-info {
+    flex: 1;
+    min-width: 0;
+}
+.profil-org-info .nama-org {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #071C34;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.1rem;
+}
+.profil-org-info .nama-org .status-badge-org {
+    display: inline-block;
+    background: #FFA007;
+    color: #071C34;
+    padding: 0.1rem 1.2rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+.profil-org-info .deskripsi-org {
+    font-size: 0.95rem;
+    color: #1e293b;
+    line-height: 1.7;
+    margin-top: 0.3rem;
+    padding-right: 1rem;
+}
+
+/* ===== INFO GRID ===== */
+.profil-org-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+.profil-org-grid .grid-item label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 0.1rem;
+}
+.profil-org-grid .grid-item label i {
+    color: #FFA007;
+    margin-right: 0.3rem;
+    font-size: 0.7rem;
+}
+.profil-org-grid .grid-item .value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #071C34;
+    margin: 0;
+}
+
+/* ===== VISI & MISI (2 KOLOM) ===== */
+.profil-org-vm {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+.profil-org-vm .vm-item label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 0.1rem;
+}
+.profil-org-vm .vm-item label i {
+    color: #FFA007;
+    margin-right: 0.3rem;
+}
+.profil-org-vm .vm-item .value {
+    font-size: 0.95rem;
+    color: #1e293b;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ===== STRUKTUR KEPENGURUSAN ===== */
+.profil-org-struktur {
+    margin-top: 0.5rem;
+}
+.profil-org-struktur .section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #071C34;
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.profil-org-struktur .section-title i {
+    color: #FFA007;
+}
+.profil-org-struktur .sub-title {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin-bottom: 1rem;
+}
+.pengurus-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.8rem;
+}
+.pengurus-card {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    border-left: 4px solid #FFA007;
+    transition: 0.2s;
+}
+.pengurus-card:hover {
+    background: #f1f5f9;
+}
+.pengurus-card .p-nama {
+    font-weight: 700;
+    color: #071C34;
+}
+.pengurus-card .p-nama i {
+    color: #FFA007;
+    margin-right: 0.3rem;
+}
+.pengurus-card .p-jabatan {
+    font-size: 0.75rem;
+    color: #FFA007;
+    font-weight: 600;
+}
+.pengurus-card .p-jabatan i {
+    margin-right: 0.2rem;
+}
+.pengurus-card .p-level {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.6rem;
+    border-radius: 50px;
+    font-weight: 600;
+}
+.pengurus-card .p-level.inti {
+    background: #fef9c3;
+    color: #ca8a04;
+}
+.pengurus-card .p-level.departemen {
+    background: #dbeafe;
+    color: #1e40af;
+}
+.pengurus-card .p-phone {
+    font-size: 0.65rem;
+    color: #94a3b8;
+}
+.pengurus-card .p-phone i {
+    color: #94a3b8;
+}
+
+/* ===== TOMBOL EDIT ===== */
+.profil-org-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 2px solid #f1f5f9;
+}
+.profil-org-actions .btn-edit {
+    background: #071C34;
+    color: #ffffff;
+    border: 2px solid #071C34;
+    border-radius: 50px;
+    padding: 0.5rem 2.5rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    transition: 0.3s;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.profil-org-actions .btn-edit:hover {
+    background: #FFA007;
+    color: #ffffff;
+    border-color: #FFA007;
+}
+.profil-org-actions .btn-edit:disabled {
+    background: #e2e8f0;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.profil-org-actions .btn-edit i {
+    color: inherit;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 992px) {
+    .profil-org-top {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .profil-org-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    .profil-org-vm {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    .pengurus-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .profil-org-actions {
+        justify-content: center;
+    }
+}
+@media (max-width: 576px) {
+    .profil-org-container {
+        padding: 0 0.5rem;
+    }
+    .profil-org-inner-card {
+        padding: 16px;
+    }
+    .profil-org-grid {
+        grid-template-columns: 1fr;
+    }
+    .pengurus-grid {
+        grid-template-columns: 1fr;
+    }
+    .profil-org-info .nama-org {
+        font-size: 1.4rem;
+        justify-content: center;
+    }
+}

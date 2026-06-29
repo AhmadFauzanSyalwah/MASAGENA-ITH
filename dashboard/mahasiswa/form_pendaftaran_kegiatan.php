@@ -69,8 +69,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['daftar'])) {
     } else {
         $insert = $pdo->prepare("INSERT INTO pendaftaran (id_mahasiswa, id_konten, status_pendaftaran, tanggal_daftar) VALUES (?, ?, 'menunggu', NOW())");
         if ($insert->execute([$user_id, $id_konten])) {
+            // ============================================================
+            // PERUBAHAN: Set session success, redirect ke halaman yang sama
+            // ============================================================
             $_SESSION['success'] = 'Pendaftaran berhasil! Menunggu verifikasi dari pengurus.';
-            header('Location: pendaftaran.php');
+            header('Location: form_pendaftaran_kegiatan.php?id_konten=' . $id_konten);
             exit;
         } else {
             $error = 'Gagal mendaftar. Silakan coba lagi.';
@@ -79,15 +82,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['daftar'])) {
 }
 
 // ============================================================
-// AMBIL PESAN DARI SESSION
+// AMBIL PESAN DARI SESSION (jika ada)
 // ============================================================
-if (isset($_SESSION['error'])) {
-    $error = $_SESSION['error'];
-    unset($_SESSION['error']);
-}
 if (isset($_SESSION['success'])) {
     $success = $_SESSION['success'];
     unset($_SESSION['success']);
+}
+if (isset($_SESSION['error'])) {
+    $error = $_SESSION['error'];
+    unset($_SESSION['error']);
 }
 
 include '../../include/header.php';
