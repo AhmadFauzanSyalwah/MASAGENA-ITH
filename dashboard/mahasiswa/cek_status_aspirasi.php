@@ -48,10 +48,10 @@ require_once __DIR__ . '/../../include/header.php';
 ?>
 
 <style>
-    /* Tambahan style khusus halaman cek status (menyesuaikan style.css root) */
+    /* Layout diubah menjadi 1fr 320px agar form berada di kanan */
     .status-layout {
         display: grid;
-        grid-template-columns: 320px minmax(0, 1fr);
+        grid-template-columns: 1fr 320px;
         gap: 2rem;
         align-items: start;
         margin-top: 1rem;
@@ -111,7 +111,6 @@ require_once __DIR__ . '/../../include/header.php';
         color: var(--text-dark);
     }
 
-    /* Penyesuaian form profil untuk card kecil */
     .status-form-custom {
         padding: 0;
         max-width: 100%;
@@ -128,7 +127,6 @@ require_once __DIR__ . '/../../include/header.php';
         margin-top: 1rem;
     }
 
-    /* Badge Status */
     .status-badge {
         display: inline-flex;
         align-items: center;
@@ -143,7 +141,6 @@ require_once __DIR__ . '/../../include/header.php';
     .badge-done { color: var(--success); background: #dcfce7; }
     .badge-rejected { color: var(--danger); background: #fee2e2; }
 
-    /* Komentar */
     .comment-list {
         display: flex;
         flex-direction: column;
@@ -184,15 +181,19 @@ require_once __DIR__ . '/../../include/header.php';
     }
 </style>
 
-<div class="dashboard-welcome">
-    <h1>Cek Status Aspirasi</h1>
-    <p>Masukkan kode aspirasi untuk melihat status tindak lanjut dari laporan atau aspirasi yang telah Anda kirimkan.</p>
+<!-- Tampilan dashboard-welcome dimodifikasi agar teks dan tombol berjejer rapi -->
+<div class="dashboard-welcome" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="margin-top: 0; margin-bottom: 0.5rem;">Cek Status Aspirasi</h1>
+        <p style="margin: 0;">Masukkan kode aspirasi untuk melihat status tindak lanjut dari laporan atau aspirasi yang telah Anda kirimkan.</p>
+    </div>
+    <div>
+        <!-- Tombol dipindahkan ke sini -->
+        <a href="aspirasi.php" class="btn" style="background-color: rgba(255, 255, 255, 0.15); color: var(--white); box-shadow: none; font-weight: 500;">Kirim Aspirasi Baru</a>
+    </div>
 </div>
 
 <div class="main-content">
-    <div style="display: flex; justify-content: flex-end; margin-bottom: 1.5rem;">
-        <a href="aspirasi.php" class="btn">Kirim Aspirasi Baru</a>
-    </div>
 
     <?php if (!$schemaReady) { ?>
         <?php schema_warning(); ?>
@@ -207,19 +208,7 @@ require_once __DIR__ . '/../../include/header.php';
     <?php } ?>
 
     <section class="status-layout">
-        <div class="status-form-wrapper">
-            <div class="card">
-                <h3 style="color: var(--primary); margin-bottom: 1.2rem; border-left: 4px solid var(--accent); padding-left: 0.5rem;">Cek Status</h3>
-                <form class="profil-form status-form-custom" method="POST" action="cek_status_aspirasi.php">
-                    <label>Kode Aspirasi</label>
-                    <input type="text" name="kode_aspirasi" value="<?= h($kode); ?>" placeholder="Contoh: ASP-2606..." required>
-                    <button type="submit" class="btn" <?= !$schemaReady ? 'disabled' : ''; ?>>
-                        Cek Status
-                    </button>
-                </form>
-            </div>
-        </div>
-
+        
         <div>
             <?php if ($schemaReady && $kode !== '' && !$data) { ?>
                 <div class="error">Data aspirasi dengan kode tersebut tidak ditemukan.</div>
@@ -270,6 +259,20 @@ require_once __DIR__ . '/../../include/header.php';
                 </div>
             <?php } ?>
         </div>
+
+        <div class="status-form-wrapper">
+            <div class="card">
+                <h3 style="color: var(--primary); margin-bottom: 1.2rem; border-left: 4px solid var(--accent); padding-left: 0.5rem;">Cek Status</h3>
+                <form class="profil-form status-form-custom" method="POST" action="cek_status_aspirasi.php">
+                    <label>Kode Aspirasi</label>
+                    <input type="text" name="kode_aspirasi" value="<?= h($kode); ?>" placeholder="Contoh: ASP-2606..." required>
+                    <button type="submit" class="btn" <?= !$schemaReady ? 'disabled' : ''; ?>>
+                        Cek Status
+                    </button>
+                </form>
+            </div>
+        </div>
+
     </section>
 </div>
 

@@ -212,7 +212,7 @@ include '../../include/header.php';
 }
 .table-card th {
     padding: 0.7rem 1rem;
-    text-align: left;
+    text-align: center; /* Ubah baris ini dari left menjadi center */
     font-weight: 700;
     font-size: 0.7rem;
     text-transform: uppercase;
@@ -220,10 +220,12 @@ include '../../include/header.php';
     letter-spacing: 0.3px;
     white-space: nowrap;
 }
+
 .table-card td {
     padding: 0.7rem 1rem;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
+    text-align: center; /* Tambahkan baris ini */
 }
 .table-card tbody tr:hover {
     background: #f8fafc;
@@ -307,19 +309,19 @@ include '../../include/header.php';
     background: transparent;
     white-space: nowrap;
 }
-.action-inline a.detail {
+.action-inline a.proses {
     color: #071C34;
     border-color: #071C34;
 }
-.action-inline a.detail:hover {
+.action-inline a.proses:hover {
     background: #071C34;
     color: #ffffff;
 }
-.action-inline a.proses {
+.action-inline a.detail {
     color: #f59e0b;
     border-color: #f59e0b;
 }
-.action-inline a.proses:hover {
+.action-inline a.detail:hover {
     background: #f59e0b;
     color: #ffffff;
 }
@@ -405,9 +407,6 @@ include '../../include/header.php';
                 Pantau aspirasi mahasiswa dan ubah status tindak lanjut
             </p>
         </div>
-        <a href="<?= BASE_URL ?>/dashboard/mahasiswa/aspirasi.php" class="btn-tambah" style="background:#FFA007; color:#071C34; padding:0.4rem 1.5rem; border-radius:50px; text-decoration:none; font-weight:600; border:2px solid #FFA007;">
-            <i class="fas fa-plus"></i> Form Aspirasi
-        </a>
     </div>
 
     <!-- STATS -->
