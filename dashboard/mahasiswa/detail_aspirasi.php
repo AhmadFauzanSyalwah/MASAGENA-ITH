@@ -20,7 +20,7 @@ if ($schemaReady && $id > 0) {
                 m.nim,
                 m.email
             FROM aspirasi a
-            LEFT JOIN organisasi o ON a.id_organisasi = o.id_organisasi
+            LEFT JOIN organisasi o ON a.id_organisasi_tujuan = o.id_organisasi
             LEFT JOIN tbmahasiswa m ON a.id_mahasiswa = m.id_mahasiswa
             WHERE a.id_aspirasi = ?
             LIMIT 1

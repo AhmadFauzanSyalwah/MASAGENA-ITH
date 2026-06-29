@@ -17,9 +17,7 @@ $id_user = $_SESSION['user_id'];
 $level = $_SESSION['level'] ?? 'biasa';
 $id_organisasi = null;
 
-// Ambil id_organisasi dari pengurus_organisasi
 if ($_SESSION['peran'] === 'admin') {
-    // Admin bisa melihat semua kegiatan
     $stmt = $pdo->prepare("SELECT k.*, o.nama_organisasi 
                            FROM konten_kegiatan k 
                            JOIN organisasi o ON o.id_organisasi = k.id_organisasi 
@@ -27,7 +25,6 @@ if ($_SESSION['peran'] === 'admin') {
     $stmt->execute();
     $semua_konten = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    // Pengurus hanya melihat kegiatan dari organisasinya
     $stmtOrg = $pdo->prepare("SELECT id_organisasi FROM pengurus_organisasi WHERE id_pengurus = ?");
     $stmtOrg->execute([$id_user]);
     $pengurusOrg = $stmtOrg->fetch(PDO::FETCH_ASSOC);
@@ -46,6 +43,16 @@ if ($_SESSION['peran'] === 'admin') {
     }
 }
 
+// Pesan session
+if (isset($_SESSION['success'])) {
+    $success = $_SESSION['success'];
+    unset($_SESSION['success']);
+}
+if (isset($_SESSION['error'])) {
+    $error = $_SESSION['error'];
+    unset($_SESSION['error']);
+}
+
 include '../../include/header.php';
 ?>
 
@@ -54,7 +61,7 @@ include '../../include/header.php';
 
 <style>
 /* ============================================
-   KELOLA KONTEN - KONSISTEN DENGAN PENDAFTARAN
+   KELOLA KONTEN - CSS DIPERBAIKI
    ============================================ */
 .kelola-container {
     max-width: 100%;
@@ -82,6 +89,23 @@ include '../../include/header.php';
     font-size: 0.85rem;
     color: #64748b;
     margin: 0;
+}
+
+/* Alert */
+.kelola-container .alert {
+    padding: 0.8rem 1.2rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+.kelola-container .alert-success {
+    background: #dcfce7;
+    border-left: 4px solid #22c55e;
+    color: #166534;
+}
+.kelola-container .alert-danger {
+    background: #fee2e2;
+    border-left: 4px solid #dc2626;
+    color: #991b1b;
 }
 
 /* ===== TOMBOL TAMBAH ===== */
@@ -116,8 +140,7 @@ include '../../include/header.php';
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9rem;
-    min-width: 700px;
-    table-layout: fixed;
+    table-layout: fixed; /* ← agar lebar kolom bisa diatur */
 }
 .table-card thead {
     background: #f8fafc;
@@ -137,6 +160,9 @@ include '../../include/header.php';
     padding: 0.7rem 0.8rem;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .table-card tbody tr:hover {
     background: #f8fafc;
@@ -153,31 +179,35 @@ include '../../include/header.php';
     color: #cbd5e0;
 }
 
-/* Kolom spesifik */
+/* ============================================================
+   LEBAR KOLOM - DISESUAIKAN AGAR AKSI LEGA
+   ============================================================ */
 .table-card .col-no {
-    width: 60px;
+    width: 8%;
     text-align: center;
 }
 .table-card .col-judul {
-    width: auto;
+    width: 28%;
 }
 .table-card .col-kategori {
-    width: 120px;
+    width: 15%;  /* ← lebih lega */
+    text-align: center;
 }
 .table-card .col-tanggal {
-    width: 130px;
+    width: 15%;  /* ← lebih lega */
+    text-align: center;
 }
 .table-card .col-status {
-    width: 120px;
+    width: 14%;
     text-align: center;
 }
 .table-card .col-aksi {
-    width: 260px;
+    width: 30%;  /* ← ruang cukup untuk 3 tombol */
     text-align: center;
 }
 
 /* ============================================================
-   STATUS BADGE - KONSISTEN
+   STATUS BADGE
    ============================================================ */
 .status-badge {
     display: inline-flex;
@@ -205,14 +235,14 @@ include '../../include/header.php';
 }
 
 /* ============================================================
-   TOMBOL AKSI - KONSISTEN
+   TOMBOL AKSI - KOMPAK TAPI LEGA
    ============================================================ */
 .action-inline {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
-    flex-wrap: nowrap;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 .action-inline form {
     display: inline;
@@ -226,7 +256,7 @@ include '../../include/header.php';
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.4rem;
     font-family: inherit;
     white-space: nowrap;
     min-width: 70px;
@@ -234,9 +264,9 @@ include '../../include/header.php';
     border-width: 2px;
     border-style: solid;
     text-decoration: none;
+    transition: 0.3s;
 }
 
-/* Edit - border #071C34 */
 .mini-btn.edit {
     background: transparent;
     color: #071C34;
@@ -248,7 +278,6 @@ include '../../include/header.php';
     border-color: #071C34;
 }
 
-/* Detail - border #FFA007 (kuning) */
 .mini-btn.detail {
     background: transparent;
     color: #FFA007;
@@ -256,11 +285,10 @@ include '../../include/header.php';
 }
 .mini-btn.detail:hover {
     background: #FFA007;
-    color: #ffff;
+    color: #ffffff;
     border-color: #FFA007;
 }
 
-/* Hapus - border #dc2626 */
 .mini-btn.hapus {
     background: transparent;
     color: #dc2626;
@@ -275,6 +303,20 @@ include '../../include/header.php';
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+@media (max-width: 992px) {
+    .table-card .col-no { width: 6%; }
+    .table-card .col-judul { width: 22%; }
+    .table-card .col-kategori { width: 14%; }
+    .table-card .col-tanggal { width: 14%; }
+    .table-card .col-status { width: 14%; }
+    .table-card .col-aksi { width: 30%; }
+    .mini-btn {
+        padding: 0.2rem 0.8rem;
+        font-size: 0.7rem;
+        min-width: 60px;
+    }
+}
+
 @media (max-width: 768px) {
     .kelola-container {
         padding: 0 0.5rem;
@@ -295,7 +337,7 @@ include '../../include/header.php';
     }
     .table-card table {
         font-size: 0.8rem;
-        min-width: 650px;
+        min-width: 700px;
     }
     .table-card th, .table-card td {
         padding: 0.4rem 0.5rem;
@@ -306,6 +348,7 @@ include '../../include/header.php';
     }
     .action-inline form {
         display: block;
+        width: 100%;
     }
     .mini-btn {
         width: 100%;
@@ -313,6 +356,8 @@ include '../../include/header.php';
         padding: 0.3rem 0.5rem;
         min-width: unset;
     }
+    /* Lebar di mobile dibuat lebih fleksibel */
+    .table-card .col-aksi { width: 100%; }
 }
 </style>
 
@@ -336,6 +381,14 @@ include '../../include/header.php';
             <i class="fas fa-plus"></i> Tambah Kegiatan
         </a>
     </div>
+
+    <!-- PESAN -->
+    <?php if (!empty($success)): ?>
+        <div class="alert alert-success"><i class="fas fa-check-circle"></i> <?= htmlspecialchars($success) ?></div>
+    <?php endif; ?>
+    <?php if (!empty($error)): ?>
+        <div class="alert alert-danger"><i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
 
     <!-- TABLE -->
     <div class="table-card">
@@ -376,7 +429,7 @@ include '../../include/header.php';
                             <strong style="color:#071C34;"><?= htmlspecialchars($row['judul']) ?></strong>
                         </td>
                         <td class="col-kategori">
-                            <span style="background:#f1f5f9; padding:0.15rem 0.6rem; border-radius:50px; font-size:0.7rem; color:#071C34;">
+                            <span style="background:#f1f5f9; padding:0.15rem 0.8rem; border-radius:50px; font-size:0.7rem; color:#071C34; display:inline-block; white-space:nowrap;">
                                 <?= htmlspecialchars($row['kategori'] ?? 'Umum') ?>
                             </span>
                         </td>
@@ -394,17 +447,15 @@ include '../../include/header.php';
                                 <a href="edit_konten.php?id=<?= $row['id_konten'] ?>" class="mini-btn edit" title="Edit kegiatan">
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
-                                <a href="detail_kegiatan.php?id=<?= $row['id_konten'] ?>" target="_blank" class="mini-btn detail" title="Lihat detail">
+                                <a href="detail_kegiatan.php?id=<?= $row['id_konten'] ?>" class="mini-btn detail" title="Lihat detail" target="_self">
                                     <i class="fas fa-eye"></i> Detail
                                 </a>
-                                <?php if ($level === 'inti' || $_SESSION['peran'] === 'admin'): ?>
-                                <form action="proses_hapus.php" method="POST" onsubmit="return confirm('Yakin ingin menghapus kegiatan [<?= htmlspecialchars($row['judul']) ?>] secara permanen?')">
-                                    <input type="hidden" name="id" value="<?= (int) $row['id_konten'] ?>">
+                                <form action="proses_hapus.php" method="POST" onsubmit="return confirm('Yakin ingin menghapus kegiatan [<?= htmlspecialchars($row['judul']) ?>] secara permanen? Semua data pendaftaran juga akan terhapus.')">
+                                    <input type="hidden" name="id_konten" value="<?= (int) $row['id_konten'] ?>">
                                     <button type="submit" class="mini-btn hapus" title="Hapus kegiatan">
                                         <i class="fas fa-trash"></i> Hapus
                                     </button>
                                 </form>
-                                <?php endif; ?>
                             </div>
                         </td>
                     </tr>

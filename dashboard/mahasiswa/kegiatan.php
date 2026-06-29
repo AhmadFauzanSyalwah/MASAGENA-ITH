@@ -108,7 +108,7 @@ $totalPages = ceil($totalKegiatan / $limit);
 // QUERY KEGIATAN
 // ============================================================
 $sql = "SELECT k.*, o.nama_organisasi, o.jenis,
-               COALESCE(k.kuota, 50) AS kuota,
+               COALESCE(k.kuota_maks, 50) AS kuota,
                (SELECT COUNT(*) FROM pendaftaran p WHERE p.id_konten = k.id_konten AND p.status_pendaftaran != 'ditolak') AS jumlah_peserta
         FROM konten_kegiatan k
         JOIN organisasi o ON k.id_organisasi = o.id_organisasi

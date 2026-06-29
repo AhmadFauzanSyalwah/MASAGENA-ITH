@@ -70,20 +70,27 @@ $totalPages = ceil($totalRiwayat / $limit);
 // ============================================================
 // QUERY DATA RIWAYAT
 // ============================================================
-$sql = "SELECT p.*, k.judul, k.tanggal_kegiatan, k.deskripsi, o.nama_organisasi,
-               COALESCE(k.kuota, 50) AS kuota,
-               (SELECT COUNT(*) FROM pendaftaran p2 WHERE p2.id_konten = k.id_konten AND p2.status_pendaftaran != 'ditolak') AS jumlah_peserta
+$sql = "SELECT p.*, k.judul, k.deskripsi, k.tanggal_kegiatan, k.kuota_maks AS kuota,
+               o.nama_organisasi
         FROM pendaftaran p
         JOIN konten_kegiatan k ON p.id_konten = k.id_konten
         JOIN organisasi o ON k.id_organisasi = o.id_organisasi
         WHERE $where
         ORDER BY $order
-        LIMIT $limit OFFSET $offset";
+        LIMIT :limit OFFSET :offset";
 
 $stmt = $pdo->prepare($sql);
 foreach ($params as $key => $val) {
-    $stmt->bindValue($key, $val);
+    // bindValue with type detection
+    if (is_int($val)) {
+        $stmt->bindValue($key, $val, PDO::PARAM_INT);
+    } else {
+        $stmt->bindValue($key, $val, PDO::PARAM_STR);
+    }
 }
+// Bind limit and offset as integers
+$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
 $riwayat = $stmt->fetchAll();
 

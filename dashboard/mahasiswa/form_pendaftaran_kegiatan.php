@@ -7,9 +7,6 @@ if (!isset($_SESSION['user_id']) || $_SESSION['peran'] != 'mahasiswa') {
     exit;
 }
 
-// ============================================================
-// SET KONTEKS UNTUK HEADER (AGAR MENU KEGIATAN AKTIF)
-// ============================================================
 $page_context = 'kegiatan';
 
 require_once '../../config/database.php';
@@ -23,9 +20,9 @@ if (!$id_konten) {
     exit;
 }
 
-// ============================================================
-// AMBIL DATA KEGIATAN
-// ============================================================
+// ------------------------------------------------------------
+// Ambil data kegiatan
+// ------------------------------------------------------------
 $stmt = $pdo->prepare("SELECT k.*, o.nama_organisasi, o.jenis 
                        FROM konten_kegiatan k 
                        JOIN organisasi o ON k.id_organisasi = o.id_organisasi 
@@ -39,28 +36,28 @@ if (!$kegiatan) {
     exit;
 }
 
-// ============================================================
-// KUOTA & PESERTA
-// ============================================================
+// ------------------------------------------------------------
+// Kuota & peserta
+// ------------------------------------------------------------
 $kuota = (int)($kegiatan['kuota'] ?? 50);
 $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM pendaftaran WHERE id_konten = ? AND status_pendaftaran != 'ditolak'");
 $stmtCount->execute([$id_konten]);
 $jumlah_peserta = $stmtCount->fetchColumn();
 $penuh = $kuota > 0 && $jumlah_peserta >= $kuota;
 
-// ============================================================
-// CEK STATUS PENDAFTARAN MAHASISWA
-// ============================================================
+// ------------------------------------------------------------
+// Cek status pendaftaran mahasiswa
+// ------------------------------------------------------------
 $stmtCek = $pdo->prepare("SELECT * FROM pendaftaran WHERE id_mahasiswa = ? AND id_konten = ?");
 $stmtCek->execute([$user_id, $id_konten]);
 $sudah_daftar = $stmtCek->fetch(PDO::FETCH_ASSOC);
 
+// ------------------------------------------------------------
+// Proses pendaftaran
+// ------------------------------------------------------------
 $error = '';
 $success = '';
 
-// ============================================================
-// PROSES PENDAFTARAN
-// ============================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['daftar'])) {
     if ($penuh) {
         $error = 'Maaf, kuota kegiatan sudah penuh.';
@@ -69,9 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['daftar'])) {
     } else {
         $insert = $pdo->prepare("INSERT INTO pendaftaran (id_mahasiswa, id_konten, status_pendaftaran, tanggal_daftar) VALUES (?, ?, 'menunggu', NOW())");
         if ($insert->execute([$user_id, $id_konten])) {
-            // ============================================================
-            // PERUBAHAN: Set session success, redirect ke halaman yang sama
-            // ============================================================
+            // Set flag bahwa baru saja mendaftar, agar blok "sudah daftar" tidak muncul
+            $_SESSION['just_registered'] = true;
             $_SESSION['success'] = 'Pendaftaran berhasil! Menunggu verifikasi dari pengurus.';
             header('Location: form_pendaftaran_kegiatan.php?id_konten=' . $id_konten);
             exit;
@@ -81,9 +77,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['daftar'])) {
     }
 }
 
-// ============================================================
-// AMBIL PESAN DARI SESSION (jika ada)
-// ============================================================
+// ------------------------------------------------------------
+// Ambil pesan dari session
+// ------------------------------------------------------------
+$just_registered = isset($_SESSION['just_registered']) && $_SESSION['just_registered'] === true;
+if ($just_registered) {
+    unset($_SESSION['just_registered']);
+}
+
 if (isset($_SESSION['success'])) {
     $success = $_SESSION['success'];
     unset($_SESSION['success']);
@@ -99,9 +100,6 @@ include '../../include/header.php';
 <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/profil.css?v=<?php echo time(); ?>">
 
 <style>
-/* ============================================
-   FORM PENDAFTARAN - KONSISTEN DENGAN PROFIL
-   ============================================ */
 .pendaftaran-form-container {
     max-width: 800px;
     margin: 0 auto;
@@ -221,7 +219,7 @@ include '../../include/header.php';
             <div class="profil-outer-card">
                 <div class="profil-inner-card">
 
-                    <!-- Pesan status -->
+                    <!-- Pesan sukses/error -->
                     <?php if (!empty($success)): ?>
                         <div class="status-info success">
                             <i class="fas fa-check-circle"></i> <?= htmlspecialchars($success) ?>
@@ -256,8 +254,8 @@ include '../../include/header.php';
                         </div>
                     </div>
 
-                    <!-- Status Pendaftaran -->
-                    <?php if ($sudah_daftar): ?>
+                    <!-- Status Pendaftaran (hanya tampil jika sudah daftar dan BUKAN baru saja mendaftar) -->
+                    <?php if ($sudah_daftar && !$just_registered): ?>
                         <div class="status-info">
                             <i class="fas fa-info-circle"></i> Anda sudah mendaftar kegiatan ini dengan status 
                             <strong><?= ucfirst($sudah_daftar['status_pendaftaran'] ?? 'Menunggu') ?></strong>.
