@@ -32,7 +32,7 @@ if (!$kegiatan) {
 }
 
 // ============================================================
-// CEK AKSES: Hanya pengurus dari organisasi yang sama
+// CEK AKSES
 // ============================================================
 $id_pengurus = $_SESSION['user_id'];
 $stmtCek = $pdo->prepare("SELECT id_organisasi FROM pengurus_organisasi WHERE id_pengurus = ?");
@@ -49,7 +49,6 @@ if ($org_pengurus != $kegiatan['id_organisasi']) {
 // PROSES UPDATE
 // ============================================================
 $error = '';
-$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
     $judul = trim($_POST['judul'] ?? '');
@@ -60,13 +59,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
     $status_publikasi = $_POST['status_publikasi'] ?? 'publik';
     $hapus_lampiran = isset($_POST['hapus_lampiran']) ? true : false;
 
-    // Validasi
     if (empty($judul) || empty($deskripsi) || empty($tanggal_kegiatan)) {
         $error = 'Judul, deskripsi, dan tanggal kegiatan wajib diisi.';
     } elseif ($kuota < 0) {
         $error = 'Kuota tidak boleh negatif.';
     } else {
-        // Proses upload lampiran
         $lampiran_baru = null;
         $upload_error = '';
 
@@ -92,7 +89,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
         }
 
         if (empty($upload_error)) {
-            // Siapkan data update
             $update_fields = [
                 'judul' => $judul,
                 'deskripsi' => $deskripsi,
@@ -102,7 +98,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                 'status_publikasi' => $status_publikasi
             ];
 
-            // Jika hapus lampiran
             if ($hapus_lampiran && $kegiatan['lampiran']) {
                 $old_file = '../../uploads/kegiatan/' . $kegiatan['lampiran'];
                 if (file_exists($old_file)) {
@@ -111,7 +106,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                 $update_fields['lampiran'] = null;
             }
 
-            // Jika ada lampiran baru, ganti
             if ($lampiran_baru) {
                 if ($kegiatan['lampiran']) {
                     $old_file = '../../uploads/kegiatan/' . $kegiatan['lampiran'];
@@ -122,7 +116,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
                 $update_fields['lampiran'] = $lampiran_baru;
             }
 
-            // Bangun query update
             $set = [];
             $params = [];
             foreach ($update_fields as $key => $val) {
@@ -135,11 +128,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
             try {
                 $stmt = $pdo->prepare($sql);
                 if ($stmt->execute($params)) {
-                    $_SESSION['success'] = 'Kegiatan berhasil diperbarui.';
-                    header('Location: detail_kegiatan.php?id=' . $id_konten);
+                    // Redirect dengan parameter sukses (tanpa session)
+                    header('Location: kelola_konten.php?update=sukses');
                     exit;
                 } else {
-                    $error = 'Gagal memperbarui data. Error: ' . implode(' ', $stmt->errorInfo());
+                    $error = 'Gagal memperbarui data.';
                 }
             } catch (PDOException $e) {
                 $error = 'Database error: ' . $e->getMessage();
@@ -150,11 +143,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update'])) {
     }
 }
 
-// Ambil pesan session
-if (isset($_SESSION['success'])) {
-    $success = $_SESSION['success'];
-    unset($_SESSION['success']);
-}
 if (isset($_SESSION['error'])) {
     $error = $_SESSION['error'];
     unset($_SESSION['error']);
@@ -164,7 +152,6 @@ $page_context = 'kelola_kegiatan';
 include '../../include/header.php';
 ?>
 
-<link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/profil.css?v=<?= time() ?>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
 <style>
@@ -173,17 +160,10 @@ include '../../include/header.php';
     margin: 0 auto;
     padding: 0 1rem;
 }
-.edit-container .alert {
+.edit-container .alert-danger {
     padding: 0.8rem 1.2rem;
     border-radius: 8px;
     margin-bottom: 1.5rem;
-}
-.edit-container .alert-success {
-    background: #dcfce7;
-    border-left: 4px solid #22c55e;
-    color: #166534;
-}
-.edit-container .alert-danger {
     background: #fee2e2;
     border-left: 4px solid #dc2626;
     color: #991b1b;
@@ -259,8 +239,6 @@ include '../../include/header.php';
     color: #94a3b8;
     font-style: italic;
 }
-
-/* ===== TOMBOL AKSI ===== */
 .edit-actions {
     display: flex;
     justify-content: space-between;
@@ -336,36 +314,29 @@ include '../../include/header.php';
                 Perbarui informasi kegiatan yang dikelola oleh <strong><?= htmlspecialchars($kegiatan['nama_organisasi']) ?></strong>
             </p>
 
-            <?php if (!empty($success)): ?>
-                <div class="alert alert-success"><i class="fas fa-check-circle"></i> <?= htmlspecialchars($success) ?></div>
-            <?php endif; ?>
             <?php if (!empty($error)): ?>
-                <div class="alert alert-danger"><i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error) ?></div>
+                <div class="alert-danger"><i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
 
-            <form method="post" class="edit-form" enctype="multipart/form-data">
+            <form method="post" class="edit-form" enctype="multipart/form-data" id="formEdit">
 
-                <!-- Judul -->
                 <div class="form-group">
                     <label for="judul">Judul Kegiatan <span style="color:#dc2626;">*</span></label>
                     <input type="text" name="judul" id="judul" class="form-control" required
                            value="<?= htmlspecialchars($kegiatan['judul']) ?>">
                 </div>
 
-                <!-- Deskripsi -->
                 <div class="form-group">
                     <label for="deskripsi">Deskripsi <span style="color:#dc2626;">*</span></label>
                     <textarea name="deskripsi" id="deskripsi" class="form-control" rows="5" required><?= htmlspecialchars($kegiatan['deskripsi']) ?></textarea>
                 </div>
 
-                <!-- Tanggal -->
                 <div class="form-group">
                     <label for="tanggal_kegiatan">Tanggal Kegiatan <span style="color:#dc2626;">*</span></label>
                     <input type="date" name="tanggal_kegiatan" id="tanggal_kegiatan" class="form-control" required
                            value="<?= htmlspecialchars($kegiatan['tanggal_kegiatan']) ?>">
                 </div>
 
-                <!-- Kategori -->
                 <div class="form-group">
                     <label for="kategori">Kategori</label>
                     <input type="text" name="kategori" id="kategori" class="form-control"
@@ -373,7 +344,6 @@ include '../../include/header.php';
                     <small class="form-text">Misal: Workshop, Seminar, Kompetisi, Pameran, dll.</small>
                 </div>
 
-                <!-- Kuota -->
                 <div class="form-group">
                     <label for="kuota">Kuota Peserta</label>
                     <input type="number" name="kuota" id="kuota" class="form-control" min="0"
@@ -381,7 +351,6 @@ include '../../include/header.php';
                     <small class="form-text">Jumlah maksimal peserta yang dapat mendaftar.</small>
                 </div>
 
-                <!-- Status Publikasi -->
                 <div class="form-group">
                     <label for="status_publikasi">Status Publikasi</label>
                     <select name="status_publikasi" id="status_publikasi" class="form-control">
@@ -391,7 +360,6 @@ include '../../include/header.php';
                     <small class="form-text">Publik akan terlihat oleh mahasiswa, Draft hanya tersimpan.</small>
                 </div>
 
-                <!-- Lampiran Saat Ini -->
                 <div class="form-group">
                     <label>Lampiran Saat Ini</label>
                     <div class="current-file-wrapper">
@@ -409,16 +377,14 @@ include '../../include/header.php';
                     </div>
                 </div>
 
-                <!-- Upload Lampiran Baru -->
                 <div class="form-group">
                     <label for="lampiran">Ganti / Tambah Lampiran (opsional)</label>
                     <input type="file" name="lampiran" id="lampiran" class="form-control" accept=".jpg,.jpeg,.png,.gif,.pdf">
                     <small class="form-text">Format yang diizinkan: JPG, PNG, GIF, PDF. Maksimal 2MB.</small>
                 </div>
 
-                <!-- Tombol -->
                 <div class="edit-actions">
-                    <a href="detail_kegiatan.php?id=<?= $id_konten ?>" class="btn-cancel">
+                    <a href="kelola_konten.php" class="btn-cancel">
                         <i class="fas fa-arrow-left"></i> Batal
                     </a>
                     <button type="submit" name="update" class="btn-save">
@@ -430,5 +396,23 @@ include '../../include/header.php';
         </div>
     </div>
 </div>
+
+<!-- ===== SCRIPT KONFIRMASI SEBELUM SIMPAN ===== -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formEdit');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Cek apakah tombol yang ditekan adalah "Simpan Perubahan" (bukan tombol lain)
+            const submitter = e.submitter;
+            if (submitter && submitter.name === 'update') {
+                if (!confirm('Apakah Anda yakin ingin menyimpan perubahan?')) {
+                    e.preventDefault();
+                }
+            }
+        });
+    }
+});
+</script>
 
 <?php include '../../include/footer.php'; ?>

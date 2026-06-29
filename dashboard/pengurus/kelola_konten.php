@@ -10,9 +10,6 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['peran'], ['pengurus', '
 require_once '../../config/database.php';
 require_once '../../include/pendaftaran-helper.php';
 
-// ============================================================
-// AMBIL DATA ORGANISASI PENGURUS
-// ============================================================
 $id_user = $_SESSION['user_id'];
 $level = $_SESSION['level'] ?? 'biasa';
 $id_organisasi = null;
@@ -43,15 +40,9 @@ if ($_SESSION['peran'] === 'admin') {
     }
 }
 
-// Pesan session
-if (isset($_SESSION['success'])) {
-    $success = $_SESSION['success'];
-    unset($_SESSION['success']);
-}
-if (isset($_SESSION['error'])) {
-    $error = $_SESSION['error'];
-    unset($_SESSION['error']);
-}
+// Ambil pesan error dari session (jika ada)
+$error = isset($_SESSION['error']) ? $_SESSION['error'] : '';
+unset($_SESSION['error']);
 
 include '../../include/header.php';
 ?>
@@ -60,17 +51,13 @@ include '../../include/header.php';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
 <style>
-/* ============================================
-   KELOLA KONTEN - CSS DIPERBAIKI
-   ============================================ */
+/* (semua CSS tetap sama seperti sebelumnya) */
 .kelola-container {
     max-width: 100%;
     margin: 0;
     padding: 0 1rem;
     box-sizing: border-box;
 }
-
-/* Header */
 .kelola-header {
     display: flex;
     justify-content: space-between;
@@ -90,25 +77,16 @@ include '../../include/header.php';
     color: #64748b;
     margin: 0;
 }
-
-/* Alert */
 .kelola-container .alert {
     padding: 0.8rem 1.2rem;
     border-radius: 8px;
     margin-bottom: 1.5rem;
-}
-.kelola-container .alert-success {
-    background: #dcfce7;
-    border-left: 4px solid #22c55e;
-    color: #166534;
 }
 .kelola-container .alert-danger {
     background: #fee2e2;
     border-left: 4px solid #dc2626;
     color: #991b1b;
 }
-
-/* ===== TOMBOL TAMBAH ===== */
 .btn-tambah {
     background: #FFA007;
     color: #071C34;
@@ -127,8 +105,6 @@ include '../../include/header.php';
     color: #ffffff;
     border-color: #071C34;
 }
-
-/* ===== TABLE CARD ===== */
 .table-card {
     background: #ffffff;
     border-radius: 16px;
@@ -140,7 +116,7 @@ include '../../include/header.php';
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9rem;
-    table-layout: fixed; /* ← agar lebar kolom bisa diatur */
+    table-layout: fixed;
 }
 .table-card thead {
     background: #f8fafc;
@@ -178,37 +154,13 @@ include '../../include/header.php';
     display: block;
     color: #cbd5e0;
 }
+.table-card .col-no { width: 8%; text-align: center; }
+.table-card .col-judul { width: 28%; }
+.table-card .col-kategori { width: 15%; text-align: center; }
+.table-card .col-tanggal { width: 15%; text-align: center; }
+.table-card .col-status { width: 14%; text-align: center; }
+.table-card .col-aksi { width: 30%; text-align: center; }
 
-/* ============================================================
-   LEBAR KOLOM - DISESUAIKAN AGAR AKSI LEGA
-   ============================================================ */
-.table-card .col-no {
-    width: 8%;
-    text-align: center;
-}
-.table-card .col-judul {
-    width: 28%;
-}
-.table-card .col-kategori {
-    width: 15%;  /* ← lebih lega */
-    text-align: center;
-}
-.table-card .col-tanggal {
-    width: 15%;  /* ← lebih lega */
-    text-align: center;
-}
-.table-card .col-status {
-    width: 14%;
-    text-align: center;
-}
-.table-card .col-aksi {
-    width: 30%;  /* ← ruang cukup untuk 3 tombol */
-    text-align: center;
-}
-
-/* ============================================================
-   STATUS BADGE
-   ============================================================ */
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -221,22 +173,11 @@ include '../../include/header.php';
     letter-spacing: 0.3px;
     white-space: nowrap;
 }
-.status-badge i {
-    font-size: 0.7rem;
-}
-.status-badge.publik {
-    background: #22c55e;
-}
-.status-badge.draft {
-    background: #f59e0b;
-}
-.status-badge.arsip {
-    background: #64748b;
-}
+.status-badge i { font-size: 0.7rem; }
+.status-badge.publik { background: #FFA007; }
+.status-badge.draft { background: #071C34; }
+.status-badge.arsip { background: #64748b; }
 
-/* ============================================================
-   TOMBOL AKSI - KOMPAK TAPI LEGA
-   ============================================================ */
 .action-inline {
     display: flex;
     align-items: center;
@@ -244,9 +185,7 @@ include '../../include/header.php';
     gap: 0.5rem;
     flex-wrap: wrap;
 }
-.action-inline form {
-    display: inline;
-}
+.action-inline form { display: inline; }
 
 .mini-btn {
     padding: 0.25rem 1.2rem;
@@ -266,7 +205,6 @@ include '../../include/header.php';
     text-decoration: none;
     transition: 0.3s;
 }
-
 .mini-btn.edit {
     background: transparent;
     color: #071C34;
@@ -277,7 +215,6 @@ include '../../include/header.php';
     color: #ffffff;
     border-color: #071C34;
 }
-
 .mini-btn.detail {
     background: transparent;
     color: #FFA007;
@@ -288,7 +225,6 @@ include '../../include/header.php';
     color: #ffffff;
     border-color: #FFA007;
 }
-
 .mini-btn.hapus {
     background: transparent;
     color: #dc2626;
@@ -300,9 +236,6 @@ include '../../include/header.php';
     border-color: #dc2626;
 }
 
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
 @media (max-width: 992px) {
     .table-card .col-no { width: 6%; }
     .table-card .col-judul { width: 22%; }
@@ -310,60 +243,25 @@ include '../../include/header.php';
     .table-card .col-tanggal { width: 14%; }
     .table-card .col-status { width: 14%; }
     .table-card .col-aksi { width: 30%; }
-    .mini-btn {
-        padding: 0.2rem 0.8rem;
-        font-size: 0.7rem;
-        min-width: 60px;
-    }
+    .mini-btn { padding: 0.2rem 0.8rem; font-size: 0.7rem; min-width: 60px; }
 }
-
 @media (max-width: 768px) {
-    .kelola-container {
-        padding: 0 0.5rem;
-    }
-    .kelola-header {
-        flex-direction: column;
-        align-items: stretch;
-        text-align: center;
-    }
-    .kelola-header .title-group h2 {
-        font-size: 1.4rem;
-    }
-    .btn-tambah {
-        justify-content: center;
-    }
-    .table-card {
-        overflow-x: auto;
-    }
-    .table-card table {
-        font-size: 0.8rem;
-        min-width: 700px;
-    }
-    .table-card th, .table-card td {
-        padding: 0.4rem 0.5rem;
-    }
-    .action-inline {
-        flex-direction: column;
-        gap: 0.3rem;
-    }
-    .action-inline form {
-        display: block;
-        width: 100%;
-    }
-    .mini-btn {
-        width: 100%;
-        justify-content: center;
-        padding: 0.3rem 0.5rem;
-        min-width: unset;
-    }
-    /* Lebar di mobile dibuat lebih fleksibel */
+    .kelola-container { padding: 0 0.5rem; }
+    .kelola-header { flex-direction: column; align-items: stretch; text-align: center; }
+    .kelola-header .title-group h2 { font-size: 1.4rem; }
+    .btn-tambah { justify-content: center; }
+    .table-card { overflow-x: auto; }
+    .table-card table { font-size: 0.8rem; min-width: 700px; }
+    .table-card th, .table-card td { padding: 0.4rem 0.5rem; }
+    .action-inline { flex-direction: column; gap: 0.3rem; }
+    .action-inline form { display: block; width: 100%; }
+    .mini-btn { width: 100%; justify-content: center; padding: 0.3rem 0.5rem; min-width: unset; }
     .table-card .col-aksi { width: 100%; }
 }
 </style>
 
 <div class="kelola-container">
 
-    <!-- HEADER -->
     <div class="kelola-header">
         <div class="title-group">
             <h2>Kelola Konten Kegiatan</h2>
@@ -382,15 +280,11 @@ include '../../include/header.php';
         </a>
     </div>
 
-    <!-- PESAN -->
-    <?php if (!empty($success)): ?>
-        <div class="alert alert-success"><i class="fas fa-check-circle"></i> <?= htmlspecialchars($success) ?></div>
-    <?php endif; ?>
+    <!-- Tampilkan error saja (tidak tampilkan success) -->
     <?php if (!empty($error)): ?>
         <div class="alert alert-danger"><i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
 
-    <!-- TABLE -->
     <div class="table-card">
         <table>
             <thead>
@@ -467,3 +361,16 @@ include '../../include/header.php';
 </div>
 
 <?php include '../../include/footer.php'; ?>
+
+<!-- ===== SCRIPT ALERT SUKSES (dari parameter GET) ===== -->
+<?php if (isset($_GET['hapus']) && $_GET['hapus'] === 'sukses'): ?>
+<script>
+    alert('Kegiatan berhasil dihapus.');
+    // Hapus parameter dari URL agar tidak muncul lagi saat refresh
+    if (window.history && window.history.replaceState) {
+        let url = window.location.href;
+        url = url.replace(/[?&]hapus=sukses/, '').replace(/[?&]$/, '');
+        window.history.replaceState(null, null, url);
+    }
+</script>
+<?php endif; ?>

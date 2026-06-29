@@ -23,15 +23,52 @@ $inisial = strtoupper(substr($nama, 0, 2));
 $page_context = $page_context ?? 'beranda';
 
 // ============================================================
-// GRUP HALAMAN UNTUK MENU AKTIF (MAHASISWA)
+// GRUP HALAMAN UNTUK MENU AKTIF (SEMUA ROLE)
 // ============================================================
+// Mahasiswa
 $kegiatan_pages = ['kegiatan.php', 'detail_kegiatan.php', 'form_pendaftaran_kegiatan.php', 'daftar_kegiatan.php'];
 $organisasi_pages = ['organisasi.php', 'detail_organisasi.php'];
+$aspirasi_pages = ['aspirasi.php', 'aspirasi_saya.php', 'detail_aspirasi.php'];
+
+// Pengurus
+$profil_organisasi_pages = ['profil_organisasi.php', 'edit_profil_organisasi.php'];
+
+// ===== Kelola Konten =====
+$kelola_konten_pages = [
+    'kelola_konten.php', 
+    'tambah_kegiatan.php', 
+    'edit_konten.php', 
+    'detail_kegiatan.php', 
+    'proses_hapus.php'
+];
+
+// ===== Aspirasi Masuk =====
+$aspirasi_masuk_pages = [
+    'kelola_aspirasi.php',
+    'detail_aspirasi.php'
+];
+
+// ===== Manajemen Pengurus =====
+$manajemen_pengurus_pages = [
+    'manajemen_pengurus.php',
+    'edit_pengurus.php',
+    'tambah_pengurus.php',
+    'hapus_pengurus.php'
+];
+
+// Admin (opsional, jika ada grup khusus)
+$admin_pages = ['index.php', 'manajemen_organisasi.php', 'manajemen_pengurus.php', 'verifikasi_akun.php', 'pengawasan_konten.php', 'kelola_user.php'];
 
 // ============================================================
-// GRUP HALAMAN UNTUK MENU AKTIF (PENGURUS)
+// TENTUKAN ACTION SEARCH
 // ============================================================
-$profil_organisasi_pages = ['profil_organisasi.php', 'edit_profil_organisasi.php'];
+// Jika halaman saat ini adalah aspirasi (mahasiswa), search akan ke beranda
+$search_action = '';
+if (in_array($current_page, $aspirasi_pages)) {
+    $search_action = '/MASAGENA-ITH/dashboard/mahasiswa/index.php';
+} else {
+    $search_action = ''; // tetap di halaman yang sama
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -271,7 +308,7 @@ $profil_organisasi_pages = ['profil_organisasi.php', 'edit_profil_organisasi.php
 
         <!-- Search -->
         <div class="search-area">
-            <form action="" method="GET" class="search-form">
+            <form action="<?= $search_action ?>" method="GET" class="search-form">
                 <input type="hidden" name="context" value="<?= $page_context ?>">
                 <input type="text" name="q" placeholder="Cari agenda, kegiatan, organisasi..." 
                        value="<?= isset($_GET['q']) ? htmlspecialchars($_GET['q']) : '' ?>">
@@ -332,19 +369,26 @@ $profil_organisasi_pages = ['profil_organisasi.php', 'edit_profil_organisasi.php
                     <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/agenda.php" class="<?= ($current_page == 'agenda.php') ? 'active' : '' ?>">Agenda</a></li>
                     <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/kegiatan.php" class="<?= in_array($current_page, $kegiatan_pages) ? 'active' : '' ?>">Kegiatan</a></li>
                     <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/organisasi.php" class="<?= in_array($current_page, $organisasi_pages) ? 'active' : '' ?>">Organisasi</a></li>
-                    <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/aspirasi.php" class="<?= ($current_page == 'aspirasi.php') ? 'active' : '' ?>">Aspirasi</a></li>
+                    <li><a href="/MASAGENA-ITH/dashboard/mahasiswa/aspirasi.php" class="<?= in_array($current_page, $aspirasi_pages) ? 'active' : '' ?>">Aspirasi</a></li>
 
                 <?php elseif ($peran === 'pengurus'): ?>
-                    <!-- ===== MENU UNTUK SEMUA PENGURUS ===== -->
                     <li><a href="/MASAGENA-ITH/dashboard/pengurus/index.php" class="<?= ($current_page == 'index.php') ? 'active' : '' ?>">Dashboard</a></li>
-                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/kelola_konten.php" class="<?= ($current_page == 'kelola_konten.php') ? 'active' : '' ?>">Kelola Konten</a></li>
+                    
+                    <!-- Kelola Konten -->
+                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/kelola_konten.php" class="<?= in_array($current_page, $kelola_konten_pages) ? 'active' : '' ?>">Kelola Konten</a></li>
+                    
+                    <!-- Pendaftaran -->
                     <li><a href="/MASAGENA-ITH/dashboard/pengurus/pendaftaran.php" class="<?= ($current_page == 'pendaftaran.php') ? 'active' : '' ?>">Pendaftaran</a></li>
-                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/kelola_aspirasi.php" class="<?= ($current_page == 'kelola_aspirasi.php') ? 'active' : '' ?>">Aspirasi Masuk</a></li>
+                    
+                    <!-- Aspirasi Masuk (aktif untuk kelola_aspirasi.php & detail_aspirasi.php) -->
+                    <li><a href="/MASAGENA-ITH/dashboard/pengurus/kelola_aspirasi.php" class="<?= in_array($current_page, $aspirasi_masuk_pages) ? 'active' : '' ?>">Aspirasi Masuk</a></li>
+                    
+                    <!-- Profil Organisasi -->
                     <li><a href="/MASAGENA-ITH/dashboard/pengurus/profil_organisasi.php" class="<?= (in_array($current_page, $profil_organisasi_pages)) ? 'active' : '' ?>">Profil Organisasi</a></li>
 
-                    <!-- ===== MENU KHUSUS PENGURUS INTI ===== -->
+                    <!-- Manajemen Pengurus (hanya untuk inti, aktif untuk manajemen, edit, tambah, hapus) -->
                     <?php if ($is_inti): ?>
-                        <li><a href="/MASAGENA-ITH/dashboard/pengurus/manajemen_pengurus.php" class="<?= ($current_page == 'manajemen_pengurus.php') ? 'active' : '' ?>">Manajemen Pengurus</a></li>
+                        <li><a href="/MASAGENA-ITH/dashboard/pengurus/manajemen_pengurus.php" class="<?= in_array($current_page, $manajemen_pengurus_pages) ? 'active' : '' ?>">Manajemen Pengurus</a></li>
                     <?php endif; ?>
 
                 <?php elseif ($peran === 'admin'): ?>

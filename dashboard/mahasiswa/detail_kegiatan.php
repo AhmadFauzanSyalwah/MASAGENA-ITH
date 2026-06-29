@@ -534,20 +534,24 @@ include '../../include/header.php';
 
 <div class="detail-container">
 
-    <!-- BREADCRUMB DIHAPUS SESUAI PERMINTAAN -->
-
-    <!-- GAMBAR -->
-    <?php 
+    <!-- ===== GAMBAR (AMAN DARI NULL) ===== -->
+    <?php
     $imagePath = '';
-    if (!empty($kegiatan['lampiran']) && file_exists('../../uploads/kegiatan/' . $kegiatan['lampiran'])) {
-        $imagePath = BASE_URL . '/uploads/kegiatan/' . $kegiatan['lampiran'];
-    } else {
-        $exts = ['jpg', 'jpeg', 'png', 'gif'];
-        foreach ($exts as $ext) {
-            $base = basename($kegiatan['lampiran'], '.' . pathinfo($kegiatan['lampiran'], PATHINFO_EXTENSION));
-            if (file_exists('../../uploads/kegiatan/' . $base . '.' . $ext)) {
-                $imagePath = BASE_URL . '/uploads/kegiatan/' . $base . '.' . $ext;
-                break;
+    if (!empty($kegiatan['lampiran'])) {
+        // Cek file langsung
+        $filePath = '../../uploads/kegiatan/' . $kegiatan['lampiran'];
+        if (file_exists($filePath)) {
+            $imagePath = '/MASAGENA-ITH/uploads/kegiatan/' . $kegiatan['lampiran'];
+        } else {
+            // Coba ekstensi lain
+            $exts = ['jpg', 'jpeg', 'png', 'gif'];
+            $base = pathinfo($kegiatan['lampiran'], PATHINFO_FILENAME);
+            foreach ($exts as $ext) {
+                $altPath = '../../uploads/kegiatan/' . $base . '.' . $ext;
+                if (file_exists($altPath)) {
+                    $imagePath = '/MASAGENA-ITH/uploads/kegiatan/' . $base . '.' . $ext;
+                    break;
+                }
             }
         }
     }
@@ -558,7 +562,7 @@ include '../../include/header.php';
         <div class="detail-gambar no-image"><i class="fa-regular fa-image"></i></div>
     <?php endif; ?>
 
-    <!-- TWO COLUMN: KIRI (Judul+Meta+Deskripsi) | KANAN (Status) -->
+    <!-- TWO COLUMN -->
     <div class="detail-two-col">
 
         <!-- KOLOM KIRI -->
@@ -598,7 +602,7 @@ include '../../include/header.php';
                 </div>
 
                 <?php if (!$sudahDaftar && !$penuh): ?>
-                    <a href="<?= BASE_URL ?>/dashboard/mahasiswa/form_pendaftaran_kegiatan.php?id_konten=<?= $id_konten ?>" class="btn-daftar">
+                    <a href="/MASAGENA-ITH/dashboard/mahasiswa/form_pendaftaran_kegiatan.php?id_konten=<?= $id_konten ?>" class="btn-daftar">
                         <i class="fas fa-user-plus"></i> Daftar Sekarang
                     </a>
                 <?php elseif ($sudahDaftar && $statusPendaftaran == 'menunggu'): ?>
@@ -612,7 +616,7 @@ include '../../include/header.php';
                 <?php endif; ?>
             </div>
 
-            <!-- Interaksi (Like & Share) di bawah status -->
+            <!-- Interaksi -->
             <div class="interaksi-card">
                 <button class="btn-interaksi btn-like <?= $isLiked ? 'liked' : '' ?>" data-id="<?= $id_konten ?>">
                     <i class="<?= $isLiked ? 'fas' : 'far' ?> fa-heart"></i>
@@ -627,7 +631,7 @@ include '../../include/header.php';
 
     </div>
 
-    <!-- ===== KOMENTAR (FULL WIDTH) ===== -->
+    <!-- KOMENTAR -->
     <div class="komentar-section">
 
         <div class="komentar-header">
@@ -637,7 +641,6 @@ include '../../include/header.php';
 
         <?= $komentar_message ?>
 
-        <!-- Form komentar -->
         <div class="form-komentar" id="formKomentar">
             <form method="post" style="display:flex; gap:0.5rem; width:100%;">
                 <textarea name="isi" placeholder="Tulis komentar..." required></textarea>
@@ -645,7 +648,6 @@ include '../../include/header.php';
             </form>
         </div>
 
-        <!-- Daftar komentar -->
         <div class="komentar-list">
             <?php if (count($komentar) > 0): ?>
                 <?php foreach ($komentar as $komen): ?>

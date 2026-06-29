@@ -131,9 +131,8 @@ include '../../include/header.php';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
 <style>
+/* (Gaya tetap seperti sebelumnya, tidak diubah) */
 .kegiatan-container { max-width: 1400px; margin: 0 auto; padding: 0 1rem; }
-
-/* Filter bar */
 .kegiatan-filter-bar {
     background: #f8fafc;
     border-radius: 16px;
@@ -191,8 +190,6 @@ include '../../include/header.php';
     background: #0a2a4a;
     color: #ffffff;
 }
-
-/* Search stats */
 .search-stats {
     background: linear-gradient(135deg, #071C34 0%, #0a2a4a 100%);
     border-radius: 16px;
@@ -221,8 +218,6 @@ include '../../include/header.php';
     background: #FFA007;
     color: #071C34;
 }
-
-/* Grid */
 .kegiatan-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -375,8 +370,6 @@ include '../../include/header.php';
     color: #94a3b8;
     cursor: not-allowed;
 }
-
-/* ===== HIGHLIGHT KUNING ===== */
 .highlight {
     background: #FFA007;
     color: #071C34;
@@ -384,8 +377,6 @@ include '../../include/header.php';
     padding: 0 4px;
     border-radius: 4px;
 }
-
-/* Pagination */
 .pagination-wrapper {
     margin: 2.5rem 0 1rem 0;
     display: flex;
@@ -429,7 +420,6 @@ include '../../include/header.php';
     padding: 3rem 1rem;
 }
 .empty-state i { font-size: 3.5rem; color: #cbd5e0; margin-bottom: 0.5rem; }
-
 @media (max-width: 992px) {
     .kegiatan-grid { grid-template-columns: repeat(2, 1fr); }
 }
@@ -525,21 +515,30 @@ include '../../include/header.php';
                 $kuota = (int)$row['kuota_maks'];
                 $jumlah = (int)$row['jumlah_peserta'];
                 $penuh = $kuota > 0 && $jumlah >= $kuota;
+                
+                // =================================================
+                // PERBAIKAN: Penentuan gambar dengan aman
+                // =================================================
                 $imagePath = '';
-                if (!empty($row['lampiran']) && file_exists('../../uploads/kegiatan/' . $row['lampiran'])) {
-                    $imagePath = '/MASAGENA-ITH/uploads/kegiatan/' . $row['lampiran'];
-                } else {
-                    $exts = ['jpg', 'jpeg', 'png', 'gif'];
-                    foreach ($exts as $ext) {
-                        $base = basename($row['lampiran'], '.' . pathinfo($row['lampiran'], PATHINFO_EXTENSION));
-                        if (file_exists('../../uploads/kegiatan/' . $base . '.' . $ext)) {
-                            $imagePath = '/MASAGENA-ITH/uploads/kegiatan/' . $base . '.' . $ext;
-                            break;
+                if (!empty($row['lampiran'])) {
+                    // Coba file sesuai nama di database
+                    if (file_exists('../../uploads/kegiatan/' . $row['lampiran'])) {
+                        $imagePath = '/MASAGENA-ITH/uploads/kegiatan/' . $row['lampiran'];
+                    } else {
+                        // Coba ekstensi alternatif (jpg, jpeg, png, gif)
+                        $exts = ['jpg', 'jpeg', 'png', 'gif'];
+                        $base = pathinfo($row['lampiran'], PATHINFO_FILENAME); // aman karena sudah dicek tidak null
+                        foreach ($exts as $ext) {
+                            if (file_exists('../../uploads/kegiatan/' . $base . '.' . $ext)) {
+                                $imagePath = '/MASAGENA-ITH/uploads/kegiatan/' . $base . '.' . $ext;
+                                break;
+                            }
                         }
                     }
                 }
+                // Jika $imagePath masih kosong, nanti tampil ikon no-image
 
-                // Terapkan highlight
+                // Highlight
                 $highlightedJudul = highlightText($row['judul'], $q);
                 $highlightedDeskripsi = highlightText(substr($row['deskripsi'], 0, 150), $q);
                 $highlightedOrg = highlightText($row['nama_organisasi'], $q);
@@ -626,7 +625,6 @@ function resetFilter() {
     form.querySelectorAll('select').forEach(function(sel) {
         sel.selectedIndex = 0;
     });
-    // Hapus q juga dengan redirect ke halaman tanpa q
     window.location.href = '<?= $_SERVER['PHP_SELF'] ?>';
 }
 </script>
