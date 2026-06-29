@@ -41,7 +41,18 @@ require_once __DIR__ . '/../../include/header.php';
 
 <style>
     /* =============================================
-       Layout Sejajar Beranda (Kiri: Info, Kanan: Form)
+       Trik CSS untuk Memaksa HANYA Form yang Melebar
+       ============================================= */
+    .aspirasi-form {
+        width: 92vw !important; 
+        max-width: 1400px !important;
+        position: relative;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    /* =============================================
+       Layout Sejajar Beranda (Kiri: Info, Kanan: Form Atas)
        ============================================= */
     .asp-layout-grid {
         display: grid;
@@ -49,6 +60,13 @@ require_once __DIR__ . '/../../include/header.php';
         gap: 2rem;
         align-items: start;
         width: 100%;
+    }
+
+    /* Wadah Kolom Kiri */
+    .left-column-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
     }
 
     /* Panel Informasi Alur (Sisi Kiri) */
@@ -115,11 +133,19 @@ require_once __DIR__ . '/../../include/header.php';
         border-color: rgba(220, 38, 38, 0.3);
     }
 
-    /* Area Formulir Utama (Sisi Kanan) */
-    .aspirasi-form-wrapper {
-        max-width: 100%;
-        padding: 0;
-        margin: 0;
+    /* Area Formulir Utama & Bawah */
+    .aspirasi-form-wrapper,
+    .aspirasi-bottom-card {
+        width: 100%;
+        padding: 1.5rem;
+        background: var(--white);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        box-sizing: border-box;
+    }
+
+    .aspirasi-bottom-card {
+        margin-top: 2rem;
     }
 
     .aspirasi-header-actions {
@@ -136,13 +162,16 @@ require_once __DIR__ . '/../../include/header.php';
     .aspirasi-header-actions h2 {
         margin-bottom: 0 !important;
         font-size: 1.3rem;
-        border-left: 4px solid var(--accent); /* Garis kuning */
+        border-left: 4px solid var(--accent);
         padding-left: 0.75rem;
     }
 
+    /* Modifikasi ditambahkan di sini: justify-content: center */
     .btn-group-actions {
         display: flex;
+        justify-content: center; /* Membuat tombol rata tengah */
         gap: 0.5rem;
+        flex-wrap: wrap;
     }
 
     .btn-sub {
@@ -155,6 +184,7 @@ require_once __DIR__ . '/../../include/header.php';
         align-items: center;
         gap: 6px;
         transition: all 0.2s ease;
+        box-shadow: var(--shadow-sm);
     }
 
     .btn-sub:hover {
@@ -165,6 +195,7 @@ require_once __DIR__ . '/../../include/header.php';
     /* Penyesuaian Form Input */
     .asp-group {
         margin-bottom: 1.25rem;
+        width: 100%;
     }
 
     .asp-group label {
@@ -187,6 +218,7 @@ require_once __DIR__ . '/../../include/header.php';
         font-size: 0.95rem;
         color: var(--text-dark);
         outline: none;
+        box-sizing: border-box;
         transition: border-color 0.2s ease, background 0.2s ease;
     }
 
@@ -197,15 +229,25 @@ require_once __DIR__ . '/../../include/header.php';
         background: var(--white);
     }
 
+    /* Kontainer Bawah (Sejajarkan Checkbox & Button) */
+    .bottom-actions-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
     .checkbox-row {
         display: flex;
         align-items: center;
         gap: 10px;
-        margin: 1rem 0 1.5rem 0;
         cursor: pointer;
         color: var(--text-dark);
         font-weight: 500;
         user-select: none;
+        margin: 0;
     }
 
     .checkbox-row input {
@@ -215,15 +257,17 @@ require_once __DIR__ . '/../../include/header.php';
         cursor: pointer;
     }
 
-    /* Tombol Kirim: Awal Kuning, Hover Biru, Saat Dipencet/Aktif Kuning */
+    /* Tombol Kirim Diubah Lebih Kecil */
     .btn-kirim-asp {
-        width: 100%;
-        padding: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0.65rem 1.5rem;
         background: var(--accent);
         color: var(--primary);
         border: none;
         border-radius: var(--radius-sm);
-        font-size: 1.1rem;
+        font-size: 0.95rem;
         font-weight: 700;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -245,7 +289,7 @@ require_once __DIR__ . '/../../include/header.php';
         cursor: not-allowed;
     }
 
-    /* Responsif untuk layar kecil / mobile */
+    /* Responsif */
     @media (max-width: 900px) {
         .asp-layout-grid {
             grid-template-columns: 1fr;
@@ -254,47 +298,17 @@ require_once __DIR__ . '/../../include/header.php';
 </style>
 
 <div class="main-container">
-    <div class="dashboard-welcome">
+    <div class="dashboard-welcome" style="margin-bottom: 1.5rem;">
         <h1>Aspirasi dan Kritik Kampus</h1>
         <p>Salurkan masukan, kritik, keluhan, maupun apresiasi Anda langsung ke lembaga atau organisasi kemahasiswaan.</p>
     </div>
 
-    <div class="asp-layout-grid" style="margin-top: 1.5rem;">
+    <form class="aspirasi-form" action="proses_aspirasi.php" method="POST">
         
-        <div class="info-panel-card">
-            <div class="info-panel-top">
-                <div class="info-icon"><i class="fa fa-bullhorn"></i></div>
-                <div>
-                    <h3>Alur Penanganan</h3>
-                    <p>
-                        Status awal aspirasi yang masuk adalah <strong>Proses</strong>. Setelah ditinjau oleh pengurus organisasi terkait, status akan diperbarui menjadi <strong>Selesai</strong> atau <strong>Ditolak</strong>.
-                    </p>
-                </div>
-            </div>
-            <p style="padding-left: 0.25rem;">
-                Jika Anda memilih opsi kirim sebagai anonim, identitas Anda akan disembunyikan dan pengecekan aspirasi dilakukan lewat kode unik.
-            </p>
-
-            <?php if ($mahasiswa) { ?>
-                <div class="mini-profile">
-                    <span style="font-size: 0.75rem; color: var(--accent); font-weight: 600; text-transform: uppercase;">Identitas Pengirim</span>
-                    <strong><?= h($mahasiswa['nama']); ?></strong>
-                    <small style="color: rgba(255,255,255,0.7);">
-                        <?= h($mahasiswa['nim']); ?> · <?= h($mahasiswa['email']); ?>
-                    </small>
-                </div>
-            <?php } else { ?>
-                <div class="mini-profile warning">
-                    <span style="font-size: 0.75rem; color: #fca5a5; font-weight: 600; text-transform: uppercase;">Data mahasiswa belum terekam</span>
-                    <strong style="color: white;">Lengkapi tabel database mahasiswa</strong>
-                    <small style="color: rgba(255,255,255,0.7);">Pastikan akun terhubung dengan login mahasiswa.</small>
-                </div>
-            <?php } ?>
-        </div>
-
-        <div class="card aspirasi-form-wrapper">
-            <div class="aspirasi-header-actions">
-                <h2>Formulir Pengaduan</h2>
+        <div class="asp-layout-grid">
+            
+            <div class="left-column-wrapper">
+                
                 <div class="btn-group-actions">
                     <a href="cek_status_aspirasi.php" class="btn-sub" style="background-color: var(--success); color: white;">
                         <i class="fa fa-search"></i> Cek Status
@@ -303,16 +317,49 @@ require_once __DIR__ . '/../../include/header.php';
                         <i class="fa fa-list"></i> Riwayat Saya
                     </a>
                 </div>
-            </div>
 
-            <?php if (!$schemaReady) { ?>
-                <div style="margin-bottom: 1rem;">
-                    <?php schema_warning(); ?>
+                <div class="info-panel-card">
+                    <div class="info-panel-top">
+                        <div class="info-icon"><i class="fa fa-bullhorn"></i></div>
+                        <div>
+                            <h3>Alur Penanganan</h3>
+                            <p>
+                                Status awal aspirasi yang masuk adalah <strong>Proses</strong>. Setelah ditinjau oleh pengurus organisasi terkait, status akan diperbarui menjadi <strong>Selesai</strong> atau <strong>Ditolak</strong>.
+                            </p>
+                        </div>
+                    </div>
+                    <p style="padding-left: 0.25rem;">
+                        Jika Anda memilih opsi kirim sebagai anonim, identitas Anda akan disembunyikan dan pengecekan aspirasi dilakukan lewat kode unik.
+                    </p>
+
+                    <?php if ($mahasiswa) { ?>
+                        <div class="mini-profile">
+                            <span style="font-size: 0.75rem; color: var(--accent); font-weight: 600; text-transform: uppercase;">Identitas Pengirim</span>
+                            <strong><?= h($mahasiswa['nama']); ?></strong>
+                            <small style="color: rgba(255,255,255,0.7);">
+                                <?= h($mahasiswa['nim']); ?> · <?= h($mahasiswa['email']); ?>
+                            </small>
+                        </div>
+                    <?php } else { ?>
+                        <div class="mini-profile warning">
+                            <span style="font-size: 0.75rem; color: #fca5a5; font-weight: 600; text-transform: uppercase;">Data mahasiswa belum terekam</span>
+                            <strong style="color: white;">Lengkapi tabel database mahasiswa</strong>
+                            <small style="color: rgba(255,255,255,0.7);">Pastikan akun terhubung dengan login mahasiswa.</small>
+                        </div>
+                    <?php } ?>
                 </div>
-            <?php } ?>
 
-            <form class="aspirasi-form" action="proses_aspirasi.php" method="POST">
-                
+            </div> <div class="aspirasi-form-wrapper">
+                <div class="aspirasi-header-actions">
+                    <h2>Formulir Pengaduan</h2>
+                </div>
+
+                <?php if (!$schemaReady) { ?>
+                    <div style="margin-bottom: 1rem;">
+                        <?php schema_warning(); ?>
+                    </div>
+                <?php } ?>
+
                 <div class="asp-group">
                     <label>Jenis Organisasi Tujuan</label>
                     <select id="filter_jenis" class="form-control" style="margin-bottom: 10px;">
@@ -380,14 +427,20 @@ require_once __DIR__ . '/../../include/header.php';
                     <label>Judul Aspirasi</label>
                     <input type="text" name="judul" placeholder="Contoh: Perbaikan fasilitas ruang ormawa" maxlength="255" required>
                 </div>
+            </div>
 
-                <div class="asp-group">
-                    <label>Isi Aspirasi / Kritik</label>
-                    <textarea name="isi_aspirasi" rows="6" placeholder="Tuliskan keluhan atau saran secara transparan dan membangun..." required></textarea>
-                </div>
+        </div> 
+        
+        <div class="aspirasi-bottom-card">
+            
+            <div class="asp-group">
+                <label>Isi Aspirasi / Kritik</label>
+                <textarea name="isi_aspirasi" rows="8" placeholder="Tuliskan keluhan atau saran secara transparan dan membangun..." required></textarea>
+            </div>
 
-                <input type="hidden" name="nim" value="<?= $mahasiswa ? h($mahasiswa['nim']) : ''; ?>">
+            <input type="hidden" name="nim" value="<?= $mahasiswa ? h($mahasiswa['nim']) : ''; ?>">
 
+            <div class="bottom-actions-row">
                 <label class="checkbox-row">
                     <input type="checkbox" name="is_anonim" value="1">
                     <span>Kirim sebagai anonim</span>
@@ -396,10 +449,11 @@ require_once __DIR__ . '/../../include/header.php';
                 <button type="submit" class="btn-kirim-asp" <?= (!$schemaReady || !$mahasiswa) ? 'disabled' : ''; ?>>
                     <i class="fa fa-paper-plane"></i> Kirim Aspirasi
                 </button>
-            </form>
+            </div>
+            
         </div>
 
-    </div>
+    </form>
 </div>
 
 <script>
@@ -439,4 +493,4 @@ require_once __DIR__ . '/../../include/header.php';
 
 <?php
 require_once __DIR__ . '/../../include/footer.php';
-?>
+?>  
