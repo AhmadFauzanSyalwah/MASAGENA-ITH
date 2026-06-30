@@ -46,11 +46,13 @@ include 'include/header_public.php';
                 Bergabunglah dengan ribuan mahasiswa ITH.
             </p>
             <div class="hero-buttons">
-                <a href="/MASAGENA-ITH/auth/login.php" class="btn-hero btn-primary">
-                    <i class="fas fa-arrow-right"></i> Mulai
+                <!-- Tombol "Pelajari Lebih Lanjut" mengarah ke section #tentang -->
+                <a href="#tentang" class="btn-hero btn-primary">
+                    <i class="fas fa-arrow-right"></i> Pelajari Lebih Lanjut
                 </a>
-                <a href="/MASAGENA-ITH/auth/register.php" class="btn-hero btn-secondary">
-                    Daftar <i class="fas fa-arrow-right"></i>
+                <!-- Tombol "Login" mengarah ke login.php -->
+                <a href="/MASAGENA-ITH/auth/login.php" class="btn-hero btn-secondary">
+                    Login <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
             <div class="hero-stats-wrapper">
@@ -218,7 +220,8 @@ include 'include/header_public.php';
         </div>
 
         <div class="services-cta">
-            <p>Siap memulai? <a href="/MASAGENA-ITH/auth/register.php">Daftar sekarang</a> dan nikmati semua layanan kami!</p>
+            <!-- Link "Daftar sekarang" diubah menjadi "Login sekarang" -->
+            <p>Siap memulai? <a href="/MASAGENA-ITH/auth/login.php">Login sekarang</a> dan nikmati semua layanan kami!</p>
         </div>
     </div>
 </section>
@@ -280,7 +283,8 @@ include 'include/header_public.php';
             <p>
                 <i class="fas fa-rocket" style="color:#FFA007;"></i>
                 Tertarik menggunakan fitur-fitur kami?
-                <a href="/MASAGENA-ITH/auth/register.php">Daftar Sekarang</a>
+                <!-- Link "Daftar Sekarang" diubah menjadi "Login Sekarang" -->
+                <a href="/MASAGENA-ITH/auth/login.php">Login Sekarang</a>
                 dan rasakan kemudahannya!
             </p>
         </div>
@@ -367,82 +371,104 @@ include 'include/header_public.php';
             </p>
         </div>
 
-        <div class="team-subsection">
-            <h3 class="team-subtitle"><i class="fas fa-users" style="color:#FFA007;"></i> Tim Pengembang</h3>
-            <div class="team-grid">
-                <div class="team-card">
-                    <div class="team-avatar"><i class="fas fa-user-circle"></i></div>
-                    <div class="team-info">
-                        <h4>Ahmad Fauzan Syalwah</h4>
-                        <p class="nim">241011057</p>
-                        <p class="role">Fullstack Developer</p>
-                        <p class="bio">Bertanggung jawab atas pengembangan backend dan integrasi sistem.</p>
-                        <div class="team-social">
-                            <a href="#"><i class="fab fa-github"></i></a>
-                            <a href="#"><i class="fab fa-linkedin-in"></i></a>
-                            <a href="#"><i class="fas fa-envelope"></i></a>
-                        </div>
-                    </div>
-                </div>
-                <div class="team-card">
-                    <div class="team-avatar"><i class="fas fa-user-circle"></i></div>
-                    <div class="team-info">
-                        <h4>Muhammad Bintang</h4>
-                        <p class="nim">241011083</p>
-                        <p class="role">Frontend Developer</p>
-                        <p class="bio">Mengembangkan antarmuka pengguna yang responsif dan interaktif.</p>
-                        <div class="team-social">
-                            <a href="#"><i class="fab fa-github"></i></a>
-                            <a href="#"><i class="fab fa-linkedin-in"></i></a>
-                            <a href="#"><i class="fas fa-envelope"></i></a>
-                        </div>
-                    </div>
-                </div>
-                <div class="team-card">
-                    <div class="team-avatar"><i class="fas fa-user-circle"></i></div>
-                    <div class="team-info">
-                        <h4>Arya Ahmad</h4>
-                        <p class="nim">241011087</p>
-                        <p class="role">UI/UX Designer</p>
-                        <p class="bio">Merancang pengalaman pengguna dan antarmuka yang intuitif.</p>
-                        <div class="team-social">
-                            <a href="#"><i class="fab fa-github"></i></a>
-                            <a href="#"><i class="fab fa-linkedin-in"></i></a>
-                            <a href="#"><i class="fas fa-envelope"></i></a>
-                        </div>
-                    </div>
-                </div>
-                <div class="team-card">
-                    <div class="team-avatar"><i class="fas fa-user-circle"></i></div>
-                    <div class="team-info">
-                        <h4>Muhammad Aqsha Ridwan</h4>
-                        <p class="nim">241011089</p>
-                        <p class="role">Database Engineer</p>
-                        <p class="bio">Mengelola struktur basis data dan memastikan integritas data.</p>
-                        <div class="team-social">
-                            <a href="#"><i class="fab fa-github"></i></a>
-                            <a href="#"><i class="fab fa-linkedin-in"></i></a>
-                            <a href="#"><i class="fas fa-envelope"></i></a>
-                        </div>
-                    </div>
-                </div>
-                <div class="team-card">
-                    <div class="team-avatar"><i class="fas fa-user-circle"></i></div>
-                    <div class="team-info">
-                        <h4>Jeremia Anderson Sipayung</h4>
-                        <p class="nim">241011096</p>
-                        <p class="role">Quality Assurance</p>
-                        <p class="bio">Memastikan kualitas dan stabilitas sistem melalui pengujian menyeluruh.</p>
-                        <div class="team-social">
-                            <a href="#"><i class="fab fa-github"></i></a>
-                            <a href="#"><i class="fab fa-linkedin-in"></i></a>
-                            <a href="#"><i class="fas fa-envelope"></i></a>
-                        </div>
-                    </div>
+        <!-- TIM PENGEMBANG (dengan pembagian tugas baru & link GitHub) -->
+        <!-- TIM PENGEMBANG (dengan foto) -->
+<div class="team-subsection">
+    <h3 class="team-subtitle"><i class="fas fa-users" style="color:#FFA007;"></i> Tim Pengembang</h3>
+    <div class="team-grid">
+        <!-- 1. Arya Ahmad -->
+        <div class="team-card">
+            <div class="team-avatar">
+                <img src="/masagena-ith/assets/img/tim/arya.png" alt="Arya Ahmad" style="width:80px; height:80px; border-radius:50%; object-fit:cover;">
+            </div>
+            <div class="team-info">
+                <h4>Arya Ahmad</h4>
+                <p class="nim">241011087</p>
+                <p class="role">Autentikasi &amp; Manajemen Pengguna</p>
+                <p class="bio">Bertanggung jawab atas sistem login, registrasi, dan manajemen akun pengguna.</p>
+                <div class="team-social">
+                    <a href="https://github.com/Aryarec21" target="_blank"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#"><i class="fas fa-envelope"></i></a>
                 </div>
             </div>
         </div>
 
+        <!-- 2. Ahmad Fauzan Syalwah -->
+        <div class="team-card">
+            <div class="team-avatar">
+                <img src="/masagena-ith/assets/img/tim/fauzan.png" alt="Ahmad Fauzan Syalwah" style="width:80px; height:80px; border-radius:50%; object-fit:cover;">
+            </div>
+            <div class="team-info">
+                <h4>Ahmad Fauzan Syalwah</h4>
+                <p class="nim">241011057</p>
+                <p class="role">Dashboard &amp; Informasi Organisasi</p>
+                <p class="bio">Mengembangkan tampilan dashboard dan menyajikan informasi organisasi secara terstruktur.</p>
+                <div class="team-social">
+                    <a href="https://github.com/AhmadFauzanSyalwah" target="_blank"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#"><i class="fas fa-envelope"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Jeremia Anderson Sipayung -->
+        <div class="team-card">
+            <div class="team-avatar">
+                <img src="/masagena-ith/assets/img/tim/jeremia.png" alt="Jeremia Anderson Sipayung" style="width:80px; height:80px; border-radius:50%; object-fit:cover;">
+            </div>
+            <div class="team-info">
+                <h4>Jeremia Anderson Sipayung</h4>
+                <p class="nim">241011096</p>
+                <p class="role">Manajemen Konten &amp; Agenda</p>
+                <p class="bio">Mengelola konten kegiatan dan agenda kampus agar selalu terbaru dan terorganisir.</p>
+                <div class="team-social">
+                    <a href="https://github.com/Jeremia-spy" target="_blank"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#"><i class="fas fa-envelope"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Muhammad Aqsha Ridwan -->
+        <div class="team-card">
+            <div class="team-avatar">
+                <img src="/masagena-ith/assets/img/tim/acca.png" alt="Muhammad Aqsha Ridwan" style="width:80px; height:80px; border-radius:50%; object-fit:cover;">
+            </div>
+            <div class="team-info">
+                <h4>Muhammad Aqsha Ridwan</h4>
+                <p class="nim">241011089</p>
+                <p class="role">Aktivitas Pengguna &amp; Pencarian</p>
+                <p class="bio">Mengembangkan fitur pencarian dan mencatat aktivitas pengguna untuk analisis.</p>
+                <div class="team-social">
+                    <a href="https://github.com/muhammadaqsharidwan-spec" target="_blank"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#"><i class="fas fa-envelope"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Muhammad Bintang -->
+        <div class="team-card">
+            <div class="team-avatar">
+                <img src="/masagena-ith/assets/img/tim/bintang.png" alt="Muhammad Bintang" style="width:80px; height:80px; border-radius:50%; object-fit:cover;">
+            </div>
+            <div class="team-info">
+                <h4>Muhammad Bintang</h4>
+                <p class="nim">241011083</p>
+                <p class="role">Pendaftaran &amp; Aspirasi/Kritik</p>
+                <p class="bio">Mengelola sistem pendaftaran kegiatan serta fitur aspirasi dan kritik mahasiswa.</p>
+                <div class="team-social">
+                    <a href="https://github.com/bintz30" target="_blank"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#"><i class="fas fa-envelope"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <!-- DOSEN PENGAMPU (tetap seperti semula) -->
         <div class="team-subsection">
             <h3 class="team-subtitle"><i class="fas fa-chalkboard-teacher" style="color:#FFA007;"></i> Dosen Pengampu</h3>
             <div class="dosen-grid">
@@ -564,195 +590,6 @@ include 'include/header_public.php';
 </section>
 
 <!-- ============================================================
-     SYARAT & KETENTUAN SECTION
-     ============================================================ -->
-<section class="section-terms" id="syarat">
-    <div class="terms-container">
-        <!-- Header -->
-        <div class="terms-header">
-            <span class="section-badge">SYARAT &amp; KETENTUAN</span>
-            <h2>Aturan Penggunaan <span>MASAGENA-ITH</span></h2>
-            <p class="terms-desc">
-                Dengan menggunakan MASAGENA-ITH, Anda menyetujui seluruh syarat dan ketentuan yang berlaku. 
-                Harap baca dengan saksama.
-            </p>
-        </div>
-
-        <!-- Content -->
-        <div class="terms-content">
-            <div class="last-updated">
-                <i class="fas fa-clock"></i> Terakhir diperbarui: 27 Juni 2026
-            </div>
-
-            <!-- 1. Penerimaan Syarat -->
-            <div class="terms-item">
-                <h3><i class="fas fa-check-circle"></i> 1. Penerimaan Syarat</h3>
-                <p>Dengan mengakses dan menggunakan platform <strong>MASAGENA-ITH</strong>, Anda menyatakan telah membaca, memahami, dan menyetujui seluruh syarat dan ketentuan yang tercantum dalam dokumen ini. Jika Anda tidak menyetujui salah satu bagian dari syarat ini, Anda tidak diperkenankan menggunakan layanan kami.</p>
-            </div>
-
-            <!-- 2. Akun Pengguna -->
-            <div class="terms-item">
-                <h3><i class="fas fa-user-circle"></i> 2. Akun Pengguna</h3>
-                <p>Untuk menggunakan layanan penuh MASAGENA-ITH, Anda diwajibkan untuk mendaftar dan membuat akun. Anda bertanggung jawab penuh atas keamanan akun Anda, termasuk menjaga kerahasiaan kata sandi.</p>
-                <ul>
-                    <li><strong>Keaslian Data:</strong> Anda wajib memberikan data diri yang akurat dan terkini saat mendaftar.</li>
-                    <li><strong>Tanggung Jawab Akun:</strong> Setiap aktivitas yang dilakukan melalui akun Anda menjadi tanggung jawab Anda sepenuhnya.</li>
-                    <li><strong>Penggunaan Akun:</strong> Akun hanya dapat digunakan oleh pemiliknya. Anda tidak diperkenankan meminjamkan atau mentransfer akun kepada pihak lain.</li>
-                </ul>
-            </div>
-
-            <!-- 3. Konten dan Pengguna -->
-            <div class="terms-item">
-                <h3><i class="fas fa-file-alt"></i> 3. Konten dan Pengguna</h3>
-                <p>Pengguna dapat mengunggah, mempublikasikan, dan berbagi konten seputar kegiatan kemahasiswaan. Namun, konten yang diunggah harus memenuhi ketentuan berikut:</p>
-                <ul>
-                    <li>Tidak mengandung unsur <strong>SARA, pornografi, kekerasan, atau ujaran kebencian</strong>.</li>
-                    <li>Tidak melanggar hak cipta atau hak kekayaan intelektual pihak lain.</li>
-                    <li>Relevan dengan tujuan platform sebagai media informasi kegiatan mahasiswa.</li>
-                    <li>Konten yang tidak sesuai dapat dihapus tanpa pemberitahuan sebelumnya.</li>
-                </ul>
-                <div class="highlight-box">
-                    <p><i class="fas fa-info-circle"></i> MASAGENA-ITH berhak untuk menghapus atau menonaktifkan akun yang terbukti melanggar ketentuan konten.</p>
-                </div>
-            </div>
-
-            <!-- 4. Hak dan Kewajiban -->
-            <div class="terms-item">
-                <h3><i class="fas fa-balance-scale"></i> 4. Hak dan Kewajiban</h3>
-                <p><strong>Pengguna</strong> memiliki hak untuk mengakses informasi, berpartisipasi dalam kegiatan, dan menyampaikan aspirasi secara bertanggung jawab.</p>
-                <p><strong>Pengurus Organisasi</strong> memiliki hak untuk mengelola konten kegiatan masing-masing, serta wajib menyajikan informasi yang akurat dan terkini.</p>
-                <p><strong>Administrator</strong> berhak untuk mengelola sistem dan melakukan pengawasan terhadap konten dan aktivitas pengguna.</p>
-            </div>
-
-            <!-- 5. Privasi dan Data -->
-            <div class="terms-item">
-                <h3><i class="fas fa-shield-alt"></i> 5. Privasi dan Data Pribadi</h3>
-                <p>MASAGENA-ITH menghormati privasi Anda. Data pribadi yang kami kumpulkan (seperti nama, email, NIM) digunakan semata-mata untuk keperluan layanan dan tidak akan dibagikan kepada pihak ketiga tanpa izin Anda, kecuali diwajibkan oleh hukum.</p>
-                <ul>
-                    <li>Data Anda disimpan dengan aman dan hanya diakses oleh pihak yang berwenang.</li>
-                    <li>Anda dapat mengakses, mengubah, atau menghapus data pribadi Anda melalui dashboard.</li>
-                    <li>Kami tidak menjual atau menyewakan data Anda kepada pihak manapun.</li>
-                </ul>
-                <div class="highlight-box">
-                    <p><i class="fas fa-lock"></i> Informasi lebih lanjut mengenai pengelolaan data dapat Anda baca di halaman <a href="#kebijakan" style="color:#FFA007; font-weight:600;">Kebijakan Privasi</a>.</p>
-                </div>
-            </div>
-
-            <!-- 6. Perubahan Syarat -->
-            <div class="terms-item">
-                <h3><i class="fas fa-sync-alt"></i> 6. Perubahan Syarat</h3>
-                <p>MASAGENA-ITH dapat memperbarui syarat dan ketentuan ini dari waktu ke waktu. Perubahan akan diinformasikan melalui platform dan berlaku efektif setelah dipublikasikan. Pengguna disarankan untuk secara berkala meninjau halaman ini.</p>
-            </div>
-
-            <!-- 7. Sanksi Pelanggaran -->
-            <div class="terms-item">
-                <h3><i class="fas fa-gavel"></i> 7. Sanksi Pelanggaran</h3>
-                <p>Pelanggaran terhadap syarat dan ketentuan ini dapat mengakibatkan:</p>
-                <ul>
-                    <li>Peringatan atau teguran tertulis.</li>
-                    <li>Pembatasan akses atau fitur tertentu.</li>
-                    <li>Penonaktifan atau penghapusan akun.</li>
-                    <li>Langkah hukum jika diperlukan.</li>
-                </ul>
-            </div>
-
-            <!-- 8. Hubungi Kami -->
-            <div class="terms-item">
-                <h3><i class="fas fa-envelope"></i> 8. Hubungi Kami</h3>
-                <p>Jika Anda memiliki pertanyaan atau keluhan terkait syarat dan ketentuan ini, silakan hubungi kami melalui:</p>
-                <ul>
-                    <li><strong>Email:</strong> <a href="mailto:info@masagena.ith.ac.id" style="color:#FFA007;">info@masagena.ith.ac.id</a></li>
-                    <li><strong>Telepon:</strong> (0421) 123456</li>
-                    <li><strong>Alamat:</strong> Kampus ITH, Parepare, Sulawesi Selatan</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ============================================================
-     FAQ SECTION
-     ============================================================ -->
-<section class="section-faq" id="faq">
-    <div class="faq-container">
-        <div class="faq-header">
-            <span class="section-badge">FAQ</span>
-            <h2>Frequently Asked <span>Questions</span></h2>
-            <p class="faq-desc">
-                Temukan jawaban atas pertanyaan yang paling sering diajukan tentang MASAGENA-ITH.
-            </p>
-        </div>
-
-        <div class="faq-list" id="faqList">
-            <!-- FAQ 1 -->
-            <div class="faq-item active">
-                <div class="faq-question" onclick="toggleFaq(this)">
-                    <span>Apa itu MASAGENA-ITH?</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">
-                    <p>MASAGENA-ITH adalah platform digital terpadu yang berfungsi sebagai media informasi seputar kegiatan akademik dan non-akademik di lingkungan Institut Teknologi Bacharuddin Jusuf Habibie (IT-BJ Habibie).</p>
-                </div>
-            </div>
-
-            <!-- FAQ 2 -->
-            <div class="faq-item">
-                <div class="faq-question" onclick="toggleFaq(this)">
-                    <span>Siapa yang bisa mengakses MASAGENA-ITH?</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">
-                    <p>Seluruh sivitas akademika ITH, terutama mahasiswa. Namun, untuk fitur pendaftaran kegiatan dan aspirasi, Anda perlu login terlebih dahulu.</p>
-                </div>
-            </div>
-
-            <!-- FAQ 3 -->
-            <div class="faq-item">
-                <div class="faq-question" onclick="toggleFaq(this)">
-                    <span>Bagaimana cara mendaftar kegiatan?</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">
-                    <p>Login sebagai mahasiswa, pilih kegiatan yang diinginkan, lalu klik tombol "Daftar". Anda akan mendapatkan notifikasi status pendaftaran.</p>
-                </div>
-            </div>
-
-            <!-- FAQ 4 -->
-            <div class="faq-item">
-                <div class="faq-question" onclick="toggleFaq(this)">
-                    <span>Apakah saya bisa menyampaikan aspirasi secara anonim?</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">
-                    <p>Ya, Anda dapat menyampaikan aspirasi, saran, atau kritik secara anonim atau dengan mencantumkan identitas Anda.</p>
-                </div>
-            </div>
-
-            <!-- FAQ 5 -->
-            <div class="faq-item">
-                <div class="faq-question" onclick="toggleFaq(this)">
-                    <span>Bagaimana jika saya lupa password?</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">
-                    <p>Gunakan fitur "Lupa Password" di halaman login. Kami akan mengirimkan instruksi reset password ke email Anda.</p>
-                </div>
-            </div>
-
-            <!-- FAQ 6 -->
-            <div class="faq-item">
-                <div class="faq-question" onclick="toggleFaq(this)">
-                    <span>Apakah MASAGENA-ITH gratis?</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">
-                    <p>Ya, MASAGENA-ITH sepenuhnya gratis untuk seluruh mahasiswa dan organisasi kemahasiswaan di ITH.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-<!-- ============================================================
      SCRIPT ANIMASI
      ============================================================ -->
 <script>
@@ -830,23 +667,6 @@ document.addEventListener('DOMContentLoaded', function() {
         serviceObserver.observe(card);
     });
 });
-// ===== FAQ TOGGLE =====
-function toggleFaq(el) {
-    const item = el.closest('.faq-item');
-    const isActive = item.classList.contains('active');
-
-    // Tutup semua FAQ (opsional: biarkan hanya satu terbuka)
-    // document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
-
-    if (isActive) {
-        item.classList.remove('active');
-    } else {
-        item.classList.add('active');
-    }
-}
-
-// ===== SCROLL REVEAL (sudah ada) =====
-// ... kode scroll reveal yang sudah ada ...
 </script>
 
 <?php include 'include/footer.php'; ?>

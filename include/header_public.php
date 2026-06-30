@@ -8,6 +8,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 $peran = $_SESSION['peran'] ?? 'guest';
 $nama = $_SESSION['nama'] ?? '';
 
+// Daftar menu navigasi – SYARAT & FAQ DIHAPUS
 $nav_links = [
     '#beranda' => 'Beranda',
     '#tentang' => 'Tentang',
@@ -16,8 +17,6 @@ $nav_links = [
     '#teknologi' => 'Teknologi',
     '#tim' => 'Tim',
     '#kontak' => 'Kontak',
-    '#syarat' => 'Syarat & Ketentuan',
-    '#faq' => 'FAQ', // Tambahkan ini
 ];
 ?>
 <!DOCTYPE html>
